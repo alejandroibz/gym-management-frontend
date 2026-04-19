@@ -1,0 +1,152 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">Detalle de cliente</p>
+      <h2>{{ data.client.nombre }} {{ data.client.apellido }}</h2>
+      <p class="dialog-subtitle">Informacion completa y relaciones del cliente seleccionado.</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="details-grid">
+    <article class="detail-card">
+      <span class="detail-label">DNI</span>
+      <strong>{{ data.client.dni }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Fecha de nacimiento</span>
+      <strong>{{ data.client.fechaNacimiento | date: 'dd/MM/yyyy' }}</strong>
+    </article>
+
+    <article class="detail-card span-2">
+      <span class="detail-label">Direccion</span>
+      <strong>{{ data.client.direccion }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Fecha de alta</span>
+      <strong>{{ data.client.fechaAlta ? (data.client.fechaAlta | date: 'dd/MM/yyyy') : 'Sin dato' }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Branch ID</span>
+      <strong>{{ data.client.branchId }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Debe pago</span>
+      <strong>{{ data.client.debePago ? 'Si' : 'No' }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Ultimo pago</span>
+      <strong>{{ data.client.ultimoPagoFecha ? (data.client.ultimoPagoFecha | date: 'dd/MM/yyyy') : 'Sin dato' }}</strong>
+    </article>
+
+    <article class="detail-card span-2">
+      <span class="detail-label">Membresia actual</span>
+      <strong>{{ currentMembership?.plan?.nombre || (currentMembership ? 'Plan #' + currentMembership.membershipPlanId : 'Sin membresia asignada') }}</strong>
+      @if (currentMembership) {
+        <span>
+          {{ currentMembership.fechaInicio | date: 'dd/MM/yyyy' }} - {{ currentMembership.fechaFin | date: 'dd/MM/yyyy' }}
+          · ${{ currentMembership.precioFinal }}
+        </span>
+        <span>Estado: {{ currentMembership.estado || 'Sin dato' }}</span>
+      }
+    </article>
+  </div>
+
+  <div class="contact-section">
+    <h3>Contacto</h3>
+
+    <div class="contact-links">
+      <div class="contact-card">
+        <span class="contact-label">Telefono</span>
+        <strong class="contact-value">{{ data.client.telefono || 'Sin telefono' }}</strong>
+        <a class="contact-action" [href]="whatsappLink" target="_blank" rel="noopener noreferrer">
+          Abrir en WhatsApp
+        </a>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-label">Email</span>
+        <strong class="contact-value">{{ data.client.email || 'Sin email' }}</strong>
+        <a class="contact-action" [href]="mailLink">Enviar correo</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="relations-grid">
+    <section class="relation-card">
+      <div class="relation-heading">
+        <h3>Membresia</h3>
+        <span>{{ hasMembership ? 1 : 0 }}</span>
+      </div>
+
+      @if (!currentMembership) {
+        <p class="empty-copy">No hay membresia asociada.</p>
+      } @else {
+        <div class="relation-list">
+          <article class="relation-item">
+            <div class="relation-field">
+              <span>ID</span>
+              <strong>{{ currentMembership.id || 'Sin dato' }}</strong>
+            </div>
+            <div class="relation-field">
+              <span>Plan</span>
+              <strong>{{ currentMembership.plan?.nombre || currentMembership.membershipPlanId }}</strong>
+            </div>
+            <div class="relation-field">
+              <span>Inicio</span>
+              <strong>{{ currentMembership.fechaInicio | date: 'dd/MM/yyyy' }}</strong>
+            </div>
+            <div class="relation-field">
+              <span>Fin</span>
+              <strong>{{ currentMembership.fechaFin | date: 'dd/MM/yyyy' }}</strong>
+            </div>
+            <div class="relation-field">
+              <span>Estado</span>
+              <strong>{{ currentMembership.estado || 'Sin dato' }}</strong>
+            </div>
+            <div class="relation-field">
+              <span>Precio final</span>
+              <strong>${{ currentMembership.precioFinal }}</strong>
+            </div>
+          </article>
+        </div>
+      }
+    </section>
+
+    <section class="relation-card">
+      <div class="relation-heading">
+        <h3>Pagos</h3>
+        <span>{{ payments.length }}</span>
+      </div>
+
+      @if (payments.length === 0) {
+        <p class="empty-copy">No hay pagos registrados.</p>
+      } @else {
+        <div class="relation-list">
+          @for (payment of payments; track $index) {
+            <article class="relation-item">
+              @for (field of payment | keyvalue; track field.key) {
+                <div class="relation-field">
+                  <span>{{ field.key }}</span>
+                  <strong>{{ formatValue(field.value) }}</strong>
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="close()">Cerrar</button>
+  </div>
+</div>

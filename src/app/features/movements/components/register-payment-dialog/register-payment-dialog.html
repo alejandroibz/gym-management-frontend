@@ -1,0 +1,79 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">Cobro</p>
+      <h2>Registrar pago</h2>
+      <p class="dialog-subtitle">Carga un pago de cliente con todos los datos necesarios sin salir de movimientos.</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Cliente</mat-label>
+        <mat-select formControlName="clientId" (selectionChange)="onClientChange()">
+          @for (client of data.clients; track client.id) {
+            <mat-option [value]="client.id">{{ getClientLabel(client) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="context-box span-2">
+        <span class="context-label">Membresia activa</span>
+        <strong>{{ membershipLabel() }}</strong>
+        @if (!selectedClient()?.membership?.id && form.controls.clientId.value) {
+          <small>El cliente seleccionado no tiene una membresia activa para asociar el pago.</small>
+        }
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Metodo de pago</mat-label>
+        <mat-select formControlName="paymentMethodId">
+          @for (method of data.paymentMethods; track method.id) {
+            <mat-option [value]="method.id">{{ getPaymentMethodLabel(method) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Categoria movimiento</mat-label>
+        <mat-select formControlName="cashMovementCategoryId">
+          @for (category of data.incomeCategories; track category.id) {
+            <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha</mat-label>
+        <input matInput type="date" formControlName="fechaPago" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Monto</mat-label>
+        <input matInput type="number" min="0" step="0.01" formControlName="monto" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Mes</mat-label>
+        <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Ano</mat-label>
+        <input matInput type="number" min="2000" formControlName="periodYear" />
+      </mat-form-field>
+    </div>
+
+    <mat-checkbox formControlName="confirmado">Registrar ya confirmado</mat-checkbox>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
+      <button mat-flat-button type="submit">Registrar pago</button>
+    </div>
+  </form>
+</div>

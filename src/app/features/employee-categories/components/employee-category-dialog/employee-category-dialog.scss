@@ -1,0 +1,47 @@
+.dialog-shell {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dialog-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-accent);
+}
+
+.dialog-header h2 {
+  margin: 0;
+}
+
+.dialog-subtitle {
+  margin: 0.45rem 0 0;
+  color: var(--app-text-muted);
+}
+
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .dialog-header,
+  .dialog-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,97 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">ABM de clientes</p>
+      <h2>{{ isEditing ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
+      <p class="dialog-subtitle">Completa los datos personales principales del cliente.</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Apellido</mat-label>
+        <input matInput formControlName="apellido" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>DNI</mat-label>
+        <input matInput formControlName="dni" inputmode="numeric" maxlength="8" (input)="onDniInput()" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha de nacimiento</mat-label>
+        <input matInput type="date" formControlName="fechaNacimiento" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Telefono</mat-label>
+        <input matInput formControlName="telefono" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Direccion</mat-label>
+        <input matInput formControlName="direccion" />
+      </mat-form-field>
+
+      <div class="membership-section span-2">
+        <div class="membership-section-copy">
+          <p class="membership-eyebrow">Membresia</p>
+          <h3>Plan asignado al cliente</h3>
+          <p>Selecciona el plan y ajusta sus fechas o el precio final si hace falta.</p>
+        </div>
+
+        <div class="membership-grid">
+          <mat-form-field appearance="outline" class="span-2">
+            <mat-label>Plan de membresia</mat-label>
+            <mat-select formControlName="membershipPlanId" (selectionChange)="onMembershipPlanChange()">
+              @for (plan of data.membershipPlans; track plan.id) {
+                <mat-option [value]="plan.id">
+                  {{ plan.nombre }} · {{ plan.duracionDias }} dias · ${{ plan.precio }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>Selecciona una membresia.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha de inicio</mat-label>
+            <input matInput type="date" formControlName="fechaInicio" (change)="onFechaInicioChange()" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha de fin</mat-label>
+            <input matInput type="date" formControlName="fechaFin" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Precio final</mat-label>
+            <input matInput type="number" min="0" step="0.01" formControlName="precioFinal" />
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
+      <button mat-flat-button type="submit">
+        <mat-icon>{{ isEditing ? 'save' : 'person_add' }}</mat-icon>
+        {{ isEditing ? 'Guardar cambios' : 'Crear cliente' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,240 @@
+<section class="clients-page">
+  <header class="page-header">
+    <div class="page-header-copy">
+      <span class="eyebrow-pill">
+        <mat-icon>groups</mat-icon>
+        ABM de clientes
+      </span>
+
+      <div>
+        <p class="eyebrow">Comunidad activa</p>
+        <h1>Clientes</h1>
+        <p class="subtitle">
+          Gestiona altas, filtros y seguimiento comercial con una vista mas clara, ordenada y lista para trabajar desde cualquier dispositivo.
+        </p>
+      </div>
+
+      <div class="header-highlights">
+        <div class="highlight-chip">
+          <mat-icon>badge</mat-icon>
+          <span>Datos personales</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>call</mat-icon>
+          <span>Contacto rapido</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>card_membership</mat-icon>
+          <span>Membresias vinculadas</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-header-side">
+      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+        <mat-icon>person_add</mat-icon>
+        Nuevo cliente
+      </button>
+
+      <div class="header-note">
+        <mat-icon>insights</mat-icon>
+        <span>Centraliza informacion clave para ventas, seguimiento y atencion al cliente.</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell accent">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Total clientes</span>
+        <strong>{{ totalClients() }}</strong>
+        <small>Registros informados por la API</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell info">
+        <mat-icon>visibility</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">En pantalla</span>
+        <strong>{{ clientsOnPage() }}</strong>
+        <small>Resultados cargados en esta pagina</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell success">
+        <mat-icon>card_membership</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Membresias visibles</span>
+        <strong>{{ totalMembershipsOnPage() }}</strong>
+        <small>Relaciones presentes en la vista actual</small>
+      </div>
+    </mat-card>
+  </section>
+
+  <mat-card class="list-card">
+    <div class="card-heading">
+      <div class="card-heading-copy">
+        <h2>Clientes del gimnasio</h2>
+        <p>Filtra por datos principales y opera sobre cada cliente sin perder contexto.</p>
+      </div>
+
+      <div class="heading-badge">
+        <mat-icon>tune</mat-icon>
+        <span>Panel operativo</span>
+      </div>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="feedback-banner error">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+      <div class="filter-block">
+        <span class="filter-label">Nombre</span>
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar por nombre</mat-label>
+          <mat-icon matPrefix>person_search</mat-icon>
+          <input matInput formControlName="nombre" />
+        </mat-form-field>
+      </div>
+
+      <div class="filter-block">
+        <span class="filter-label">Apellido</span>
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar por apellido</mat-label>
+          <mat-icon matPrefix>badge</mat-icon>
+          <input matInput formControlName="apellido" />
+        </mat-form-field>
+      </div>
+
+      <div class="filter-block">
+        <span class="filter-label">Documento</span>
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar por DNI</mat-label>
+          <mat-icon matPrefix>credit_card</mat-icon>
+          <input matInput formControlName="dni" />
+        </mat-form-field>
+      </div>
+
+      <div class="filter-actions">
+        <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
+          <mat-icon>search</mat-icon>
+          Aplicar filtros
+        </button>
+
+        <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
+          <mat-icon>restart_alt</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </form>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Cargando clientes...</span>
+      </div>
+    } @else if (clients().length === 0) {
+      <div class="empty-state">
+        <mat-icon>person</mat-icon>
+        <h3>Sin clientes para mostrar</h3>
+        <p>Crea un nuevo cliente o ajusta los filtros para encontrar resultados.</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>DNI</th>
+              <th>Membresia</th>
+              <th>Contacto</th>
+              <th>Direccion</th>
+              <th>Relaciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (client of clients(); track client.id) {
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <strong>{{ client.nombre }} {{ client.apellido }}</strong>
+                    <span>{{ client.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="dni-pill">{{ client.dni }}</span>
+                </td>
+                <td>
+                  <div class="client-cell">
+                    <strong>{{ getMembershipLabel(client) }}</strong>
+                    <span>
+                      {{ getMembershipEndDate(client) ? ('Vence ' + (getMembershipEndDate(client) | date: 'dd/MM/yyyy')) : 'Sin vencimiento informado' }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="contact-cell">
+                    <a
+                      class="contact-link"
+                      [href]="getWhatsAppLink(client.telefono)"
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      {{ client.telefono }}
+                    </a>
+                    <a class="contact-link" [href]="getMailLink(client.email)">
+                      {{ client.email }}
+                    </a>
+                  </div>
+                </td>
+                <td>{{ client.direccion }}</td>
+                <td>
+                  <div class="relations-cell">
+                    <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
+                      {{ getPaymentStatusLabel(client) }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="icon-action-button"
+                      [disabled]="isSaving()"
+                      title="Abrir cliente"
+                      aria-label="Abrir cliente"
+                      (click)="openClientDetails(client)">
+                      <mat-icon>arrow_forward</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageNumber() - 1"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[6, 12, 24, 48]"
+      (page)="handlePageChange($event)">
+    </mat-paginator>
+  </mat-card>
+</section>

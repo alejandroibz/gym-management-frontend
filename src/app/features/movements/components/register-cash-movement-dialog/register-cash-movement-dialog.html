@@ -1,0 +1,76 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">Caja manual</p>
+      <h2>Registrar movimiento</h2>
+      <p class="dialog-subtitle">Carga ingresos o egresos manuales de forma clara y ordenada.</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo</mat-label>
+        <mat-select formControlName="tipoMovimiento" (selectionChange)="onTypeChange()">
+          <mat-option [value]="1">Ingreso</mat-option>
+          <mat-option [value]="2">Egreso</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Categoria</mat-label>
+        <mat-select formControlName="cashMovementCategoryId" (selectionChange)="onCategoryChange()">
+          @for (category of filteredCategories(); track category.id) {
+            <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (shouldShowEmployeeField()) {
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>Empleado relacionado</mat-label>
+          <mat-select formControlName="employeeId" (selectionChange)="onEmployeeChange()">
+            <mat-option [value]="null">Sin empleado</mat-option>
+            @for (employee of data.employees; track employee.id) {
+              <mat-option [value]="employee.id">{{ getEmployeeLabel(employee) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha</mat-label>
+        <input matInput type="date" formControlName="fechaMovimiento" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ amountLabel() }}</mat-label>
+        <input matInput type="number" min="0" step="0.01" formControlName="monto" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Descripcion</mat-label>
+        <input matInput formControlName="descripcion" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Metodo de pago</mat-label>
+        <mat-select formControlName="metodoPago">
+          <mat-option [value]="null">Sin metodo</mat-option>
+          @for (method of data.paymentMethods; track method.id) {
+            <mat-option [value]="getPaymentMethodLabel(method)">{{ getPaymentMethodLabel(method) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
+      <button mat-flat-button type="submit">Registrar movimiento</button>
+    </div>
+  </form>
+</div>

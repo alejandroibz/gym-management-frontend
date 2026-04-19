@@ -1,0 +1,39 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">Detalle de plan</p>
+      <h2>{{ data.plan.nombre }}</h2>
+      <p class="dialog-subtitle">{{ data.plan.descripcion }}</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="details-grid">
+    <article class="detail-card">
+      <span class="detail-label">Precio</span>
+      <strong>{{ data.plan.precio | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Duracion</span>
+      <strong>{{ data.plan.duracionDias }} dias</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Gym ID</span>
+      <strong>{{ data.plan.gymId }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Creado</span>
+      <strong>{{ data.plan.fechaCreacion ? (data.plan.fechaCreacion | date: 'dd/MM/yyyy') : 'Sin dato' }}</strong>
+    </article>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="close()">Cerrar</button>
+  </div>
+</div>

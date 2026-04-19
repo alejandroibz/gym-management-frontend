@@ -1,0 +1,61 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">Detalle de empleado</p>
+      <h2>{{ data.employee.nombre }} {{ data.employee.apellido }}</h2>
+      <p class="dialog-subtitle">Informacion completa del registro seleccionado.</p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="details-grid">
+    <article class="detail-card">
+      <span class="detail-label">Categoria</span>
+      <strong>{{ categoryName }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">DNI</span>
+      <strong>{{ data.employee.dni }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Fecha de ingreso</span>
+      <strong>{{ data.employee.fechaIngreso | date: 'dd/MM/yyyy' }}</strong>
+    </article>
+
+    <article class="detail-card">
+      <span class="detail-label">Sueldo</span>
+      <strong>{{ data.employee.sueldo | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
+    </article>
+  </div>
+
+  <div class="contact-section">
+    <h3>Contacto</h3>
+
+    <div class="contact-links">
+      <div class="contact-card">
+        <span class="contact-label">Telefono</span>
+        <strong class="contact-value">{{ data.employee.telefono || 'Sin telefono' }}</strong>
+        <a class="contact-action" [href]="whatsappLink" target="_blank" rel="noopener noreferrer">
+          Abrir en WhatsApp
+        </a>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-label">Email</span>
+        <strong class="contact-value">{{ data.employee.email || 'Sin email' }}</strong>
+        <a class="contact-action" [href]="mailLink">
+          Enviar correo
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="close()">Cerrar</button>
+  </div>
+</div>

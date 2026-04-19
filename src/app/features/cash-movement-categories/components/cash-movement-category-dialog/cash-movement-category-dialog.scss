@@ -1,0 +1,41 @@
+.dialog-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dialog-eyebrow {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--app-accent);
+}
+
+.dialog-header h2 {
+  margin: 0;
+}
+
+.dialog-subtitle {
+  margin: 0.4rem 0 0;
+  color: var(--app-text-muted);
+}
+
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}

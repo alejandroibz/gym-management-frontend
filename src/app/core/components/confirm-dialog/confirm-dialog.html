@@ -1,0 +1,26 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div class="dialog-icon" [class.danger]="data.tone === 'danger'">
+      <mat-icon>{{ data.tone === 'danger' ? 'warning' : 'help' }}</mat-icon>
+    </div>
+
+    <div class="dialog-copy">
+      <h2>{{ data.title }}</h2>
+      <p>{{ data.message }}</p>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="close()">
+      {{ data.cancelLabel ?? 'Cancelar' }}
+    </button>
+
+    <button
+      mat-flat-button
+      type="button"
+      [class.danger-button]="data.tone === 'danger'"
+      (click)="confirm()">
+      {{ data.confirmLabel ?? 'Confirmar' }}
+    </button>
+  </div>
+</div>

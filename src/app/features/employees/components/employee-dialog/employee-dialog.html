@@ -1,0 +1,79 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">ABM de empleados</p>
+      <h2>{{ isEditing ? 'Editar empleado' : 'Nuevo empleado' }}</h2>
+      <p class="dialog-subtitle">
+        Completa los datos principales para guardar el registro del empleado.
+      </p>
+    </div>
+
+    <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Categoria</mat-label>
+        <mat-select formControlName="employeeCategoryId">
+          @for (category of data.categories; track category.id) {
+            <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>Selecciona una categoria.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>DNI</mat-label>
+        <input matInput formControlName="dni" inputmode="numeric" maxlength="8" (input)="onDniInput()" />
+        <mat-error>Ingresa un DNI valido.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre" />
+        <mat-error>Ingresa el nombre.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Apellido</mat-label>
+        <input matInput formControlName="apellido" />
+        <mat-error>Ingresa el apellido.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Telefono</mat-label>
+        <input matInput formControlName="telefono" />
+        <mat-error>Ingresa el telefono.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+        <mat-error>Ingresa un email valido.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha de ingreso</mat-label>
+        <input matInput type="date" formControlName="fechaIngreso" />
+        <mat-error>Ingresa la fecha de ingreso.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Sueldo</mat-label>
+        <input matInput type="number" min="0" step="0.01" formControlName="sueldo" />
+        <mat-error>Ingresa un sueldo valido.</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
+      <button mat-flat-button type="submit">
+        <mat-icon>{{ isEditing ? 'save' : 'add' }}</mat-icon>
+        {{ isEditing ? 'Guardar cambios' : 'Crear empleado' }}
+      </button>
+    </div>
+  </form>
+</div>

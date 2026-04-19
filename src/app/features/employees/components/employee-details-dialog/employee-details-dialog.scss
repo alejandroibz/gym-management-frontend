@@ -1,0 +1,125 @@
+.dialog-shell {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dialog-eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--app-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialog-header h2,
+.contact-section h3 {
+  margin: 0;
+}
+
+.dialog-subtitle {
+  margin: 0.4rem 0 0;
+  color: var(--app-text-muted);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.detail-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: #fbfbfc;
+  border: 1px solid var(--app-border);
+}
+
+.detail-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.contact-section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.contact-links {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.contact-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: #fbfbfc;
+  border: 1px solid var(--app-border);
+}
+
+.contact-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.contact-value {
+  display: block;
+  color: var(--app-text);
+  font-size: 1rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.contact-action {
+  color: var(--app-accent);
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.contact-action:hover {
+  color: var(--app-accent);
+  text-decoration: underline;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .dialog-shell {
+    padding: 1rem;
+  }
+
+  .dialog-header,
+  .dialog-actions {
+    flex-direction: column;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions button {
+    width: 100%;
+  }
+}

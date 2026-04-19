@@ -1,0 +1,268 @@
+<section class="dashboard-page">
+  <header class="hero-card">
+    <div class="hero-copy">
+      <p class="eyebrow">Tablero Ejecutivo</p>
+      <h1>Vista central del gimnasio</h1>
+      <p class="hero-text">
+        {{ headline() }}. Este panel combina datos reales del sistema con estimaciones operativas para darte una
+        lectura rapida y profesional del negocio.
+      </p>
+
+      <div class="hero-actions">
+        <button mat-flat-button color="primary" type="button" (click)="refreshDashboard()">
+          <mat-icon>refresh</mat-icon>
+          Actualizar panel
+        </button>
+
+        <button mat-stroked-button routerLink="/clients" type="button">
+          <mat-icon>north_east</mat-icon>
+          Ir a clientes
+        </button>
+      </div>
+
+      <p class="timestamp" *ngIf="lastUpdated() as updatedAt">
+        Ultima actualizacion: {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+      </p>
+    </div>
+
+    <div class="hero-aside">
+      <div class="health-ring" [style.--health-score]="healthScore()">
+        <div class="health-ring__inner">
+          <strong>{{ healthScore() }}</strong>
+          <span>/100</span>
+        </div>
+      </div>
+      <p class="health-label">Indice interno de salud operativa</p>
+    </div>
+  </header>
+
+  <div class="feedback-banner" *ngIf="errorMessage()">
+    <mat-icon>info</mat-icon>
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <section class="loading-state" *ngIf="isLoading()">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Estamos consolidando la informacion del dashboard.</p>
+  </section>
+
+  <ng-container *ngIf="!isLoading() && dashboard() as snapshot">
+    <section class="stats-grid">
+      <mat-card class="stat-card" *ngFor="let card of snapshot.statCards">
+        <div class="stat-card__header">
+          <span>{{ card.label }}</span>
+          <mat-icon>{{ card.icon }}</mat-icon>
+        </div>
+        <strong>
+          <ng-container *ngIf="card.label === 'Ingresos estimados'; else plainValue">
+            {{ card.value | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}
+          </ng-container>
+          <ng-template #plainValue>{{ card.value | number: '1.0-0' : 'es-AR' }}</ng-template>
+        </strong>
+        <small>{{ card.hint }}</small>
+      </mat-card>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--main">
+      <mat-card class="panel-card finance-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Finanzas</p>
+            <h2>Resumen economico</h2>
+          </div>
+          <mat-icon>monitoring</mat-icon>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-tile" *ngFor="let metric of snapshot.financeMetrics" [class.dark]="metric.tone === 'dark'">
+            <div class="metric-tile__icon">
+              <mat-icon>{{ metric.icon }}</mat-icon>
+            </div>
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.hint }}</small>
+          </article>
+        </div>
+      </mat-card>
+
+      <mat-card class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Clientes y equipo</p>
+            <h2>Movimientos recientes</h2>
+          </div>
+          <mat-icon>groups</mat-icon>
+        </div>
+
+        <div class="metric-grid metric-grid--compact">
+          <article class="metric-tile" *ngFor="let metric of snapshot.peopleMetrics" [class.dark]="metric.tone === 'dark'">
+            <div class="metric-tile__icon">
+              <mat-icon>{{ metric.icon }}</mat-icon>
+            </div>
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.hint }}</small>
+          </article>
+        </div>
+      </mat-card>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--secondary">
+      <mat-card class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Actividad</p>
+            <h2>Ultimos movimientos</h2>
+          </div>
+          <mat-icon>timeline</mat-icon>
+        </div>
+
+        <div class="activity-list" *ngIf="snapshot.recentActivity.length; else emptyActivity">
+          <a class="activity-item" *ngFor="let item of snapshot.recentActivity; trackBy: trackByTitle" [routerLink]="item.route">
+            <div class="activity-item__icon">
+              <mat-icon>{{ item.icon }}</mat-icon>
+            </div>
+            <div class="activity-item__copy">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.subtitle }}</span>
+            </div>
+            <time *ngIf="item.timestamp">{{ item.timestamp | date: 'dd/MM HH:mm' }}</time>
+          </a>
+        </div>
+
+        <ng-template #emptyActivity>
+          <div class="empty-block">
+            <mat-icon>hourglass_empty</mat-icon>
+            <p>Todavia no hay actividad suficiente para mostrar una linea temporal.</p>
+          </div>
+        </ng-template>
+      </mat-card>
+
+      <mat-card class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Accesos rapidos</p>
+            <h2>Gestion del dia</h2>
+          </div>
+          <mat-icon>bolt</mat-icon>
+        </div>
+
+        <div class="action-grid">
+          <a class="action-card" *ngFor="let action of snapshot.actionCards; trackBy: trackByTitle" [routerLink]="action.route">
+            <div class="action-card__icon">
+              <mat-icon>{{ action.icon }}</mat-icon>
+            </div>
+            <strong>{{ action.title }}</strong>
+            <p>{{ action.description }}</p>
+          </a>
+        </div>
+      </mat-card>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--secondary">
+      <mat-card class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Equipo</p>
+            <h2>Distribucion por categorias</h2>
+          </div>
+          <mat-icon>bar_chart</mat-icon>
+        </div>
+
+        <div class="distribution-list">
+          <article class="distribution-item" *ngFor="let item of snapshot.categoryDistribution; trackBy: trackByLabel">
+            <div class="distribution-item__topline">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.value | number: '1.0-0' : 'es-AR' }} · {{ item.percentage }}%</span>
+            </div>
+            <div class="progress-track">
+              <span class="progress-fill" [style.width.%]="item.percentage"></span>
+            </div>
+            <small>{{ item.helper }}</small>
+          </article>
+        </div>
+      </mat-card>
+
+      <mat-card class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Oferta comercial</p>
+            <h2>Peso relativo de los planes</h2>
+          </div>
+          <mat-icon>sell</mat-icon>
+        </div>
+
+        <div class="distribution-list">
+          <article class="distribution-item" *ngFor="let item of snapshot.planDistribution; trackBy: trackByLabel">
+            <div class="distribution-item__topline">
+              <strong>{{ item.label }}</strong>
+              <span>
+                <ng-container *ngIf="item.value > 0; else plainPlanValue">
+                  {{ item.value | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }} · {{ item.percentage }}%
+                </ng-container>
+                <ng-template #plainPlanValue>{{ item.value }}</ng-template>
+              </span>
+            </div>
+            <div class="progress-track">
+              <span class="progress-fill dark" [style.width.%]="item.percentage"></span>
+            </div>
+            <small>{{ item.helper }}</small>
+          </article>
+        </div>
+      </mat-card>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--footer">
+      <mat-card class="panel-card summary-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Balance general</p>
+            <h2>Lectura ejecutiva</h2>
+          </div>
+          <mat-icon>dashboard_customize</mat-icon>
+        </div>
+
+        <div class="summary-grid">
+          <div>
+            <span>Clientes totales</span>
+            <strong>{{ snapshot.totalClients | number: '1.0-0' : 'es-AR' }}</strong>
+          </div>
+          <div>
+            <span>Promedio por plan</span>
+            <strong>{{ snapshot.averagePlanPrice | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
+          </div>
+          <div>
+            <span>Sueldo promedio</span>
+            <strong>{{ snapshot.averageSalary | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
+          </div>
+          <div>
+            <span>Nomina proyectada</span>
+            <strong>{{ snapshot.estimatedPayroll | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="panel-card alerts-card">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Alertas inteligentes</p>
+            <h2>Focos de atencion</h2>
+          </div>
+          <mat-icon>tips_and_updates</mat-icon>
+        </div>
+
+        <div class="alerts-list">
+          <article class="alert-item" *ngFor="let alert of snapshot.alerts; trackBy: trackByTitle" [class.neutral]="alert.tone === 'neutral'">
+            <div class="alert-item__icon">
+              <mat-icon>{{ alert.icon }}</mat-icon>
+            </div>
+            <div>
+              <strong>{{ alert.title }}</strong>
+              <p>{{ alert.description }}</p>
+            </div>
+          </article>
+        </div>
+      </mat-card>
+    </section>
+  </ng-container>
+</section>

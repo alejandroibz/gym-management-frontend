@@ -1,0 +1,197 @@
+<mat-sidenav-container class="app-container" autosize>
+  <mat-sidenav
+    [mode]="isMobile ? 'over' : 'side'"
+    [opened]="isMobile ? isMobileSidebarOpen : true"
+    [class.collapsed]="isCollapsed"
+    class="app-sidenav">
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <div class="brand">
+          <p class="brand-kicker" *ngIf="!isCollapsed">Panel interno</p>
+          <h2>{{ isCollapsed ? 'GA' : 'Gym Admin' }}</h2>
+        </div>
+
+        <button
+          mat-icon-button
+          type="button"
+          class="collapse-button"
+          (click)="toggleSidebar()"
+          [attr.aria-label]="isMobile ? 'Cerrar menu lateral' : 'Colapsar menu lateral'">
+          <mat-icon>{{ isMobile ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      </div>
+
+      <div class="sidebar-section-label" *ngIf="!isCollapsed">Principal</div>
+
+      <mat-nav-list class="nav-list">
+        <a
+          mat-list-item
+          routerLink="/dashboard"
+          routerLinkActive="active-link"
+          (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content">
+            <mat-icon>dashboard</mat-icon>
+            <span class="nav-text">Dashboard</span>
+          </div>
+        </a>
+
+        <div class="menu-group" [class.group-active]="isEmployeesSectionActive">
+          <button mat-list-item type="button" class="menu-trigger" (click)="toggleEmployeesMenu()">
+            <div class="nav-item-content">
+              <mat-icon>groups</mat-icon>
+              <span class="nav-text">Empleados</span>
+              <mat-icon class="submenu-icon" [class.open]="employeesMenuOpen && !isCollapsed">
+                expand_more
+              </mat-icon>
+            </div>
+          </button>
+
+          @if (employeesMenuOpen && !isCollapsed) {
+            <div class="submenu">
+              <a
+                mat-list-item
+                routerLink="/employees/categories"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>badge</mat-icon>
+                  <span class="nav-text">Categorias</span>
+                </div>
+              </a>
+
+              <a
+                mat-list-item
+                routerLink="/employees"
+                [routerLinkActiveOptions]="{ exact: true }"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>person_search</mat-icon>
+                  <span class="nav-text">Empleados</span>
+                </div>
+              </a>
+            </div>
+          }
+        </div>
+
+        <a
+          mat-list-item
+          routerLink="/owners"
+          routerLinkActive="active-link"
+          (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <span class="nav-text">Duenos</span>
+          </div>
+        </a>
+
+        <div class="menu-group" [class.group-active]="isClientsSectionActive">
+          <button mat-list-item type="button" class="menu-trigger" (click)="toggleClientsMenu()">
+            <div class="nav-item-content">
+              <mat-icon>person</mat-icon>
+              <span class="nav-text">Clientes</span>
+              <mat-icon class="submenu-icon" [class.open]="clientsMenuOpen && !isCollapsed">
+                expand_more
+              </mat-icon>
+            </div>
+          </button>
+
+          @if (clientsMenuOpen && !isCollapsed) {
+            <div class="submenu">
+              <a
+                mat-list-item
+                routerLink="/clients"
+                [routerLinkActiveOptions]="{ exact: true }"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>person</mat-icon>
+                  <span class="nav-text">Clientes</span>
+                </div>
+              </a>
+
+              <a
+                mat-list-item
+                routerLink="/membership-plans"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>card_membership</mat-icon>
+                  <span class="nav-text">Planes</span>
+                </div>
+              </a>
+            </div>
+          }
+        </div>
+
+        <div class="menu-group" [class.group-active]="isMovementsSectionActive">
+          <button mat-list-item type="button" class="menu-trigger" (click)="toggleMovementsMenu()">
+            <div class="nav-item-content">
+              <mat-icon>payments</mat-icon>
+              <span class="nav-text">Movimientos</span>
+              <mat-icon class="submenu-icon" [class.open]="movementsMenuOpen && !isCollapsed">
+                expand_more
+              </mat-icon>
+            </div>
+          </button>
+
+          @if (movementsMenuOpen && !isCollapsed) {
+            <div class="submenu">
+              <a
+                mat-list-item
+                routerLink="/movements/categories"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>category</mat-icon>
+                  <span class="nav-text">Categorias</span>
+                </div>
+              </a>
+
+              <a
+                mat-list-item
+                routerLink="/movements"
+                [routerLinkActiveOptions]="{ exact: true }"
+                routerLinkActive="active-link"
+                (click)="closeSidebarOnMobile()">
+                <div class="nav-item-content submenu-item-content">
+                  <mat-icon>swap_horiz</mat-icon>
+                  <span class="nav-text">Movimientos</span>
+                </div>
+              </a>
+            </div>
+          }
+        </div>
+      </mat-nav-list>
+
+      <div class="sidebar-footer" *ngIf="!isCollapsed">
+        <div class="footer-dot"></div>
+        <div>
+          <strong>Gestion central</strong>
+          <p>Accesos rapidos del sistema</p>
+        </div>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="app-toolbar">
+      @if (isMobile) {
+        <button
+          mat-icon-button
+          type="button"
+          class="mobile-menu-button"
+          (click)="toggleSidebar()"
+          aria-label="Abrir menu lateral">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+
+      <span class="toolbar-title">Sistema de Gestion de Gimnasio</span>
+    </mat-toolbar>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

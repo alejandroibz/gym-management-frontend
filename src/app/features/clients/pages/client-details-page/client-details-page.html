@@ -1,0 +1,247 @@
+<section class="client-details-page">
+  <div class="page-topbar">
+    <nav class="breadcrumb">
+      <a routerLink="/clients">Clientes</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>{{ clientName() }}</span>
+    </nav>
+
+    <button mat-stroked-button type="button" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="feedback-banner error">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="42"></mat-spinner>
+      <span>Cargando cliente...</span>
+    </div>
+  } @else if (client(); as currentClient) {
+    <header class="hero-card">
+      <div class="hero-copy">
+        <p class="eyebrow">Ficha completa</p>
+        <h1>{{ currentClient.nombre }} {{ currentClient.apellido }}</h1>
+        <p class="subtitle">
+          Gestiona datos personales, membresia activa y pagos desde una sola pantalla.
+        </p>
+
+        <div class="hero-pills">
+          <span class="hero-pill">{{ getMembershipLabel() }}</span>
+          <span class="hero-pill">{{ currentClient.debePago ? 'Debe pago' : 'Pago al dia' }}</span>
+          <span class="hero-pill">{{ getMembershipStateLabel(currentClient.membership?.estado) }}</span>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        @if (!isEditing()) {
+          <button mat-flat-button type="button" [disabled]="isSaving()" (click)="startEditing()">
+            <mat-icon>edit</mat-icon>
+            Editar
+          </button>
+
+          <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
+            <mat-icon>payments</mat-icon>
+            Registrar pago
+          </button>
+
+          <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteClient()">
+            <mat-icon>delete</mat-icon>
+            Eliminar
+          </button>
+        } @else {
+          <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="cancelEditing()">
+            <mat-icon>close</mat-icon>
+            Cancelar
+          </button>
+
+          <button mat-flat-button type="button" [disabled]="isSaving()" (click)="confirmSave()">
+            <mat-icon>save</mat-icon>
+            Confirmar
+          </button>
+        }
+      </div>
+    </header>
+
+    <div class="content-grid">
+      <mat-card class="content-card">
+        <div class="card-heading">
+          <div>
+            <h2>Informacion del cliente</h2>
+            <p>Datos principales y comerciales del registro seleccionado.</p>
+          </div>
+        </div>
+
+        <form class="details-form" [formGroup]="form">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="nombre" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Apellido</mat-label>
+              <input matInput formControlName="apellido" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>DNI</mat-label>
+              <input matInput formControlName="dni" maxlength="8" inputmode="numeric" (input)="onDniInput()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha de nacimiento</mat-label>
+              <input matInput type="date" formControlName="fechaNacimiento" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Telefono</mat-label>
+              <input matInput formControlName="telefono" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput type="email" formControlName="email" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Direccion</mat-label>
+              <input matInput formControlName="direccion" />
+            </mat-form-field>
+
+            <div class="membership-box span-2">
+              <div class="membership-copy">
+                <p class="membership-eyebrow">Membresia</p>
+                <h3>Datos del plan vigente</h3>
+                <p>Cuando edites, puedes cambiar plan, fechas y precio final.</p>
+              </div>
+
+              <div class="membership-grid">
+                <mat-form-field appearance="outline" class="span-2">
+                  <mat-label>Plan de membresia</mat-label>
+                  <mat-select formControlName="membershipPlanId" (selectionChange)="onMembershipPlanChange()">
+                    @for (plan of membershipPlans(); track plan.id) {
+                      <mat-option [value]="plan.id">
+                        {{ plan.nombre }} - {{ plan.duracionDias }} dias - ${{ plan.precio }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Fecha de inicio</mat-label>
+                  <input matInput type="date" formControlName="fechaInicio" (change)="onFechaInicioChange()" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Fecha de fin</mat-label>
+                  <input matInput type="date" formControlName="fechaFin" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Precio final</mat-label>
+                  <input matInput type="number" min="0" step="0.01" formControlName="precioFinal" />
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+        </form>
+      </mat-card>
+
+      <mat-card class="content-card">
+        <div class="card-heading">
+          <div>
+            <h2>Resumen rapido</h2>
+            <p>Indicadores utiles del cliente y su membresia actual.</p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-item">
+            <span>Plan</span>
+            <strong>{{ getMembershipLabel() }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Estado membresia</span>
+            <strong>{{ getMembershipStateLabel(currentClient.membership?.estado) }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Fecha alta</span>
+            <strong>{{ currentClient.fechaAlta ? (currentClient.fechaAlta | date: 'dd/MM/yyyy') : 'Sin dato' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Ultimo pago</span>
+            <strong>{{ currentClient.ultimoPagoFecha ? (currentClient.ultimoPagoFecha | date: 'dd/MM/yyyy') : 'Sin dato' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Debe pago</span>
+            <strong>{{ currentClient.debePago ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Monto actual</span>
+            <strong>${{ currentClient.membership?.precioFinal ?? 0 }}</strong>
+          </article>
+        </div>
+      </mat-card>
+
+      <mat-card class="content-card span-full">
+        <div class="card-heading">
+          <div>
+            <h2>Pagos registrados</h2>
+            <p>Historial de pagos asociado al cliente.</p>
+          </div>
+        </div>
+
+        @if (payments().length === 0) {
+          <div class="empty-state compact">
+            <mat-icon>receipt_long</mat-icon>
+            <p>No hay pagos registrados para este cliente.</p>
+          </div>
+        } @else {
+          <div class="payments-grid">
+            @for (payment of payments(); track $index) {
+              <article class="payment-card">
+                <div class="payment-card-header">
+                  <div class="payment-card-summary">
+                    <strong class="payment-amount">{{ getPaymentHeadline(payment) }}</strong>
+                    <span class="payment-supporting-text">{{ getPaymentSupportingText(payment) }}</span>
+                  </div>
+
+                  <div class="payment-card-actions">
+                    @if (isPendingPayment(payment)) {
+                      <span class="status-chip pending">Pendiente</span>
+                      <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="confirmPayment(payment)">
+                        Confirmar pago
+                      </button>
+                    } @else {
+                      <span class="status-chip confirmed">
+                        <mat-icon>check_circle</mat-icon>
+                        Confirmado
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <div class="payment-fields-grid">
+                  @for (field of getVisiblePaymentFields(payment); track field.label) {
+                    <div class="payment-field">
+                      <span>{{ field.label }}</span>
+                      <strong>{{ field.value }}</strong>
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </mat-card>
+    </div>
+  }
+</section>

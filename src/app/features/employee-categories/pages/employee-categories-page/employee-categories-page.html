@@ -1,0 +1,193 @@
+<section class="employee-categories-page">
+  <header class="page-header">
+    <div class="page-header-copy">
+      <span class="eyebrow-pill">
+        <mat-icon>badge</mat-icon>
+        ABM de empleados
+      </span>
+
+      <div>
+        <p class="eyebrow">Estructura del equipo</p>
+        <h1>Categorias de empleados</h1>
+        <p class="subtitle">
+          Organiza roles y perfiles del personal con una vista mas limpia, profesional y comoda para gestionar desde desktop o mobile.
+        </p>
+      </div>
+
+      <div class="header-highlights">
+        <div class="highlight-chip">
+          <mat-icon>workspaces</mat-icon>
+          <span>Roles ordenados</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>rule</mat-icon>
+          <span>Estructura operativa</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>tune</mat-icon>
+          <span>Gestion simple</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-header-side">
+      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+        <mat-icon>add</mat-icon>
+        Nueva categoria
+      </button>
+
+      <div class="header-note">
+        <mat-icon>account_tree</mat-icon>
+        <span>Define categorias para ordenar tareas, permisos y organizacion interna del personal.</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell accent">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Categorias</span>
+        <strong>{{ totalCategories() }}</strong>
+        <small>Total informado por la API</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell info">
+        <mat-icon>dashboard_customize</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Pagina actual</span>
+        <strong>{{ pageNumber() }}</strong>
+        <small>Resultado paginado</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell success">
+        <mat-icon>visibility</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">En pantalla</span>
+        <strong>{{ categoriesOnPage() }}</strong>
+        <small>Registros cargados en esta pagina</small>
+      </div>
+    </mat-card>
+  </section>
+
+  <section class="content-grid">
+    <mat-card class="list-card">
+      <div class="card-heading">
+        <div class="card-heading-copy">
+          <h2>Listado</h2>
+          <p>Busca y gestiona las categorias del personal desde una vista mas clara y enfocada.</p>
+        </div>
+
+        <div class="heading-badge">
+          <mat-icon>tune</mat-icon>
+          <span>Panel operativo</span>
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="feedback-banner error">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      @if (isLoading()) {
+        <div class="feedback-banner">
+          <mat-icon>sync</mat-icon>
+          <span>Cargando categorias...</span>
+        </div>
+      }
+
+      <div class="filters">
+        <div class="filter-block">
+          <span class="filter-label">Busqueda</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar categoria</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
+          </mat-form-field>
+        </div>
+
+        <div class="filter-block">
+          <span class="filter-label">Origen</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Origen</mat-label>
+            <mat-select [value]="statusFilter()" (valueChange)="updateStatusFilter($event)">
+              <mat-option value="all">API paginada</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="category-list">
+        @if (!isLoading() && filteredCategories().length === 0) {
+          <div class="empty-state">
+            <mat-icon>inventory_2</mat-icon>
+            <h3>Sin resultados</h3>
+            <p>No hay categorias para esta pagina o la busqueda no encontro coincidencias.</p>
+          </div>
+        } @else {
+          @for (category of filteredCategories(); track category.id) {
+            <article class="category-item">
+              <div class="category-color"></div>
+
+              <div class="category-body">
+                <div class="category-topline">
+                  <div class="category-title-block">
+                    <div class="category-title-row">
+                      <div class="category-avatar">
+                        <mat-icon>badge</mat-icon>
+                      </div>
+
+                      <div>
+                        <p class="category-overline">Categoria operativa</p>
+                        <h3>{{ category.nombre }}</h3>
+                      </div>
+                    </div>
+
+                    <p>{{ category.descripcion }}</p>
+                  </div>
+                </div>
+
+                <div class="category-actions">
+                  <button mat-stroked-button type="button" class="action-button" [disabled]="isSaving()" (click)="editCategory(category)">
+                    <mat-icon>edit</mat-icon>
+                    Editar
+                  </button>
+
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="action-button warn-button"
+                    [disabled]="isSaving()"
+                    (click)="removeCategory(category.id)">
+                    <mat-icon>delete</mat-icon>
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </article>
+          }
+        }
+      </div>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="pageNumber() - 1"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[5, 10, 20, 50]"
+        (page)="handlePageChange($event)">
+      </mat-paginator>
+    </mat-card>
+  </section>
+</section>

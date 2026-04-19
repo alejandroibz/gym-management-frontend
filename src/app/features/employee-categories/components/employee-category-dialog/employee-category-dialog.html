@@ -1,0 +1,52 @@
+<div class="dialog-shell">
+  <div class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">ABM de categorias</p>
+      <h2>{{ isEditing ? 'Editar categoria' : 'Nueva categoria' }}</h2>
+      <p class="dialog-subtitle">Completa los datos principales para guardar la categoria.</p>
+    </div>
+
+    <button mat-icon-button type="button" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre</mat-label>
+      <input matInput formControlName="nombre" placeholder="Ej. Recepcion" />
+      @if (form.controls.nombre.hasError('required')) {
+        <mat-error>El nombre es obligatorio.</mat-error>
+      }
+      @if (form.controls.nombre.hasError('minlength')) {
+        <mat-error>Ingresa al menos 3 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Descripcion</mat-label>
+      <textarea
+        matInput
+        rows="4"
+        formControlName="descripcion"
+        placeholder="Describe la categoria"></textarea>
+      @if (form.controls.descripcion.hasError('required')) {
+        <mat-error>La descripcion es obligatoria.</mat-error>
+      }
+      @if (form.controls.descripcion.hasError('minlength')) {
+        <mat-error>Ingresa al menos 3 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="dialog-actions">
+      <button mat-flat-button type="submit">
+        <mat-icon>{{ isEditing ? 'save' : 'add_circle' }}</mat-icon>
+        {{ isEditing ? 'Guardar cambios' : 'Crear categoria' }}
+      </button>
+
+      <button mat-stroked-button type="button" (click)="close()">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</div>

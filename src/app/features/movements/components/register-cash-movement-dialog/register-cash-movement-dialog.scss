@@ -1,0 +1,82 @@
+.dialog-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #ffffff;
+}
+
+.dialog-header,
+.dialog-actions,
+.form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.dialog-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.dialog-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f766e;
+}
+
+.dialog-header h2,
+.dialog-subtitle {
+  margin: 0;
+}
+
+.dialog-subtitle {
+  margin-top: 0.35rem;
+  color: var(--app-text-muted);
+}
+
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.dialog-actions {
+  grid-auto-flow: column;
+  justify-content: end;
+}
+
+:host ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+:host ::ng-deep .mdc-text-field--outlined {
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .dialog-shell {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+
+  .dialog-actions {
+    grid-auto-flow: row;
+  }
+}

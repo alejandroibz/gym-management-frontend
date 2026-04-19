@@ -1,0 +1,169 @@
+.dialog-shell {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dialog-eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--app-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialog-header h2,
+.contact-section h3,
+.relation-heading h3 {
+  margin: 0;
+}
+
+.dialog-subtitle,
+.empty-copy {
+  margin: 0.4rem 0 0;
+  color: var(--app-text-muted);
+}
+
+.details-grid,
+.relations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.detail-card,
+.relation-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: #fbfbfc;
+  border: 1px solid var(--app-border);
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.detail-label,
+.contact-label,
+.relation-field span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.contact-section,
+.contact-links,
+.relation-list,
+.relation-item {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.contact-links {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.contact-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: #fbfbfc;
+  border: 1px solid var(--app-border);
+}
+
+.contact-value {
+  display: block;
+  color: var(--app-text);
+  font-size: 1rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.contact-action {
+  color: var(--app-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.contact-action:hover {
+  text-decoration: underline;
+}
+
+.relation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.relation-heading span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font-weight: 700;
+}
+
+.relation-item {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--app-border);
+}
+
+.relation-field {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.relation-field strong {
+  word-break: break-word;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .dialog-shell {
+    padding: 1rem;
+  }
+
+  .dialog-header,
+  .dialog-actions {
+    flex-direction: column;
+  }
+
+  .details-grid,
+  .relations-grid,
+  .contact-links {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
+
+  .dialog-actions button {
+    width: 100%;
+  }
+}

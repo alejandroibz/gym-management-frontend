@@ -1,1 +1,97 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$red-palette,
+        tertiary: mat.$red-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+:root {
+  --app-bg: #f4f4f5;
+  --app-surface: #ffffff;
+  --app-surface-muted: #fafafa;
+  --app-surface-strong: #121212;
+  --app-surface-strong-2: #1c1c1f;
+  --app-text: #121212;
+  --app-text-muted: #5f5f63;
+  --app-text-soft: #8b8b91;
+  --app-border: #e4e4e7;
+  --app-border-strong: #2a2a2f;
+  --app-accent: #c1121f;
+  --app-accent-strong: #930f18;
+  --app-accent-soft: #fff1f2;
+  --app-accent-soft-2: #ffe2e6;
+  --app-accent-shadow: rgba(193, 18, 31, 0.18);
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
+  height: 100%;
+}
+
+.employee-category-dialog-backdrop {
+  background: rgba(18, 18, 18, 0.4);
+  backdrop-filter: blur(7px);
+}
+
+.employee-category-dialog-panel .mat-mdc-dialog-surface {
+  border-radius: 24px !important;
+  padding: 1.5rem !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  box-shadow: 0 24px 80px rgba(18, 18, 18, 0.22) !important;
+}
+
+.employee-dialog-backdrop {
+  background: rgba(18, 18, 18, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.employee-dialog-panel .mat-mdc-dialog-surface {
+  border-radius: 24px !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  color: var(--app-text) !important;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22) !important;
+}
+
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-fab.mat-primary,
+.mat-mdc-mini-fab.mat-primary {
+  --mdc-filled-button-container-color: var(--app-accent);
+  --mdc-filled-button-label-text-color: #fff;
+  --mat-mdc-fab-color: #fff;
+  --mat-mdc-fab-background-color: var(--app-accent);
+}
+
+.mat-mdc-outlined-button {
+  --mdc-outlined-button-outline-color: var(--app-border);
+}
 /* You can add global styles to this file, and also import other style files */

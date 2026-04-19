@@ -1,0 +1,214 @@
+<section class="membership-plans-page">
+  <header class="page-header">
+    <div class="page-header-copy">
+      <span class="eyebrow-pill">
+        <mat-icon>card_membership</mat-icon>
+        ABM de planes
+      </span>
+
+      <div>
+        <p class="eyebrow">Oferta comercial</p>
+        <h1>Planes</h1>
+        <p class="subtitle">
+          Ordena la propuesta del gimnasio con una experiencia mas clara para crear, editar y revisar cada plan de membresia.
+        </p>
+      </div>
+
+      <div class="header-highlights">
+        <div class="highlight-chip">
+          <mat-icon>sell</mat-icon>
+          <span>Precios claros</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>schedule</mat-icon>
+          <span>Duracion visible</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>receipt_long</mat-icon>
+          <span>Oferta organizada</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-header-side">
+      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+        <mat-icon>add_card</mat-icon>
+        Nuevo plan
+      </button>
+
+      <div class="header-note">
+        <mat-icon>auto_graph</mat-icon>
+        <span>Define propuestas comerciales simples de comparar y faciles de administrar.</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell accent">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Total planes</span>
+        <strong>{{ totalPlans() }}</strong>
+        <small>Registros informados por la API</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell info">
+        <mat-icon>dashboard_customize</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">Pagina actual</span>
+        <strong>{{ pageNumber() }}</strong>
+        <small>Con tamano {{ pageSize() }}</small>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-shell success">
+        <mat-icon>visibility</mat-icon>
+      </div>
+      <div class="stat-copy">
+        <span class="stat-label">En pantalla</span>
+        <strong>{{ plansOnPage() }}</strong>
+        <small>Resultados paginados</small>
+      </div>
+    </mat-card>
+  </section>
+
+  <mat-card class="list-card">
+    <div class="card-heading">
+      <div class="card-heading-copy">
+        <h2>Planes de membresia</h2>
+        <p>Consulta nombre, descripcion, duracion y precio con una tabla mas limpia y facil de operar.</p>
+      </div>
+
+      <div class="heading-badge">
+        <mat-icon>tune</mat-icon>
+        <span>Panel comercial</span>
+      </div>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="feedback-banner error">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+      <div class="filter-block">
+        <span class="filter-label">Nombre</span>
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar por nombre</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="nombre" />
+        </mat-form-field>
+      </div>
+
+      <div class="filter-actions">
+        <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
+          <mat-icon>search</mat-icon>
+          Aplicar filtros
+        </button>
+
+        <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
+          <mat-icon>restart_alt</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </form>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Cargando planes...</span>
+      </div>
+    } @else if (plans().length === 0) {
+      <div class="empty-state">
+        <mat-icon>card_membership</mat-icon>
+        <h3>Sin planes para mostrar</h3>
+        <p>Crea un nuevo plan o ajusta los filtros para encontrar resultados.</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="plans-table">
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Duracion</th>
+              <th>Precio</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (plan of plans(); track plan.id) {
+              <tr>
+                <td>
+                  <div class="plan-cell">
+                    <strong>{{ plan.nombre }}</strong>
+                    <span>{{ plan.descripcion }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="duration-pill">{{ plan.duracionDias }} dias</span>
+                </td>
+                <td>
+                  <span class="price-pill">${{ plan.precio }}</span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="icon-action-button"
+                      [disabled]="isSaving()"
+                      title="Ver detalle del plan"
+                      aria-label="Ver detalle del plan"
+                      (click)="viewPlanDetails(plan)">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="icon-action-button"
+                      [disabled]="isSaving()"
+                      title="Editar plan"
+                      aria-label="Editar plan"
+                      (click)="editPlan(plan)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="icon-action-button warn-button"
+                      [disabled]="isSaving()"
+                      title="Eliminar plan"
+                      aria-label="Eliminar plan"
+                      (click)="removePlan(plan)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageNumber() - 1"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[6, 12, 24, 48]"
+      (page)="handlePageChange($event)">
+    </mat-paginator>
+  </mat-card>
+</section>
