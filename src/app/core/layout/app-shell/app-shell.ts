@@ -1,7 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
@@ -43,11 +43,19 @@ export class AppShell {
       if (matches) {
         this.isCollapsed = false;
         this.isMobileSidebarOpen = false;
+        this.syncLayout();
         return;
       }
 
       this.isCollapsed = true;
       this.isMobileSidebarOpen = false;
+      this.syncLayout();
+    });
+
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.syncLayout();
+      }
     });
   }
 
@@ -66,10 +74,12 @@ export class AppShell {
   toggleSidebar(): void {
     if (this.isMobile) {
       this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+      this.syncLayout();
       return;
     }
 
     this.isCollapsed = !this.isCollapsed;
+    this.syncLayout();
   }
 
   toggleEmployeesMenu(): void {
@@ -99,6 +109,13 @@ export class AppShell {
   closeSidebarOnMobile(): void {
     if (this.isMobile) {
       this.isMobileSidebarOpen = false;
+      this.syncLayout();
     }
+  }
+
+  private syncLayout(): void {
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
   }
 }

@@ -41,6 +41,11 @@
           <mat-icon>playlist_add</mat-icon>
           Registrar movimiento
         </button>
+
+        <button mat-stroked-button type="button" class="header-action-secondary" routerLink="/movements/categories">
+          <mat-icon>category</mat-icon>
+          Categorias
+        </button>
       </div>
 
       <div class="header-note">
@@ -109,7 +114,7 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Cobros</p>
-            <h2>Pagos registrados</h2>
+            <h2>Pagos registrados de membresias</h2>
             <p>Filtra por cliente y periodo para revisar rapidamente el historial de cobros.</p>
           </div>
           <div class="heading-side">
@@ -125,38 +130,51 @@
           </div>
         </div>
 
-        <form class="filters-grid" [formGroup]="paymentFiltersForm" (ngSubmit)="applyPaymentFilters()">
-          <mat-form-field appearance="outline">
-            <mat-label>Cliente</mat-label>
-            <mat-select formControlName="clientId">
-              <mat-option value="">Todos</mat-option>
-              @for (client of clients(); track client.id) {
-                <mat-option [value]="client.id">{{ getClientLabel(client) }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+        <div class="filters-toolbar">
+          <button mat-stroked-button type="button" class="filters-toggle" (click)="togglePaymentFilters()">
+            <mat-icon>{{ paymentFiltersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+            {{ paymentFiltersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+          </button>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Ano</mat-label>
-            <input matInput type="number" min="2000" formControlName="periodYear" />
-          </mat-form-field>
+          <span class="filters-summary">
+            {{ activePaymentFiltersCount() === 0 ? 'Sin filtros activos' : activePaymentFiltersCount() + ' filtros activos' }}
+          </span>
+        </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Mes</mat-label>
-            <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
-          </mat-form-field>
+        @if (paymentFiltersExpanded()) {
+          <form class="filters-grid" [formGroup]="paymentFiltersForm" (ngSubmit)="applyPaymentFilters()">
+            <mat-form-field appearance="outline">
+              <mat-label>Cliente</mat-label>
+              <mat-select formControlName="clientId">
+                <mat-option value="">Todos</mat-option>
+                @for (client of clients(); track client.id) {
+                  <mat-option [value]="client.id">{{ getClientLabel(client) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
 
-          <div class="inline-actions">
-            <button mat-flat-button type="submit" [disabled]="isLoadingPayments()">
-              <mat-icon>search</mat-icon>
-              Filtrar
-            </button>
-            <button mat-stroked-button type="button" [disabled]="isLoadingPayments()" (click)="resetPaymentFilters()">
-              <mat-icon>restart_alt</mat-icon>
-              Limpiar
-            </button>
-          </div>
-        </form>
+            <mat-form-field appearance="outline">
+              <mat-label>Ano</mat-label>
+              <input matInput type="number" min="2000" formControlName="periodYear" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Mes</mat-label>
+              <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
+            </mat-form-field>
+
+            <div class="inline-actions">
+              <button mat-flat-button type="submit" [disabled]="isLoadingPayments()">
+                <mat-icon>search</mat-icon>
+                Filtrar
+              </button>
+              <button mat-stroked-button type="button" [disabled]="isLoadingPayments()" (click)="resetPaymentFilters()">
+                <mat-icon>restart_alt</mat-icon>
+                Limpiar
+              </button>
+            </div>
+          </form>
+        }
 
         @if (isLoadingPayments()) {
           <div class="loading-state compact">
@@ -239,37 +257,50 @@
           </div>
         </div>
 
-        <form class="filters-grid movement-filters" [formGroup]="movementFiltersForm" (ngSubmit)="applyMovementFilters()">
-          <mat-form-field appearance="outline">
-            <mat-label>Tipo</mat-label>
-            <mat-select formControlName="tipo">
-              <mat-option value="">Todos</mat-option>
-              <mat-option [value]="1">Ingreso</mat-option>
-              <mat-option [value]="2">Egreso</mat-option>
-            </mat-select>
-          </mat-form-field>
+        <div class="filters-toolbar">
+          <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleMovementFilters()">
+            <mat-icon>{{ movementFiltersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+            {{ movementFiltersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+          </button>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Categoria</mat-label>
-            <mat-select formControlName="categoryId">
-              <mat-option value="">Todas</mat-option>
-              @for (category of categories(); track category.id) {
-                <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <span class="filters-summary">
+            {{ activeMovementFiltersCount() === 0 ? 'Sin filtros activos' : activeMovementFiltersCount() + ' filtros activos' }}
+          </span>
+        </div>
 
-          <div class="inline-actions">
-            <button mat-flat-button type="submit" [disabled]="isLoadingMovements()">
-              <mat-icon>search</mat-icon>
-              Filtrar
-            </button>
-            <button mat-stroked-button type="button" [disabled]="isLoadingMovements()" (click)="resetMovementFilters()">
-              <mat-icon>restart_alt</mat-icon>
-              Limpiar
-            </button>
-          </div>
-        </form>
+        @if (movementFiltersExpanded()) {
+          <form class="filters-grid movement-filters" [formGroup]="movementFiltersForm" (ngSubmit)="applyMovementFilters()">
+            <mat-form-field appearance="outline">
+              <mat-label>Tipo</mat-label>
+              <mat-select formControlName="tipo">
+                <mat-option value="">Todos</mat-option>
+                <mat-option [value]="1">Ingreso</mat-option>
+                <mat-option [value]="2">Egreso</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Categoria</mat-label>
+              <mat-select formControlName="categoryId">
+                <mat-option value="">Todas</mat-option>
+                @for (category of categories(); track category.id) {
+                  <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="inline-actions">
+              <button mat-flat-button type="submit" [disabled]="isLoadingMovements()">
+                <mat-icon>search</mat-icon>
+                Filtrar
+              </button>
+              <button mat-stroked-button type="button" [disabled]="isLoadingMovements()" (click)="resetMovementFilters()">
+                <mat-icon>restart_alt</mat-icon>
+                Limpiar
+              </button>
+            </div>
+          </form>
+        }
 
         @if (isLoadingMovements()) {
           <div class="loading-state compact">
@@ -344,33 +375,46 @@
           </div>
         </div>
 
-        <form class="stack-form" [formGroup]="insightsForm" (ngSubmit)="applyInsights()">
-          <div class="double-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Mes</mat-label>
-              <input matInput type="number" min="1" max="12" formControlName="month" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Ano</mat-label>
-              <input matInput type="number" min="2000" formControlName="year" />
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Categorias</mat-label>
-            <mat-select formControlName="categoryIds" multiple>
-              @for (category of categories(); track category.id) {
-                <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <button mat-stroked-button type="submit" class="full-button" [disabled]="isLoadingInsights()">
-            <mat-icon>query_stats</mat-icon>
-            Actualizar analisis
+        <div class="filters-toolbar">
+          <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleInsights()">
+            <mat-icon>{{ insightsExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+            {{ insightsExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
           </button>
-        </form>
+
+          <span class="filters-summary">
+            {{ activeInsightsFiltersCount() === 0 ? 'Periodo actual' : activeInsightsFiltersCount() + ' filtros activos' }}
+          </span>
+        </div>
+
+        @if (insightsExpanded()) {
+          <form class="stack-form" [formGroup]="insightsForm" (ngSubmit)="applyInsights()">
+            <div class="double-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Mes</mat-label>
+                <input matInput type="number" min="1" max="12" formControlName="month" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ano</mat-label>
+                <input matInput type="number" min="2000" formControlName="year" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Categorias</mat-label>
+              <mat-select formControlName="categoryIds" multiple>
+                @for (category of categories(); track category.id) {
+                  <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-stroked-button type="submit" class="full-button" [disabled]="isLoadingInsights()">
+              <mat-icon>query_stats</mat-icon>
+              Actualizar analisis
+            </button>
+          </form>
+        }
 
         @if (isLoadingInsights()) {
           <div class="loading-state compact">

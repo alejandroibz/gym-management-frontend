@@ -1,4 +1,17 @@
 <section class="membership-plans-page">
+  <div class="page-topbar">
+    <nav class="breadcrumb">
+      <a routerLink="/clients">Clientes</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>Planes</span>
+    </nav>
+
+    <button mat-stroked-button type="button" routerLink="/clients">
+      <mat-icon>arrow_back</mat-icon>
+      Volver a clientes
+    </button>
+  </div>
+
   <header class="page-header">
     <div class="page-header-copy">
       <span class="eyebrow-pill">
@@ -100,28 +113,41 @@
       </div>
     }
 
-    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
-      <div class="filter-block">
-        <span class="filter-label">Nombre</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por nombre</mat-label>
-          <mat-icon matPrefix>search</mat-icon>
-          <input matInput formControlName="nombre" />
-        </mat-form-field>
-      </div>
+    <div class="filters-toolbar">
+      <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
+        <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+        {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+      </button>
 
-      <div class="filter-actions">
-        <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
-          <mat-icon>search</mat-icon>
-          Aplicar filtros
-        </button>
+      <span class="filters-summary">
+        {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtro activo' }}
+      </span>
+    </div>
 
-        <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
-          <mat-icon>restart_alt</mat-icon>
-          Limpiar
-        </button>
-      </div>
-    </form>
+    @if (filtersExpanded()) {
+      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+        <div class="filter-block">
+          <span class="filter-label">Nombre</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por nombre</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput formControlName="nombre" />
+          </mat-form-field>
+        </div>
+
+        <div class="filter-actions">
+          <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
+            <mat-icon>search</mat-icon>
+            Aplicar filtros
+          </button>
+
+          <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            Limpiar
+          </button>
+        </div>
+      </form>
+    }
 
     @if (isLoading()) {
       <div class="loading-state">
@@ -148,19 +174,19 @@
           <tbody>
             @for (plan of plans(); track plan.id) {
               <tr>
-                <td>
+                <td data-label="Plan">
                   <div class="plan-cell">
                     <strong>{{ plan.nombre }}</strong>
                     <span>{{ plan.descripcion }}</span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Duracion">
                   <span class="duration-pill">{{ plan.duracionDias }} dias</span>
                 </td>
-                <td>
+                <td data-label="Precio">
                   <span class="price-pill">${{ plan.precio }}</span>
                 </td>
-                <td>
+                <td data-label="Acciones">
                   <div class="action-buttons">
                     <button
                       mat-icon-button

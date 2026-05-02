@@ -12,6 +12,34 @@
   --movement-ink: #0f172a;
 }
 
+.page-topbar,
+.breadcrumb {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.page-topbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breadcrumb {
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--app-text-muted);
+  font-size: 0.92rem;
+}
+
+.breadcrumb a {
+  color: var(--app-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumb a:hover {
+  color: var(--app-accent);
+}
+
 .page-header {
   position: relative;
   display: grid;
@@ -155,7 +183,6 @@
   background: rgba(15, 23, 42, 0.04);
   border: 1px solid rgba(15, 23, 42, 0.06);
   color: var(--app-text-muted);
-  text-align: left;
 }
 
 .stats-grid,
@@ -455,8 +482,14 @@ mat-paginator {
 }
 
 @media (max-width: 768px) {
-  .stats-grid,
-  .filters {
+  .page-topbar,
+  .card-heading,
+  .category-topline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats-grid,.filters {
     grid-template-columns: 1fr;
   }
 
@@ -469,11 +502,6 @@ mat-paginator {
     font-size: 2rem;
   }
 
-  .card-heading,
-  .category-topline {
-    flex-direction: column;
-  }
-
   .primary-action {
     width: 100%;
     justify-content: center;
@@ -481,6 +509,11 @@ mat-paginator {
 
   .page-header-side {
     justify-items: stretch;
+  }
+
+  .filter-block {
+    padding: 0.75rem 0.85rem;
+    border-radius: 16px;
   }
 
   .category-item {
@@ -498,15 +531,16 @@ mat-paginator {
   .action-button {
     min-width: 0;
   }
+
+  .page-topbar button,.category-actions button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 520px) {
   .cash-movement-categories-page {
     gap: 1rem;
-  }
-
-  .stats-grid {
-    gap: 0.85rem;
   }
 
   .stat-card {
@@ -516,9 +550,5 @@ mat-paginator {
 
   .header-highlights {
     gap: 0.55rem;
-  }
-
-  .category-title-row {
-    align-items: flex-start;
   }
 }

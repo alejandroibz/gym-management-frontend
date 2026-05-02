@@ -24,16 +24,16 @@ export const routes: Routes = [
             .then(m => m.EmployeesPageComponent)
       },
       {
-        path: 'employees/:id',
-        loadComponent: () =>
-          import('./features/employees/pages/employee-details-page/employee-details-page')
-            .then(m => m.EmployeeDetailsPageComponent)
-      },
-      {
         path: 'employees/categories',
         loadComponent: () =>
           import('./features/employee-categories/pages/employee-categories-page/employee-categories-page')
             .then(m => m.EmployeeCategoriesPageComponent)
+      },
+      {
+        path: 'employees/:id',
+        loadComponent: () =>
+          import('./features/employees/pages/employee-details-page/employee-details-page')
+            .then(m => m.EmployeeDetailsPageComponent)
       },
       {
         path: 'clients',

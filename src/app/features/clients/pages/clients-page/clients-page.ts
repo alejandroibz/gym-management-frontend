@@ -9,10 +9,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { ClientDialogComponent, ClientDialogResult } from '../../components/client-dialog/client-dialog';
-import { Client, ClientFilters } from '../../models/client.model';
+import { Client, ClientCreatePayload, ClientFilters, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
@@ -30,7 +30,8 @@ import { MembershipPlansService } from '../../../membership-plans/services/membe
     MatIconModule,
     MatInputModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    RouterLink
   ],
   templateUrl: './clients-page.html',
   styleUrl: './clients-page.scss',
@@ -51,6 +52,7 @@ export class ClientsPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
+  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     nombre: [''],
@@ -59,8 +61,12 @@ export class ClientsPageComponent {
   });
 
   readonly totalClients = computed(() => this.totalCount());
-  readonly clientsOnPage = computed(() => this.clients().length);
-  readonly totalMembershipsOnPage = computed(() => this.clients().reduce((sum, client) => sum + (client.membership ? 1 : 0), 0));
+  readonly clientsWithMembership = computed(() => this.clients().filter(client => Boolean(client.membership)).length);
+  readonly pendingPaymentsCount = computed(() => this.clients().filter(client => client.debePago).length);
+  readonly activeFiltersCount = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    return [raw.nombre, raw.apellido, raw.dni].filter(value => value.trim().length > 0).length;
+  });
 
   constructor() {
     this.loadMembershipPlans();
@@ -76,6 +82,7 @@ export class ClientsPageComponent {
   applyFilters(): void {
     this.pageNumber.set(1);
     this.loadClients();
+    this.collapseFiltersOnMobile();
   }
 
   resetFilters(): void {
@@ -86,9 +93,19 @@ export class ClientsPageComponent {
     });
     this.pageNumber.set(1);
     this.loadClients();
+    this.collapseFiltersOnMobile();
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update(value => !value);
   }
 
   openCreateModal(): void {
+    if (this.membershipPlans().length === 0) {
+      this.openMissingMembershipPlansDialog();
+      return;
+    }
+
     this.openDialog();
   }
 
@@ -162,22 +179,7 @@ export class ClientsPageComponent {
       this.isSaving.set(true);
       this.errorMessage.set('');
 
-      const payload = {
-        branchId: 1,
-        nombre: result.nombre,
-        apellido: result.apellido,
-        dni: result.dni,
-        fechaNacimiento: result.fechaNacimiento,
-        telefono: result.telefono,
-        email: result.email,
-        direccion: result.direccion,
-        membership: {
-          membershipPlanId: result.membership.membershipPlanId,
-          fechaInicio: result.membership.fechaInicio,
-          fechaFin: result.membership.fechaFin,
-          precioFinal: result.membership.precioFinal
-        }
-      };
+      const payload = this.buildClientPayload(result);
 
       if (result.id !== undefined) {
         this.clientsService
@@ -209,6 +211,30 @@ export class ClientsPageComponent {
           this.errorMessage.set('No se pudo crear el cliente.');
         }
       });
+    });
+  }
+
+  private openMissingMembershipPlansDialog(): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Primero crea una membresia',
+        message:
+          'Para registrar un cliente necesitas tener al menos una membresia disponible. Crea un plan y luego vuelve para completar el alta.',
+        confirmLabel: 'Ir a membresias',
+        cancelLabel: 'Ahora no',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.router.navigate(['/membership-plans']);
     });
   }
 
@@ -270,5 +296,34 @@ export class ClientsPageComponent {
       apellido: raw.apellido.trim() || undefined,
       dni: raw.dni.trim() || undefined
     };
+  }
+
+  private buildClientPayload(result: ClientDialogResult): ClientCreatePayload | ClientUpdatePayload {
+    return {
+      branchId: result.branchId,
+      nombre: result.nombre,
+      apellido: result.apellido,
+      dni: result.dni,
+      fechaNacimiento: result.fechaNacimiento,
+      telefono: result.telefono,
+      email: result.email,
+      direccion: result.direccion,
+      membership: {
+        membershipPlanId: result.membership.membershipPlanId,
+        fechaInicio: result.membership.fechaInicio,
+        fechaFin: result.membership.fechaFin,
+        precioFinal: result.membership.precioFinal
+      }
+    };
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  private collapseFiltersOnMobile(): void {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      this.filtersExpanded.set(false);
+    }
   }
 }

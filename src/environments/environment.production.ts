@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://tu-api-productiva.com'
+  apiUrl: 'https://gymappmanagement-ckg5chcyctdacdf9.brazilsouth-01.azurewebsites.net/api'
 };

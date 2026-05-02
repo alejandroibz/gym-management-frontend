@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
+import { RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   CashMovementCategoryDialogComponent,
@@ -33,7 +34,8 @@ type CategoryMovementFilter = 'all' | CashMovementType;
     MatIconModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSelectModule
+    MatSelectModule,
+    RouterLink
   ],
   templateUrl: './cash-movement-categories-page.html',
   styleUrl: './cash-movement-categories-page.scss',
@@ -52,9 +54,20 @@ export class CashMovementCategoriesPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);
+  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly totalCategories = computed(() => this.totalCount());
   readonly categoriesOnPage = computed(() => this.categories().length);
+  readonly activeFiltersCount = computed(() => {
+    let count = 0;
+    if (this.filterTerm().trim()) {
+      count += 1;
+    }
+    if (this.movementFilter() !== 'all') {
+      count += 1;
+    }
+    return count;
+  });
   readonly filteredCategories = computed(() => {
     const search = this.filterTerm().trim().toLowerCase();
     const movementType = this.movementFilter();
@@ -80,6 +93,10 @@ export class CashMovementCategoriesPageComponent {
 
   updateMovementFilter(value: CategoryMovementFilter): void {
     this.movementFilter.set(value);
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update(value => !value);
   }
 
   handlePageChange(event: PageEvent): void {
@@ -229,5 +246,9 @@ export class CashMovementCategoriesPageComponent {
         this.errorMessage.set('No se pudieron cargar las categorias desde la API.');
       }
     });
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
   }
 }

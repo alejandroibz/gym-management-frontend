@@ -503,8 +503,6 @@ mat-paginator {
 
 @media (max-width: 900px) {
   .page-header,
-  .filters-grid,
-  .movement-filters,
   .record-grid {
     grid-template-columns: 1fr;
   }
@@ -528,6 +526,13 @@ mat-paginator {
   .record-badges {
     justify-items: start;
   }
+
+  .section-action-button,
+  .header-action-primary,
+  .header-action-secondary {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {
@@ -542,6 +547,52 @@ mat-paginator {
   }
 
   .section-shortcuts {
+    grid-auto-flow: row;
+  }
+
+  .filters-grid,
+  .movement-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .inline-actions {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: stretch;
+  }
+
+  .inline-actions button,
+  .full-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .record-card {
+    padding: 0.9rem;
+  }
+
+  .record-amount {
+    font-size: 1.25rem;
+  }
+
+  .summary-row {
+    padding: 0.85rem 0.9rem;
+  }
+
+  mat-paginator {
+    margin-inline: -0.25rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .filters-grid,
+  .movement-filters,
+  .double-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-actions {
     grid-auto-flow: row;
   }
 }

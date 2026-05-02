@@ -33,10 +33,17 @@
     </div>
 
     <div class="page-header-side">
-      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
-        <mat-icon>person_add</mat-icon>
-        Nuevo empleado
-      </button>
+      <div class="header-actions">
+        <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+          <mat-icon>person_add</mat-icon>
+          Nuevo empleado
+        </button>
+
+        <button mat-stroked-button type="button" class="secondary-action" routerLink="/employees/categories">
+          <mat-icon>badge</mat-icon>
+          Categorias
+        </button>
+      </div>
 
       <div class="header-note">
         <mat-icon>inventory</mat-icon>
@@ -59,23 +66,23 @@
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell info">
-        <mat-icon>dashboard_customize</mat-icon>
+        <mat-icon>badge</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Pagina actual</span>
-        <strong>{{ pageNumber() }}</strong>
-        <small>Con tamano {{ pageSize() }}</small>
+        <span class="stat-label">Categorias representadas</span>
+        <strong>{{ representedCategoriesCount() }}</strong>
+        <small>Roles distintos presentes entre los empleados cargados</small>
       </div>
     </mat-card>
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell success">
-        <mat-icon>visibility</mat-icon>
+        <mat-icon>payments</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Rango visible</span>
-        <strong>{{ currentRangeLabel() }}</strong>
-        <small>{{ employeesOnPage() }} empleados en pantalla</small>
+        <span class="stat-label">Masa salarial visible</span>
+        <strong>{{ visiblePayrollTotal() | currency: 'ARS':'symbol':'1.0-0' }}</strong>
+        <small>Suma de sueldos de los empleados cargados en esta vista</small>
       </div>
     </mat-card>
   </section>
@@ -100,59 +107,72 @@
       </div>
     }
 
-    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
-      <div class="filter-block">
-        <span class="filter-label">Nombre</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por nombre</mat-label>
-          <mat-icon matPrefix>person_search</mat-icon>
-          <input matInput formControlName="nombre" />
-        </mat-form-field>
-      </div>
+    <div class="filters-toolbar">
+      <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
+        <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+        {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+      </button>
 
-      <div class="filter-block">
-        <span class="filter-label">Apellido</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por apellido</mat-label>
-          <mat-icon matPrefix>badge</mat-icon>
-          <input matInput formControlName="apellido" />
-        </mat-form-field>
-      </div>
+      <span class="filters-summary">
+        {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtros activos' }}
+      </span>
+    </div>
 
-      <div class="filter-block">
-        <span class="filter-label">Documento</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por DNI</mat-label>
-          <mat-icon matPrefix>credit_card</mat-icon>
-          <input matInput formControlName="dni" />
-        </mat-form-field>
-      </div>
+    @if (filtersExpanded()) {
+      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+        <div class="filter-block">
+          <span class="filter-label">Nombre</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por nombre</mat-label>
+            <mat-icon matPrefix>person_search</mat-icon>
+            <input matInput formControlName="nombre" />
+          </mat-form-field>
+        </div>
 
-      <div class="filter-block">
-        <span class="filter-label">Categoria</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Filtrar por categoria</mat-label>
-          <mat-select formControlName="employeeCategoryId">
-            <mat-option value="">Todas</mat-option>
-            @for (category of categories(); track category.id) {
-              <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
+        <div class="filter-block">
+          <span class="filter-label">Apellido</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por apellido</mat-label>
+            <mat-icon matPrefix>badge</mat-icon>
+            <input matInput formControlName="apellido" />
+          </mat-form-field>
+        </div>
 
-      <div class="filter-actions">
-        <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
-          <mat-icon>search</mat-icon>
-          Aplicar filtros
-        </button>
+        <div class="filter-block">
+          <span class="filter-label">Documento</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por DNI</mat-label>
+            <mat-icon matPrefix>credit_card</mat-icon>
+            <input matInput formControlName="dni" />
+          </mat-form-field>
+        </div>
 
-        <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
-          <mat-icon>restart_alt</mat-icon>
-          Limpiar
-        </button>
-      </div>
-    </form>
+        <div class="filter-block">
+          <span class="filter-label">Categoria</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Filtrar por categoria</mat-label>
+            <mat-select formControlName="employeeCategoryId">
+              <mat-option value="">Todas</mat-option>
+              @for (category of categories(); track category.id) {
+                <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="filter-actions">
+          <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
+            <mat-icon>search</mat-icon>
+            Aplicar filtros
+          </button>
+
+          <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            Limpiar
+          </button>
+        </div>
+      </form>
+    }
 
     @if (isLoading()) {
       <div class="loading-state">
@@ -173,6 +193,7 @@
               <th>Empleado</th>
               <th>DNI</th>
               <th>Categoria</th>
+              <th>Fechas</th>
               <th>Contacto</th>
               <th>Acciones</th>
             </tr>
@@ -180,21 +201,27 @@
           <tbody>
             @for (employee of employees(); track employee.id) {
               <tr>
-                <td>
+                <td data-label="Empleado">
                   <div class="employee-cell">
                     <strong>{{ employee.nombre }} {{ employee.apellido }}</strong>
                     <span>{{ employee.email }}</span>
                   </div>
                 </td>
-                <td>
+                <td data-label="DNI">
                   <span class="dni-pill">{{ employee.dni }}</span>
                 </td>
-                <td class="category-column">
+                <td data-label="Categoria" class="category-column">
                   <div class="category-cell">
                     <span class="category-chip">{{ getCategoryName(employee.employeeCategoryId) }}</span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Fechas">
+                  <div class="employee-cell">
+                    <strong>Nac. {{ employee.fechaNacimiento | date: 'dd/MM/yyyy' }}</strong>
+                    <span>Ingreso {{ employee.fechaIngreso | date: 'dd/MM/yyyy' }}</span>
+                  </div>
+                </td>
+                <td data-label="Contacto">
                   <div class="contact-cell">
                     <a
                       class="contact-link"
@@ -208,7 +235,7 @@
                     </a>
                   </div>
                 </td>
-                <td>
+                <td data-label="Acciones">
                   <div class="action-buttons">
                     <button
                       mat-icon-button

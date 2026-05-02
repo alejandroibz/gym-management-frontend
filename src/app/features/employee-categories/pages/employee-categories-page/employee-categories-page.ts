@@ -7,7 +7,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   EmployeeCategoryDialogComponent,
@@ -15,8 +17,6 @@ import {
 } from '../../components/employee-category-dialog/employee-category-dialog';
 import { EmployeeCategory } from '../../models/employee-category.model';
 import { EmployeeCategoriesService } from '../../services/employee-categories.service';
-
-type CategoryStatusFilter = 'all';
 
 @Component({
   selector: 'app-employee-categories-page',
@@ -30,7 +30,9 @@ type CategoryStatusFilter = 'all';
     MatIconModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSelectModule
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    RouterLink
   ],
   templateUrl: './employee-categories-page.html',
   styleUrl: './employee-categories-page.scss',
@@ -42,16 +44,27 @@ export class EmployeeCategoriesPageComponent {
 
   readonly categories = signal<EmployeeCategory[]>([]);
   readonly filterTerm = signal('');
-  readonly statusFilter = signal<CategoryStatusFilter>('all');
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly errorMessage = signal('');
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);
+  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly totalCategories = computed(() => this.totalCount());
   readonly categoriesOnPage = computed(() => this.categories().length);
+  readonly activeFiltersCount = computed(() => this.filterTerm().trim() ? 1 : 0);
+  readonly currentRangeLabel = computed(() => {
+    if (this.totalCount() === 0 || this.filteredCategories().length === 0) {
+      return 'Sin resultados';
+    }
+
+    const start = (this.pageNumber() - 1) * this.pageSize() + 1;
+    const end = start + this.categoriesOnPage() - 1;
+
+    return `${start}-${end}`;
+  });
   readonly filteredCategories = computed(() => {
     const search = this.filterTerm().trim().toLowerCase();
 
@@ -75,8 +88,8 @@ export class EmployeeCategoriesPageComponent {
     this.filterTerm.set(term);
   }
 
-  updateStatusFilter(status: CategoryStatusFilter): void {
-    this.statusFilter.set(status);
+  toggleFilters(): void {
+    this.filtersExpanded.update(value => !value);
   }
 
   handlePageChange(event: PageEvent): void {
@@ -220,5 +233,9 @@ export class EmployeeCategoriesPageComponent {
         this.errorMessage.set('No se pudieron cargar las categorias desde la API.');
       }
     });
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
   }
 }

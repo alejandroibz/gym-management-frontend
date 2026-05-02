@@ -24,6 +24,7 @@ export interface EmployeeDialogResult {
   dni: string;
   telefono: string;
   email: string;
+  fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
 }
@@ -75,6 +76,10 @@ export class EmployeeDialogComponent {
       this.data.employee?.email ?? '',
       [Validators.required, Validators.email, Validators.maxLength(120)]
     ],
+    fechaNacimiento: [
+      this.toDateInputValue(this.data.employee?.fechaNacimiento) ?? '',
+      [Validators.required]
+    ],
     fechaIngreso: [
       this.toDateInputValue(this.data.employee?.fechaIngreso) ?? '',
       [Validators.required]
@@ -119,6 +124,7 @@ export class EmployeeDialogComponent {
       dni: value.dni.trim(),
       telefono: value.telefono.trim(),
       email: value.email.trim(),
+      fechaNacimiento: new Date(`${value.fechaNacimiento}T00:00:00`).toISOString(),
       fechaIngreso: new Date(`${value.fechaIngreso}T00:00:00`).toISOString(),
       sueldo: Number(value.sueldo)
     });

@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { MembershipPlanDetailsDialogComponent } from '../../components/membership-plan-details-dialog/membership-plan-details-dialog';
 import {
@@ -33,7 +34,8 @@ import { MembershipPlansService } from '../../services/membership-plans.service'
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    RouterLink
   ],
   templateUrl: './membership-plans-page.html',
   styleUrl: './membership-plans-page.scss',
@@ -51,6 +53,7 @@ export class MembershipPlansPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
+  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     nombre: ['']
@@ -58,6 +61,10 @@ export class MembershipPlansPageComponent {
 
   readonly totalPlans = computed(() => this.totalCount());
   readonly plansOnPage = computed(() => this.plans().length);
+  readonly activeFiltersCount = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    return raw.nombre.trim() ? 1 : 0;
+  });
 
   constructor() {
     this.loadPlans();
@@ -72,6 +79,7 @@ export class MembershipPlansPageComponent {
   applyFilters(): void {
     this.pageNumber.set(1);
     this.loadPlans();
+    this.collapseFiltersOnMobile();
   }
 
   resetFilters(): void {
@@ -80,6 +88,11 @@ export class MembershipPlansPageComponent {
     });
     this.pageNumber.set(1);
     this.loadPlans();
+    this.collapseFiltersOnMobile();
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update(value => !value);
   }
 
   openCreateModal(): void {
@@ -250,5 +263,15 @@ export class MembershipPlansPageComponent {
     return {
       nombre: raw.nombre.trim() || undefined
     };
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  private collapseFiltersOnMobile(): void {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      this.filtersExpanded.set(false);
+    }
   }
 }

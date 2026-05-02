@@ -94,4 +94,41 @@ body {
 .mat-mdc-outlined-button {
   --mdc-outlined-button-outline-color: var(--app-border);
 }
+
+.filters-toolbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .filters-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .filters-summary {
+    font-size: 0.78rem;
+    color: var(--app-text-muted);
+    text-align: right;
+  }
+
+  .filters-toggle {
+    min-height: 38px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .filters-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .filters-summary {
+    text-align: left;
+  }
+}
 /* You can add global styles to this file, and also import other style files */

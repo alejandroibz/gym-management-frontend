@@ -10,6 +10,34 @@
   --plans-green: #0f766e;
 }
 
+.page-topbar,
+.breadcrumb {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.page-topbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breadcrumb {
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--app-text-muted);
+  font-size: 0.92rem;
+}
+
+.breadcrumb a {
+  color: var(--app-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumb a:hover {
+  color: var(--app-accent);
+}
+
 .page-header {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.85fr);
@@ -391,6 +419,12 @@ mat-paginator {
 }
 
 @media (max-width: 768px) {
+  .page-topbar,
+  .card-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -404,10 +438,6 @@ mat-paginator {
     font-size: 2rem;
   }
 
-  .card-heading {
-    flex-direction: column;
-  }
-
   .primary-action {
     width: 100%;
     justify-content: center;
@@ -417,12 +447,97 @@ mat-paginator {
     justify-items: stretch;
   }
 
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .filter-block {
+    padding: 0.75rem 0.85rem;
+    border-radius: 16px;
+  }
+
+  .filter-label {
+    font-size: 0.72rem;
+  }
+
   .filter-actions {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .plans-table td,
   .plans-table th {
     padding: 0.85rem;
+  }
+
+  .table-wrapper {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .plans-table,
+  .plans-table tbody,
+  .plans-table tr,
+  .plans-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .plans-table {
+    min-width: 0;
+  }
+
+  .plans-table thead {
+    display: none;
+  }
+
+  .plans-table tbody {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .plans-table tr {
+    border: 1px solid var(--plans-border);
+    border-radius: 20px;
+    background: var(--plans-surface);
+    box-shadow: var(--plans-shadow);
+    overflow: hidden;
+  }
+
+  .plans-table td {
+    display: grid;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .plans-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .plans-table td::before {
+    content: attr(data-label);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--app-text-soft);
+  }
+
+  .action-buttons {
+    justify-content: flex-start;
+  }
+
+  .page-topbar button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .filter-actions {
+    flex-direction: column;
   }
 }

@@ -194,7 +194,7 @@
       <mat-card class="content-card span-full">
         <div class="card-heading">
           <div>
-            <h2>Pagos registrados</h2>
+            <h2>Pagos registrados de membresias.</h2>
             <p>Historial de pagos asociado al cliente.</p>
           </div>
         </div>
@@ -209,9 +209,9 @@
             @for (payment of payments(); track $index) {
               <article class="payment-card">
                 <div class="payment-card-header">
-                  <div class="payment-card-summary">
-                    <strong class="payment-amount">{{ getPaymentHeadline(payment) }}</strong>
-                    <span class="payment-supporting-text">{{ getPaymentSupportingText(payment) }}</span>
+                  <div class="payment-card-copy">
+                    <strong>Pago registrado</strong>
+                    <span>{{ getPaymentStateLabel(payment) }}</span>
                   </div>
 
                   <div class="payment-card-actions">
@@ -220,11 +220,6 @@
                       <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="confirmPayment(payment)">
                         Confirmar pago
                       </button>
-                    } @else {
-                      <span class="status-chip confirmed">
-                        <mat-icon>check_circle</mat-icon>
-                        Confirmado
-                      </span>
                     }
                   </div>
                 </div>

@@ -10,6 +10,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Router, RouterLink } from '@angular/router';
+import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory, CashMovementType } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
 import { Client } from '../../../clients/models/client.model';
@@ -42,7 +44,8 @@ import { CashMovementsService } from '../../services/cash-movements.service';
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    RouterLink
   ],
   templateUrl: './movements-page.html',
   styleUrl: './movements-page.scss',
@@ -51,6 +54,7 @@ import { CashMovementsService } from '../../services/cash-movements.service';
 export class MovementsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
   private readonly paymentsService = inject(PaymentsService);
@@ -82,10 +86,13 @@ export class MovementsPageComponent {
   readonly paymentPageNumber = signal(1);
   readonly paymentPageSize = signal(10);
   readonly paymentTotalCount = signal(0);
+  readonly paymentFiltersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly movementPageNumber = signal(1);
   readonly movementPageSize = signal(10);
   readonly movementTotalCount = signal(0);
+  readonly movementFiltersExpanded = signal(this.getInitialFiltersExpanded());
+  readonly insightsExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly paymentFiltersForm = this.formBuilder.nonNullable.group({
     clientId: [''],
@@ -121,6 +128,38 @@ export class MovementsPageComponent {
   );
   readonly visibleNetAmount = computed(() => this.visibleIncomeAmount() - this.visibleExpenseAmount());
   readonly monthlyNetAmount = computed(() => this.monthlySummary().reduce((sum, item) => sum + item.net, 0));
+  readonly activePaymentFiltersCount = computed(() => {
+    const raw = this.paymentFiltersForm.getRawValue();
+    let count = 0;
+    if (raw.clientId) {
+      count += 1;
+    }
+    if (Number(raw.periodYear) !== this.currentYear) {
+      count += 1;
+    }
+    if (Number(raw.periodMonth) !== this.currentMonth) {
+      count += 1;
+    }
+    return count;
+  });
+  readonly activeMovementFiltersCount = computed(() => {
+    const raw = this.movementFiltersForm.getRawValue();
+    return [raw.tipo, raw.categoryId].filter(value => String(value).trim().length > 0).length;
+  });
+  readonly activeInsightsFiltersCount = computed(() => {
+    const raw = this.insightsForm.getRawValue();
+    let count = 0;
+    if (Number(raw.year) !== this.currentYear) {
+      count += 1;
+    }
+    if (Number(raw.month) !== this.currentMonth) {
+      count += 1;
+    }
+    if (raw.categoryIds.length > 0) {
+      count += 1;
+    }
+    return count;
+  });
 
   constructor() {
     this.loadLookups();
@@ -133,6 +172,7 @@ export class MovementsPageComponent {
   applyPaymentFilters(): void {
     this.paymentPageNumber.set(1);
     this.loadPayments();
+    this.collapseSectionOnMobile(this.paymentFiltersExpanded);
   }
 
   resetPaymentFilters(): void {
@@ -143,6 +183,7 @@ export class MovementsPageComponent {
     });
     this.paymentPageNumber.set(1);
     this.loadPayments();
+    this.collapseSectionOnMobile(this.paymentFiltersExpanded);
   }
 
   handlePaymentPageChange(event: PageEvent): void {
@@ -152,6 +193,11 @@ export class MovementsPageComponent {
   }
 
   openPaymentDialog(): void {
+    if (this.categories().length === 0) {
+      this.openMissingCategoriesDialog();
+      return;
+    }
+
     const dialogRef = this.dialog.open(RegisterPaymentDialogComponent, {
       width: '760px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -193,6 +239,11 @@ export class MovementsPageComponent {
   }
 
   openMovementDialog(): void {
+    if (this.categories().length === 0) {
+      this.openMissingCategoriesDialog();
+      return;
+    }
+
     const dialogRef = this.dialog.open(RegisterCashMovementDialogComponent, {
       width: '760px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -233,6 +284,7 @@ export class MovementsPageComponent {
   applyMovementFilters(): void {
     this.movementPageNumber.set(1);
     this.loadCashMovements();
+    this.collapseSectionOnMobile(this.movementFiltersExpanded);
   }
 
   resetMovementFilters(): void {
@@ -242,6 +294,7 @@ export class MovementsPageComponent {
     });
     this.movementPageNumber.set(1);
     this.loadCashMovements();
+    this.collapseSectionOnMobile(this.movementFiltersExpanded);
   }
 
   handleMovementPageChange(event: PageEvent): void {
@@ -252,6 +305,19 @@ export class MovementsPageComponent {
 
   applyInsights(): void {
     this.loadInsights();
+    this.collapseSectionOnMobile(this.insightsExpanded);
+  }
+
+  togglePaymentFilters(): void {
+    this.paymentFiltersExpanded.update(value => !value);
+  }
+
+  toggleMovementFilters(): void {
+    this.movementFiltersExpanded.update(value => !value);
+  }
+
+  toggleInsights(): void {
+    this.insightsExpanded.update(value => !value);
   }
 
   getClientLabel(client: Client): string {
@@ -298,6 +364,30 @@ export class MovementsPageComponent {
 
   getCategoriesByType(type: CashMovementType): CashMovementCategory[] {
     return this.categories().filter(category => category.tipoMovimiento === type);
+  }
+
+  private openMissingCategoriesDialog(): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Primero crea una categoria',
+        message:
+          'Para registrar un pago o un movimiento necesitas al menos una categoria disponible. Crea una categoria y luego vuelve para continuar.',
+        confirmLabel: 'Ir a categorias',
+        cancelLabel: 'Ahora no',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.router.navigate(['/movements/categories']);
+    });
   }
 
   private loadLookups(): void {
@@ -437,5 +527,15 @@ export class MovementsPageComponent {
 
   private toDateInputValue(value: string): string {
     return value.slice(0, 10);
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  private collapseSectionOnMobile(section: { set(value: boolean): void }): void {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      section.set(false);
+    }
   }
 }

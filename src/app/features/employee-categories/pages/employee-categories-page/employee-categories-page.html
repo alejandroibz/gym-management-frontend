@@ -1,4 +1,17 @@
 <section class="employee-categories-page">
+  <div class="page-topbar">
+    <nav class="breadcrumb">
+      <a routerLink="/employees">Empleados</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>Categorias</span>
+    </nav>
+
+    <button mat-stroked-button type="button" routerLink="/employees">
+      <mat-icon>arrow_back</mat-icon>
+      Volver a empleados
+    </button>
+  </div>
+
   <header class="page-header">
     <div class="page-header-copy">
       <span class="eyebrow-pill">
@@ -59,23 +72,23 @@
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell info">
-        <mat-icon>dashboard_customize</mat-icon>
+        <mat-icon>visibility</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Pagina actual</span>
-        <strong>{{ pageNumber() }}</strong>
-        <small>Resultado paginado</small>
+        <span class="stat-label">Rango visible</span>
+        <strong>{{ currentRangeLabel() }}</strong>
+        <small>{{ categoriesOnPage() }} categorias en pantalla</small>
       </div>
     </mat-card>
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell success">
-        <mat-icon>visibility</mat-icon>
+        <mat-icon>dashboard_customize</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">En pantalla</span>
-        <strong>{{ categoriesOnPage() }}</strong>
-        <small>Registros cargados en esta pagina</small>
+        <span class="stat-label">Pagina actual</span>
+        <strong>{{ pageNumber() }}</strong>
+        <small>Con tamano {{ pageSize() }}</small>
       </div>
     </mat-card>
   </section>
@@ -101,40 +114,41 @@
         </div>
       }
 
-      @if (isLoading()) {
-        <div class="feedback-banner">
-          <mat-icon>sync</mat-icon>
-          <span>Cargando categorias...</span>
+      <div class="filters-toolbar">
+        <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
+          <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+          {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+        </button>
+
+        <span class="filters-summary">
+          {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtro activo' }}
+        </span>
+      </div>
+
+      @if (filtersExpanded()) {
+        <div class="filters">
+          <div class="filter-block search-block">
+            <span class="filter-label">Busqueda</span>
+            <mat-form-field appearance="outline">
+              <mat-label>Buscar categoria</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
+            </mat-form-field>
+          </div>
         </div>
       }
 
-      <div class="filters">
-        <div class="filter-block">
-          <span class="filter-label">Busqueda</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Buscar categoria</mat-label>
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
-          </mat-form-field>
-        </div>
-
-        <div class="filter-block">
-          <span class="filter-label">Origen</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Origen</mat-label>
-            <mat-select [value]="statusFilter()" (valueChange)="updateStatusFilter($event)">
-              <mat-option value="all">API paginada</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </div>
-
       <div class="category-list">
-        @if (!isLoading() && filteredCategories().length === 0) {
+        @if (isLoading()) {
+          <div class="loading-state">
+            <mat-spinner diameter="36"></mat-spinner>
+            <span>Cargando categorias...</span>
+          </div>
+        } @else if (filteredCategories().length === 0) {
           <div class="empty-state">
             <mat-icon>inventory_2</mat-icon>
-            <h3>Sin resultados</h3>
-            <p>No hay categorias para esta pagina o la busqueda no encontro coincidencias.</p>
+            <h3>Sin categorias para mostrar</h3>
+            <p>Crea una categoria nueva o ajusta la busqueda para encontrar coincidencias.</p>
           </div>
         } @else {
           @for (category of filteredCategories(); track category.id) {
@@ -156,6 +170,10 @@
                     </div>
 
                     <p>{{ category.descripcion }}</p>
+                  </div>
+
+                  <div class="category-topline-side">
+                    <span class="status-badge">Categoria activa</span>
                   </div>
                 </div>
 

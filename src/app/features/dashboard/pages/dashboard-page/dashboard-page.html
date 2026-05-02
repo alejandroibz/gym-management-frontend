@@ -1,268 +1,192 @@
 <section class="dashboard-page">
-  <header class="hero-card">
-    <div class="hero-copy">
-      <p class="eyebrow">Tablero Ejecutivo</p>
-      <h1>Vista central del gimnasio</h1>
-      <p class="hero-text">
-        {{ headline() }}. Este panel combina datos reales del sistema con estimaciones operativas para darte una
-        lectura rapida y profesional del negocio.
-      </p>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <span class="eyebrow-pill">
+        <mat-icon>dashboard</mat-icon>
+        Resumen central
+      </span>
 
-      <div class="hero-actions">
-        <button mat-flat-button color="primary" type="button" (click)="refreshDashboard()">
-          <mat-icon>refresh</mat-icon>
-          Actualizar panel
-        </button>
-
-        <button mat-stroked-button routerLink="/clients" type="button">
-          <mat-icon>north_east</mat-icon>
-          Ir a clientes
-        </button>
+      <div>
+        <p class="eyebrow">Control operativo</p>
+        <h1>Dashboard</h1>
       </div>
 
-      <p class="timestamp" *ngIf="lastUpdated() as updatedAt">
-        Ultima actualizacion: {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}
-      </p>
-    </div>
+      <div class="header-highlights">
+        <div class="highlight-chip">
+          <mat-icon>monitoring</mat-icon>
+          <span>Lectura rapida del negocio</span>
+        </div>
 
-    <div class="hero-aside">
-      <div class="health-ring" [style.--health-score]="healthScore()">
-        <div class="health-ring__inner">
-          <strong>{{ healthScore() }}</strong>
-          <span>/100</span>
+        <div class="highlight-chip">
+          <mat-icon>payments</mat-icon>
+          <span>Pagos y cobros visibles</span>
+        </div>
+
+        <div class="highlight-chip">
+          <mat-icon>groups</mat-icon>
+          <span>Clientes y equipo en foco</span>
         </div>
       </div>
-      <p class="health-label">Indice interno de salud operativa</p>
+    </div>
+
+    <div class="page-header-side">
+      <button mat-flat-button type="button" class="primary-action" (click)="refreshDashboard()">
+        <mat-icon>refresh</mat-icon>
+        Actualizar
+      </button>
+
+      <div class="header-note">
+        <mat-icon>schedule</mat-icon>
+        <span>
+          @if (lastUpdated(); as updatedAt) {
+            Ultima actualizacion {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+          } @else {
+            Resumen listo para consultar
+          }
+        </span>
+      </div>
     </div>
   </header>
 
-  <div class="feedback-banner" *ngIf="errorMessage()">
-    <mat-icon>info</mat-icon>
-    <span>{{ errorMessage() }}</span>
-  </div>
+  @if (errorMessage()) {
+    <div class="feedback-banner error">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
 
-  <section class="loading-state" *ngIf="isLoading()">
-    <mat-spinner diameter="44"></mat-spinner>
-    <p>Estamos consolidando la informacion del dashboard.</p>
-  </section>
-
-  <ng-container *ngIf="!isLoading() && dashboard() as snapshot">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="36"></mat-spinner>
+      <span>Cargando resumen del dashboard...</span>
+    </div>
+  } @else if (dashboard(); as snapshot) {
     <section class="stats-grid">
-      <mat-card class="stat-card" *ngFor="let card of snapshot.statCards">
-        <div class="stat-card__header">
-          <span>{{ card.label }}</span>
-          <mat-icon>{{ card.icon }}</mat-icon>
-        </div>
-        <strong>
-          <ng-container *ngIf="card.label === 'Ingresos estimados'; else plainValue">
-            {{ card.value | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}
-          </ng-container>
-          <ng-template #plainValue>{{ card.value | number: '1.0-0' : 'es-AR' }}</ng-template>
-        </strong>
-        <small>{{ card.hint }}</small>
-      </mat-card>
+      @for (item of snapshot.stats; track trackByLabel($index, item)) {
+        <article class="stat-card" [class.info]="item.tone === 'info'" [class.success]="item.tone === 'success'" [class.accent]="item.tone === 'accent'">
+          <div class="stat-icon-shell" [class.info]="item.tone === 'info'" [class.success]="item.tone === 'success'" [class.accent]="item.tone === 'accent'">
+            <mat-icon>{{ item.icon }}</mat-icon>
+          </div>
+          <div class="stat-copy">
+            <span class="stat-label">{{ item.label }}</span>
+            <strong>{{ item.displayValue }}</strong>
+            <small>{{ item.hint }}</small>
+          </div>
+        </article>
+      }
     </section>
 
-    <section class="dashboard-grid dashboard-grid--main">
-      <mat-card class="panel-card finance-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Finanzas</p>
-            <h2>Resumen economico</h2>
+    <section class="content-grid">
+      <section class="panel-card">
+        <div class="card-heading">
+          <div class="card-heading-copy">
+            <h2>Pagos recientes</h2>
+            <p>Ultimos pagos informados por el resumen central.</p>
           </div>
-          <mat-icon>monitoring</mat-icon>
-        </div>
 
-        <div class="metric-grid">
-          <article class="metric-tile" *ngFor="let metric of snapshot.financeMetrics" [class.dark]="metric.tone === 'dark'">
-            <div class="metric-tile__icon">
-              <mat-icon>{{ metric.icon }}</mat-icon>
-            </div>
-            <span>{{ metric.label }}</span>
-            <strong>{{ metric.value }}</strong>
-            <small>{{ metric.hint }}</small>
-          </article>
-        </div>
-      </mat-card>
-
-      <mat-card class="panel-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Clientes y equipo</p>
-            <h2>Movimientos recientes</h2>
+          <div class="heading-badge">
+            <mat-icon>payments</mat-icon>
+            <span>Historial</span>
           </div>
-          <mat-icon>groups</mat-icon>
         </div>
 
-        <div class="metric-grid metric-grid--compact">
-          <article class="metric-tile" *ngFor="let metric of snapshot.peopleMetrics" [class.dark]="metric.tone === 'dark'">
-            <div class="metric-tile__icon">
-              <mat-icon>{{ metric.icon }}</mat-icon>
+        @if (snapshot.recentPayments.length === 0) {
+          <div class="empty-state">
+            <mat-icon>payments</mat-icon>
+            <h3>Sin pagos recientes</h3>
+            <p>No hay movimientos recientes informados por el backend.</p>
+          </div>
+        } @else {
+          <div class="table-wrapper">
+            <table class="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Detalle</th>
+                  <th>Movimiento</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of snapshot.recentPayments; track trackByTitle($index, item)) {
+                  <tr>
+                    <td data-label="Cliente">
+                      <a class="table-link" [routerLink]="item.route">{{ item.title }}</a>
+                    </td>
+                    <td data-label="Detalle">{{ item.line1 }}</td>
+                    <td data-label="Movimiento">{{ item.line2 }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="panels-row">
+        <section class="panel-card">
+          <div class="card-heading">
+            <div class="card-heading-copy">
+              <h2>Pagos pendientes</h2>
+              <p>Cobros a seguir segun la vista previa del resumen.</p>
             </div>
-            <span>{{ metric.label }}</span>
-            <strong>{{ metric.value }}</strong>
-            <small>{{ metric.hint }}</small>
-          </article>
-        </div>
-      </mat-card>
+
+            <div class="heading-badge">
+              <mat-icon>receipt_long</mat-icon>
+              <span>Seguimiento</span>
+            </div>
+          </div>
+
+          @if (snapshot.pendingPayments.length === 0) {
+            <div class="empty-state compact">
+              <mat-icon>check_circle</mat-icon>
+              <h3>Sin pendientes</h3>
+              <p>No hay pagos pendientes para revisar.</p>
+            </div>
+          } @else {
+            <div class="stack-list">
+              @for (item of snapshot.pendingPayments; track trackByTitle($index, item)) {
+                <a class="stack-item" [routerLink]="item.route">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.line1 }}</span>
+                  <small>{{ item.line2 }}</small>
+                </a>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="panel-card">
+          <div class="card-heading">
+            <div class="card-heading-copy">
+              <h2>Proximos vencimientos</h2>
+              <p>Renovaciones cercanas informadas por el resumen.</p>
+            </div>
+
+            <div class="heading-badge">
+              <mat-icon>event_busy</mat-icon>
+              <span>Renovaciones</span>
+            </div>
+          </div>
+
+          @if (snapshot.upcomingExpirations.length === 0) {
+            <div class="empty-state compact">
+              <mat-icon>event_available</mat-icon>
+              <h3>Sin vencimientos cercanos</h3>
+              <p>No hay renovaciones proximas por ahora.</p>
+            </div>
+          } @else {
+            <div class="stack-list">
+              @for (item of snapshot.upcomingExpirations; track trackByTitle($index, item)) {
+                <a class="stack-item" [routerLink]="item.route">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.line1 }}</span>
+                  <small>{{ item.line2 }}</small>
+                </a>
+              }
+            </div>
+          }
+        </section>
+      </section>
     </section>
-
-    <section class="dashboard-grid dashboard-grid--secondary">
-      <mat-card class="panel-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Actividad</p>
-            <h2>Ultimos movimientos</h2>
-          </div>
-          <mat-icon>timeline</mat-icon>
-        </div>
-
-        <div class="activity-list" *ngIf="snapshot.recentActivity.length; else emptyActivity">
-          <a class="activity-item" *ngFor="let item of snapshot.recentActivity; trackBy: trackByTitle" [routerLink]="item.route">
-            <div class="activity-item__icon">
-              <mat-icon>{{ item.icon }}</mat-icon>
-            </div>
-            <div class="activity-item__copy">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.subtitle }}</span>
-            </div>
-            <time *ngIf="item.timestamp">{{ item.timestamp | date: 'dd/MM HH:mm' }}</time>
-          </a>
-        </div>
-
-        <ng-template #emptyActivity>
-          <div class="empty-block">
-            <mat-icon>hourglass_empty</mat-icon>
-            <p>Todavia no hay actividad suficiente para mostrar una linea temporal.</p>
-          </div>
-        </ng-template>
-      </mat-card>
-
-      <mat-card class="panel-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Accesos rapidos</p>
-            <h2>Gestion del dia</h2>
-          </div>
-          <mat-icon>bolt</mat-icon>
-        </div>
-
-        <div class="action-grid">
-          <a class="action-card" *ngFor="let action of snapshot.actionCards; trackBy: trackByTitle" [routerLink]="action.route">
-            <div class="action-card__icon">
-              <mat-icon>{{ action.icon }}</mat-icon>
-            </div>
-            <strong>{{ action.title }}</strong>
-            <p>{{ action.description }}</p>
-          </a>
-        </div>
-      </mat-card>
-    </section>
-
-    <section class="dashboard-grid dashboard-grid--secondary">
-      <mat-card class="panel-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Equipo</p>
-            <h2>Distribucion por categorias</h2>
-          </div>
-          <mat-icon>bar_chart</mat-icon>
-        </div>
-
-        <div class="distribution-list">
-          <article class="distribution-item" *ngFor="let item of snapshot.categoryDistribution; trackBy: trackByLabel">
-            <div class="distribution-item__topline">
-              <strong>{{ item.label }}</strong>
-              <span>{{ item.value | number: '1.0-0' : 'es-AR' }} · {{ item.percentage }}%</span>
-            </div>
-            <div class="progress-track">
-              <span class="progress-fill" [style.width.%]="item.percentage"></span>
-            </div>
-            <small>{{ item.helper }}</small>
-          </article>
-        </div>
-      </mat-card>
-
-      <mat-card class="panel-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Oferta comercial</p>
-            <h2>Peso relativo de los planes</h2>
-          </div>
-          <mat-icon>sell</mat-icon>
-        </div>
-
-        <div class="distribution-list">
-          <article class="distribution-item" *ngFor="let item of snapshot.planDistribution; trackBy: trackByLabel">
-            <div class="distribution-item__topline">
-              <strong>{{ item.label }}</strong>
-              <span>
-                <ng-container *ngIf="item.value > 0; else plainPlanValue">
-                  {{ item.value | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }} · {{ item.percentage }}%
-                </ng-container>
-                <ng-template #plainPlanValue>{{ item.value }}</ng-template>
-              </span>
-            </div>
-            <div class="progress-track">
-              <span class="progress-fill dark" [style.width.%]="item.percentage"></span>
-            </div>
-            <small>{{ item.helper }}</small>
-          </article>
-        </div>
-      </mat-card>
-    </section>
-
-    <section class="dashboard-grid dashboard-grid--footer">
-      <mat-card class="panel-card summary-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Balance general</p>
-            <h2>Lectura ejecutiva</h2>
-          </div>
-          <mat-icon>dashboard_customize</mat-icon>
-        </div>
-
-        <div class="summary-grid">
-          <div>
-            <span>Clientes totales</span>
-            <strong>{{ snapshot.totalClients | number: '1.0-0' : 'es-AR' }}</strong>
-          </div>
-          <div>
-            <span>Promedio por plan</span>
-            <strong>{{ snapshot.averagePlanPrice | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
-          </div>
-          <div>
-            <span>Sueldo promedio</span>
-            <strong>{{ snapshot.averageSalary | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
-          </div>
-          <div>
-            <span>Nomina proyectada</span>
-            <strong>{{ snapshot.estimatedPayroll | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
-          </div>
-        </div>
-      </mat-card>
-
-      <mat-card class="panel-card alerts-card">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">Alertas inteligentes</p>
-            <h2>Focos de atencion</h2>
-          </div>
-          <mat-icon>tips_and_updates</mat-icon>
-        </div>
-
-        <div class="alerts-list">
-          <article class="alert-item" *ngFor="let alert of snapshot.alerts; trackBy: trackByTitle" [class.neutral]="alert.tone === 'neutral'">
-            <div class="alert-item__icon">
-              <mat-icon>{{ alert.icon }}</mat-icon>
-            </div>
-            <div>
-              <strong>{{ alert.title }}</strong>
-              <p>{{ alert.description }}</p>
-            </div>
-          </article>
-        </div>
-      </mat-card>
-    </section>
-  </ng-container>
+  }
 </section>

@@ -28,6 +28,11 @@
     </article>
 
     <article class="detail-card">
+      <span class="detail-label">Fecha de nacimiento</span>
+      <strong>{{ data.employee.fechaNacimiento | date: 'dd/MM/yyyy' }}</strong>
+    </article>
+
+    <article class="detail-card">
       <span class="detail-label">Sueldo</span>
       <strong>{{ data.employee.sueldo | currency: 'ARS' : 'symbol' : '1.0-0' : 'es-AR' }}</strong>
     </article>

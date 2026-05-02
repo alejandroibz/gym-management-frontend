@@ -7,6 +7,7 @@ export interface Employee {
   dni: string;
   telefono: string;
   email: string;
+  fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
   fechaCreacion?: string;
@@ -20,6 +21,7 @@ export interface EmployeeCreatePayload {
   dni: string;
   telefono: string;
   email: string;
+  fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
 }

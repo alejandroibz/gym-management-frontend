@@ -10,7 +10,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
 import {
@@ -34,7 +35,8 @@ import { EmployeesService } from '../../services/employees.service';
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    RouterLink
   ],
   templateUrl: './employees-page.html',
   styleUrl: './employees-page.scss',
@@ -57,6 +59,7 @@ export class EmployeesPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
+  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     nombre: [''],
@@ -66,16 +69,11 @@ export class EmployeesPageComponent {
   });
 
   readonly totalEmployees = computed(() => this.totalCount());
-  readonly employeesOnPage = computed(() => this.employees().length);
-  readonly currentRangeLabel = computed(() => {
-    if (this.totalCount() === 0 || this.employeesOnPage() === 0) {
-      return 'Sin resultados';
-    }
-
-    const start = (this.pageNumber() - 1) * this.pageSize() + 1;
-    const end = start + this.employeesOnPage() - 1;
-
-    return `${start}-${end}`;
+  readonly representedCategoriesCount = computed(() => new Set(this.employees().map(employee => employee.employeeCategoryId)).size);
+  readonly visiblePayrollTotal = computed(() => this.employees().reduce((sum, employee) => sum + employee.sueldo, 0));
+  readonly activeFiltersCount = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    return [raw.nombre, raw.apellido, raw.dni, raw.employeeCategoryId].filter(value => String(value).trim().length > 0).length;
   });
 
   constructor() {
@@ -92,6 +90,7 @@ export class EmployeesPageComponent {
   applyFilters(): void {
     this.pageNumber.set(1);
     this.loadEmployees();
+    this.collapseFiltersOnMobile();
   }
 
   resetFilters(): void {
@@ -103,9 +102,19 @@ export class EmployeesPageComponent {
     });
     this.pageNumber.set(1);
     this.loadEmployees();
+    this.collapseFiltersOnMobile();
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update(value => !value);
   }
 
   openCreateModal(): void {
+    if (this.categories().length === 0) {
+      this.openMissingCategoriesDialog();
+      return;
+    }
+
     this.openDialog();
   }
 
@@ -156,6 +165,7 @@ export class EmployeesPageComponent {
         dni: result.dni,
         telefono: result.telefono,
         email: result.email,
+        fechaNacimiento: result.fechaNacimiento,
         fechaIngreso: result.fechaIngreso,
         sueldo: result.sueldo
       };
@@ -190,6 +200,30 @@ export class EmployeesPageComponent {
           this.errorMessage.set('No se pudo crear el empleado.');
         }
       });
+    });
+  }
+
+  private openMissingCategoriesDialog(): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Primero crea una categoria',
+        message:
+          'Para registrar un empleado necesitas al menos una categoria disponible. Crea una categoria y luego vuelve para continuar con el alta.',
+        confirmLabel: 'Ir a categorias',
+        cancelLabel: 'Ahora no',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.router.navigate(['/employees/categories']);
     });
   }
 
@@ -251,5 +285,15 @@ export class EmployeesPageComponent {
     requestAnimationFrame(() => {
       window.dispatchEvent(new Event('resize'));
     });
+  }
+
+  private getInitialFiltersExpanded(): boolean {
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  private collapseFiltersOnMobile(): void {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      this.filtersExpanded.set(false);
+    }
   }
 }

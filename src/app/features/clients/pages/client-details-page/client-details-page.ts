@@ -16,7 +16,7 @@ import { MembershipPlansService } from '../../../membership-plans/services/membe
 import { PaymentCreatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { RegisterClientPaymentDialogComponent } from '../../components/register-client-payment-dialog/register-client-payment-dialog';
-import { Client, ClientRelationRecord } from '../../models/client.model';
+import { Client, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 
 @Component({
@@ -564,12 +564,29 @@ export class ClientDetailsPageComponent {
   }
 
   private saveChanges(id: number, branchId: number): void {
-    const raw = this.form.getRawValue();
-
     this.isSaving.set(true);
     this.errorMessage.set('');
 
-    this.clientsService.update(id, {
+    this.clientsService.update(id, this.buildUpdatePayload(id, branchId)).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.loadClient();
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.errorMessage.set('No se pudo actualizar el cliente.');
+      }
+    });
+  }
+
+  private getSelectedPlan(): MembershipPlan | undefined {
+    return this.membershipPlans().find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
+  }
+
+  private buildUpdatePayload(id: number, branchId: number): ClientUpdatePayload {
+    const raw = this.form.getRawValue();
+
+    return {
       id,
       branchId,
       nombre: raw.nombre.trim(),
@@ -585,20 +602,7 @@ export class ClientDetailsPageComponent {
         fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
         precioFinal: Number(raw.precioFinal)
       }
-    }).subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.loadClient();
-      },
-      error: () => {
-        this.isSaving.set(false);
-        this.errorMessage.set('No se pudo actualizar el cliente.');
-      }
-    });
-  }
-
-  private getSelectedPlan(): MembershipPlan | undefined {
-    return this.membershipPlans().find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
+    };
   }
 
   private toDateInputValue(value?: string | null): string {

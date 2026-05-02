@@ -35,6 +35,7 @@
 
         <div class="hero-pills">
           <span class="hero-pill">{{ currentCategoryName() }}</span>
+          <span class="hero-pill">Nacimiento {{ currentEmployee.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
           <span class="hero-pill">Ingreso {{ currentEmployee.fechaIngreso | date: 'dd/MM/yyyy' }}</span>
           <span class="hero-pill">Sueldo ${{ currentEmployee.sueldo }}</span>
         </div>
@@ -111,6 +112,11 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
+              <mat-label>Fecha de nacimiento</mat-label>
+              <input matInput type="date" formControlName="fechaNacimiento" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
               <mat-label>Fecha de ingreso</mat-label>
               <input matInput type="date" formControlName="fechaIngreso" />
             </mat-form-field>
@@ -147,6 +153,10 @@
           <article class="summary-item">
             <span>Email</span>
             <strong>{{ currentEmployee.email }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Fecha de nacimiento</span>
+            <strong>{{ currentEmployee.fechaNacimiento | date: 'dd/MM/yyyy' }}</strong>
           </article>
           <article class="summary-item">
             <span>Fecha de ingreso</span>

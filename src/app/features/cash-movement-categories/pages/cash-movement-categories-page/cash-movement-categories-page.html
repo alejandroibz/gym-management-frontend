@@ -1,4 +1,17 @@
 <section class="cash-movement-categories-page">
+  <div class="page-topbar">
+    <nav class="breadcrumb">
+      <a routerLink="/movements">Movimientos</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>Categorias</span>
+    </nav>
+
+    <button mat-stroked-button type="button" routerLink="/movements">
+      <mat-icon>arrow_back</mat-icon>
+      Volver a movimientos
+    </button>
+  </div>
+
   <header class="page-header">
     <div class="page-header-copy">
       <span class="eyebrow-pill">
@@ -108,28 +121,41 @@
         </div>
       }
 
-      <div class="filters">
-        <div class="filter-block search-block">
-          <span class="filter-label">Busqueda</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Buscar categoria</mat-label>
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
-          </mat-form-field>
-        </div>
+      <div class="filters-toolbar">
+        <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
+          <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+          {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+        </button>
 
-        <div class="filter-block type-block">
-          <span class="filter-label">Tipo de movimiento</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Tipo</mat-label>
-            <mat-select [value]="movementFilter()" (valueChange)="updateMovementFilter($event)">
-              <mat-option value="all">Todos</mat-option>
-              <mat-option [value]="1">Ingreso</mat-option>
-              <mat-option [value]="2">Egreso</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
+        <span class="filters-summary">
+          {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtros activos' }}
+        </span>
       </div>
+
+      @if (filtersExpanded()) {
+        <div class="filters">
+          <div class="filter-block search-block">
+            <span class="filter-label">Busqueda</span>
+            <mat-form-field appearance="outline">
+              <mat-label>Buscar categoria</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
+            </mat-form-field>
+          </div>
+
+          <div class="filter-block type-block">
+            <span class="filter-label">Tipo de movimiento</span>
+            <mat-form-field appearance="outline">
+              <mat-label>Tipo</mat-label>
+              <mat-select [value]="movementFilter()" (valueChange)="updateMovementFilter($event)">
+                <mat-option value="all">Todos</mat-option>
+                <mat-option [value]="1">Ingreso</mat-option>
+                <mat-option [value]="2">Egreso</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      }
 
       <div class="category-list">
         @if (!isLoading() && filteredCategories().length === 0) {

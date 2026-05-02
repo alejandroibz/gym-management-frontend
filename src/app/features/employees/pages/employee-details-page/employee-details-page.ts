@@ -59,6 +59,7 @@ export class EmployeeDetailsPageComponent {
     dni: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(8), Validators.pattern(/^\d{7,8}$/)]],
     telefono: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
+    fechaNacimiento: ['', [Validators.required]],
     fechaIngreso: ['', [Validators.required]],
     sueldo: [0, [Validators.required, Validators.min(0)]]
   });
@@ -240,6 +241,7 @@ export class EmployeeDetailsPageComponent {
       dni: employee.dni,
       telefono: employee.telefono,
       email: employee.email,
+      fechaNacimiento: this.toDateInputValue(employee.fechaNacimiento),
       fechaIngreso: this.toDateInputValue(employee.fechaIngreso),
       sueldo: employee.sueldo
     });
@@ -260,6 +262,7 @@ export class EmployeeDetailsPageComponent {
       dni: raw.dni.trim(),
       telefono: raw.telefono.trim(),
       email: raw.email.trim(),
+      fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
       fechaIngreso: new Date(`${raw.fechaIngreso}T00:00:00`).toISOString(),
       sueldo: Number(raw.sueldo)
     }).subscribe({

@@ -353,4 +353,18 @@
   .span-2 {
     grid-column: span 1;
   }
+
+  .page-topbar button,
+  .hero-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .content-card {
+    padding: 1rem;
+  }
+
+  .payment-card {
+    padding: 0.9rem;
+  }
 }

@@ -55,7 +55,7 @@ export class RegisterCashMovementDialogComponent {
   });
   readonly shouldShowEmployeeField = computed(() => {
     const category = this.selectedCategory();
-    return this.selectedType() === 2 && category?.nombre.trim().toLowerCase() === 'pago sueldos';
+    return this.selectedType() === 2 && category?.nombre.trim().toLowerCase() === 'pago de sueldos';
   });
   readonly amountLabel = computed(() => this.shouldShowEmployeeField() ? 'Sueldo empleado' : 'Monto');
 

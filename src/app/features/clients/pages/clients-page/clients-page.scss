@@ -111,11 +111,22 @@
   justify-items: end;
 }
 
+.header-actions {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: end;
+}
+
 .primary-action {
   min-height: 48px;
   padding-inline: 1.1rem;
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(193, 18, 31, 0.18);
+}
+
+.secondary-action {
+  min-height: 44px;
+  border-radius: 14px;
 }
 
 .header-note {
@@ -413,6 +424,10 @@ mat-paginator {
   .page-header-side {
     justify-items: start;
   }
+
+  .header-actions {
+    justify-items: start;
+  }
 }
 
 @media (max-width: 768px) {
@@ -442,12 +457,101 @@ mat-paginator {
     justify-items: stretch;
   }
 
+  .header-actions {
+    justify-items: stretch;
+  }
+
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .filter-block {
+    padding: 0.75rem 0.85rem;
+    border-radius: 16px;
+  }
+
+  .filter-label {
+    font-size: 0.72rem;
+  }
+
   .filter-actions {
-    flex-direction: column;
+    grid-column: 1 / -1;
+    flex-direction: row;
   }
 
   .clients-table td,
   .clients-table th {
     padding: 0.85rem;
+  }
+
+  .table-wrapper {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .clients-table,
+  .clients-table tbody,
+  .clients-table tr,
+  .clients-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .clients-table {
+    min-width: 0;
+  }
+
+  .clients-table thead {
+    display: none;
+  }
+
+  .clients-table tbody {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .clients-table tr {
+    border: 1px solid var(--clients-border);
+    border-radius: 20px;
+    background: var(--clients-surface);
+    box-shadow: var(--clients-shadow);
+    overflow: hidden;
+  }
+
+  .clients-table td {
+    display: grid;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .clients-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .clients-table td::before {
+    content: attr(data-label);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--app-text-soft);
+  }
+
+  .action-buttons {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    flex-direction: column;
   }
 }

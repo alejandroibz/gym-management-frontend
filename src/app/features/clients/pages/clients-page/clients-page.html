@@ -33,10 +33,17 @@
     </div>
 
     <div class="page-header-side">
-      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
-        <mat-icon>person_add</mat-icon>
-        Nuevo cliente
-      </button>
+      <div class="header-actions">
+        <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+          <mat-icon>person_add</mat-icon>
+          Nuevo cliente
+        </button>
+
+        <button mat-stroked-button type="button" class="secondary-action" routerLink="/membership-plans">
+          <mat-icon>card_membership</mat-icon>
+          Planes
+        </button>
+      </div>
 
       <div class="header-note">
         <mat-icon>insights</mat-icon>
@@ -59,23 +66,23 @@
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell info">
-        <mat-icon>visibility</mat-icon>
+        <mat-icon>card_membership</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">En pantalla</span>
-        <strong>{{ clientsOnPage() }}</strong>
-        <small>Resultados cargados en esta pagina</small>
+        <span class="stat-label">Con membresia asignada</span>
+        <strong>{{ clientsWithMembership() }}</strong>
+        <small>Clientes cargados en la vista actual con plan vinculado</small>
       </div>
     </mat-card>
 
     <mat-card class="stat-card">
       <div class="stat-icon-shell success">
-        <mat-icon>card_membership</mat-icon>
+        <mat-icon>payments</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Membresias visibles</span>
-        <strong>{{ totalMembershipsOnPage() }}</strong>
-        <small>Relaciones presentes en la vista actual</small>
+        <span class="stat-label">Pagos pendientes</span>
+        <strong>{{ pendingPaymentsCount() }}</strong>
+        <small>Clientes de esta vista que requieren seguimiento de cobro</small>
       </div>
     </mat-card>
   </section>
@@ -100,46 +107,59 @@
       </div>
     }
 
-    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
-      <div class="filter-block">
-        <span class="filter-label">Nombre</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por nombre</mat-label>
-          <mat-icon matPrefix>person_search</mat-icon>
-          <input matInput formControlName="nombre" />
-        </mat-form-field>
-      </div>
+    <div class="filters-toolbar">
+      <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
+        <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+        {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
+      </button>
 
-      <div class="filter-block">
-        <span class="filter-label">Apellido</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por apellido</mat-label>
-          <mat-icon matPrefix>badge</mat-icon>
-          <input matInput formControlName="apellido" />
-        </mat-form-field>
-      </div>
+      <span class="filters-summary">
+        {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtros activos' }}
+      </span>
+    </div>
 
-      <div class="filter-block">
-        <span class="filter-label">Documento</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Buscar por DNI</mat-label>
-          <mat-icon matPrefix>credit_card</mat-icon>
-          <input matInput formControlName="dni" />
-        </mat-form-field>
-      </div>
+    @if (filtersExpanded()) {
+      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+        <div class="filter-block">
+          <span class="filter-label">Nombre</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por nombre</mat-label>
+            <mat-icon matPrefix>person_search</mat-icon>
+            <input matInput formControlName="nombre" />
+          </mat-form-field>
+        </div>
 
-      <div class="filter-actions">
-        <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
-          <mat-icon>search</mat-icon>
-          Aplicar filtros
-        </button>
+        <div class="filter-block">
+          <span class="filter-label">Apellido</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por apellido</mat-label>
+            <mat-icon matPrefix>badge</mat-icon>
+            <input matInput formControlName="apellido" />
+          </mat-form-field>
+        </div>
 
-        <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
-          <mat-icon>restart_alt</mat-icon>
-          Limpiar
-        </button>
-      </div>
-    </form>
+        <div class="filter-block">
+          <span class="filter-label">Documento</span>
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por DNI</mat-label>
+            <mat-icon matPrefix>credit_card</mat-icon>
+            <input matInput formControlName="dni" />
+          </mat-form-field>
+        </div>
+
+        <div class="filter-actions">
+          <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
+            <mat-icon>search</mat-icon>
+            Aplicar filtros
+          </button>
+
+          <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            Limpiar
+          </button>
+        </div>
+      </form>
+    }
 
     @if (isLoading()) {
       <div class="loading-state">
@@ -162,23 +182,23 @@
               <th>Membresia</th>
               <th>Contacto</th>
               <th>Direccion</th>
-              <th>Relaciones</th>
+              <th>Estado de pago</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (client of clients(); track client.id) {
               <tr>
-                <td>
+                <td data-label="Cliente">
                   <div class="client-cell">
                     <strong>{{ client.nombre }} {{ client.apellido }}</strong>
                     <span>{{ client.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
                   </div>
                 </td>
-                <td>
+                <td data-label="DNI">
                   <span class="dni-pill">{{ client.dni }}</span>
                 </td>
-                <td>
+                <td data-label="Membresia">
                   <div class="client-cell">
                     <strong>{{ getMembershipLabel(client) }}</strong>
                     <span>
@@ -186,7 +206,7 @@
                     </span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Contacto">
                   <div class="contact-cell">
                     <a
                       class="contact-link"
@@ -200,15 +220,15 @@
                     </a>
                   </div>
                 </td>
-                <td>{{ client.direccion }}</td>
-                <td>
+                <td data-label="Direccion">{{ client.direccion }}</td>
+                <td data-label="Estado de pago">
                   <div class="relations-cell">
                     <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
                       {{ getPaymentStatusLabel(client) }}
                     </span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Acciones">
                   <div class="action-buttons">
                     <button
                       mat-icon-button
