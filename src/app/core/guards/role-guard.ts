@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
 import { combineLatest, map } from 'rxjs';
-import { extractUserRoles } from '../auth/auth0-config';
+import { extractUserRoles, hasAnyAllowedRole } from '../auth/auth0-config';
 
 export const roleGuard: CanActivateFn = (route) => {
   const auth = inject(AuthService);
@@ -25,10 +25,10 @@ export const roleGuard: CanActivateFn = (route) => {
 
       const userRoles = extractUserRoles(user);
 
-      const hasAccess = userRoles.some(role => allowedRoles.includes(role));
+      const hasAccess = hasAnyAllowedRole(userRoles, allowedRoles);
 
       if (!hasAccess) {
-        return router.createUrlTree(['/dashboard']);
+        return router.createUrlTree(['/sin-acceso']);
       }
 
       return true;

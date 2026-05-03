@@ -22,10 +22,20 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
+        path: 'sin-acceso',
+        loadComponent: () =>
+          import('./features/auth/access-denied/access-denied')
+            .then(m => m.AccessDeniedComponent)
+      },
+      {
         path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/pages/dashboard-page/dashboard-page')
-            .then(m => m.DashboardPageComponent)
+            .then(m => m.DashboardPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       },
       {
         path: 'employees',
@@ -61,31 +71,51 @@ export const routes: Routes = [
         path: 'clients',
         loadComponent: () =>
           import('./features/clients/pages/clients-page/clients-page')
-            .then(m => m.ClientsPageComponent)
+            .then(m => m.ClientsPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       },
       {
         path: 'clients/:id',
         loadComponent: () =>
           import('./features/clients/pages/client-details-page/client-details-page')
-            .then(m => m.ClientDetailsPageComponent)
+            .then(m => m.ClientDetailsPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       },
       {
         path: 'membership-plans',
         loadComponent: () =>
           import('./features/membership-plans/pages/membership-plans-page/membership-plans-page')
-            .then(m => m.MembershipPlansPageComponent)
+            .then(m => m.MembershipPlansPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       },
       {
         path: 'movements',
         loadComponent: () =>
           import('./features/movements/pages/movements-page/movements-page')
-            .then(m => m.MovementsPageComponent)
+            .then(m => m.MovementsPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       },
       {
         path: 'movements/categories',
         loadComponent: () =>
           import('./features/cash-movement-categories/pages/cash-movement-categories-page/cash-movement-categories-page')
-            .then(m => m.CashMovementCategoriesPageComponent)
+            .then(m => m.CashMovementCategoriesPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       }
     ]
   }

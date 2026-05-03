@@ -18,3 +18,13 @@ export function extractUserRoles(user: Record<string, unknown> | null | undefine
 
   return [];
 }
+
+export function normalizeRole(role: string): string {
+  return role.toLowerCase().replace(/[\s_-]/g, '');
+}
+
+export function hasAnyAllowedRole(userRoles: string[], allowedRoles: string[]): boolean {
+  const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+
+  return userRoles.some(role => normalizedAllowedRoles.includes(normalizeRole(role)));
+}

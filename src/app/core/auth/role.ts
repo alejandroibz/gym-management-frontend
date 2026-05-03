@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '@auth0/auth0-angular';
 import { map, Observable } from 'rxjs';
-import { extractUserRoles } from './auth0-config';
+import { extractUserRoles, hasAnyAllowedRole } from './auth0-config';
 
 @Injectable({
   providedIn: 'root'
@@ -15,13 +15,13 @@ export class RoleService {
 
   hasRole(role: string): Observable<boolean> {
     return this.roles$.pipe(
-      map(roles => roles.includes(role))
+      map(roles => hasAnyAllowedRole(roles, [role]))
     );
   }
 
   hasAnyRole(allowedRoles: string[]): Observable<boolean> {
     return this.roles$.pipe(
-      map(roles => roles.some(role => allowedRoles.includes(role)))
+      map(roles => hasAnyAllowedRole(roles, allowedRoles))
     );
   }
 }

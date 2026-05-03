@@ -1,0 +1,28 @@
+<section class="access-denied-page">
+  <div class="access-denied-panel">
+    <div class="icon-shell" aria-hidden="true">
+      <mat-icon>lock</mat-icon>
+    </div>
+
+    <p class="eyebrow">Acceso restringido</p>
+    <h1>No tenes acceso a esta pantalla</h1>
+    <p class="message">
+      Tu usuario esta activo, pero el rol asignado no tiene permisos para operar esta seccion.
+      Si necesitas entrar, pedile a un administrador que revise tus permisos.
+    </p>
+
+    <div class="actions">
+      @if (isAdminOrSuperAdmin$ | async) {
+        <a mat-flat-button routerLink="/dashboard">
+          <mat-icon>dashboard</mat-icon>
+          Ir al dashboard
+        </a>
+      }
+
+      <button mat-stroked-button type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Cerrar sesion
+      </button>
+    </div>
+  </div>
+</section>

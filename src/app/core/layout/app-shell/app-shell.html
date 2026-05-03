@@ -29,6 +29,7 @@
 
       <mat-nav-list class="nav-list">
         <a
+          *ngIf="isAdminOrSuperAdmin$ | async"
           mat-list-item
           routerLink="/dashboard"
           routerLinkActive="active-link"
@@ -52,6 +53,7 @@
         </a>
 
         <a
+          *ngIf="isAdminOrSuperAdmin$ | async"
           mat-list-item
           routerLink="/clients"
           routerLinkActive="active-link"
@@ -63,6 +65,7 @@
         </a>
 
         <a
+          *ngIf="isAdminOrSuperAdmin$ | async"
           mat-list-item
           routerLink="/movements"
           routerLinkActive="active-link"
