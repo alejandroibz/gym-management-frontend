@@ -1,14 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
-import { Employee } from '../../models/employee.model';
+import { Employee, EmployeeAppAccessPayload, EmployeeAppRole } from '../../models/employee.model';
 
 export interface EmployeeDialogData {
   employee?: Employee;
@@ -27,6 +29,7 @@ export interface EmployeeDialogResult {
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
+  appAccess?: EmployeeAppAccessPayload | null;
 }
 
 @Component({
@@ -37,6 +40,7 @@ export interface EmployeeDialogResult {
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -48,8 +52,10 @@ export interface EmployeeDialogResult {
 })
 export class EmployeeDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<EmployeeDialogComponent, EmployeeDialogResult>);
   readonly data = inject<EmployeeDialogData>(MAT_DIALOG_DATA);
+  readonly appRoleOptions: EmployeeAppRole[] = ['Admin', 'SuperAdmin'];
 
   readonly form = this.formBuilder.nonNullable.group({
     employeeCategoryId: [
@@ -72,10 +78,7 @@ export class EmployeeDialogComponent {
       this.data.employee?.telefono ?? '',
       [Validators.required, Validators.minLength(6), Validators.maxLength(30)]
     ],
-    email: [
-      this.data.employee?.email ?? '',
-      [Validators.required, Validators.email, Validators.maxLength(120)]
-    ],
+    email: [this.data.employee?.email ?? '', [Validators.email, Validators.maxLength(120)]],
     fechaNacimiento: [
       this.toDateInputValue(this.data.employee?.fechaNacimiento) ?? '',
       [Validators.required]
@@ -87,8 +90,20 @@ export class EmployeeDialogComponent {
     sueldo: [
       this.data.employee?.sueldo ?? null,
       [Validators.required, Validators.min(0)]
-    ]
+    ],
+    createAccess: [false],
+    appRole: ['Admin' as EmployeeAppRole | '' ]
   });
+
+  constructor() {
+    this.form.controls.createAccess.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateAccessValidators();
+      });
+
+    this.updateAccessValidators();
+  }
 
   get isEditing(): boolean {
     return !!this.data.employee;
@@ -126,7 +141,13 @@ export class EmployeeDialogComponent {
       email: value.email.trim(),
       fechaNacimiento: new Date(`${value.fechaNacimiento}T00:00:00`).toISOString(),
       fechaIngreso: new Date(`${value.fechaIngreso}T00:00:00`).toISOString(),
-      sueldo: Number(value.sueldo)
+      sueldo: Number(value.sueldo),
+      appAccess: value.createAccess
+        ? {
+            createAccess: true,
+            role: value.appRole as EmployeeAppRole
+          }
+        : null
     });
   }
 
@@ -136,5 +157,26 @@ export class EmployeeDialogComponent {
     }
 
     return value.slice(0, 10);
+  }
+
+  private updateAccessValidators(): void {
+    const emailControl = this.form.controls.email;
+    const appRoleControl = this.form.controls.appRole;
+    const createAccess = this.form.controls.createAccess.value;
+
+    emailControl.setValidators(
+      createAccess
+        ? [Validators.required, Validators.email, Validators.maxLength(120)]
+        : [Validators.email, Validators.maxLength(120)]
+    );
+
+    appRoleControl.setValidators(createAccess ? [Validators.required] : []);
+
+    if (!createAccess) {
+      appRoleControl.setValue('Admin', { emitEvent: false });
+    }
+
+    emailControl.updateValueAndValidity({ emitEvent: false });
+    appRoleControl.updateValueAndValidity({ emitEvent: false });
   }
 }

@@ -79,6 +79,8 @@ body {
   background: #ffffff !important;
   color: var(--app-text) !important;
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22) !important;
+  max-height: min(92dvh, 960px);
+  overflow: hidden !important;
 }
 
 .mat-mdc-raised-button.mat-primary,
@@ -130,5 +132,15 @@ body {
   .filters-summary {
     text-align: left;
   }
+
+  .employee-dialog-panel {
+    max-width: calc(100vw - 0.75rem) !important;
+  }
+
+  .employee-dialog-panel .mat-mdc-dialog-surface {
+    border-radius: 20px !important;
+    max-height: calc(100dvh - 1rem);
+  }
 }
+
 /* You can add global styles to this file, and also import other style files */

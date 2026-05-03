@@ -16,7 +16,7 @@ import { MembershipPlansService } from '../../../membership-plans/services/membe
 import { PaymentCreatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { RegisterClientPaymentDialogComponent } from '../../components/register-client-payment-dialog/register-client-payment-dialog';
-import { Client, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
+import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 
 @Component({
@@ -75,7 +75,8 @@ export class ClientDetailsPageComponent {
     return client ? `${client.nombre} ${client.apellido}` : 'Cliente';
   });
 
-  readonly currentMembership = computed(() => this.client()?.membership ?? null);
+  readonly currentMembership = computed(() => this.getEffectiveMembership(this.client()));
+  readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
   readonly canRegisterPayment = computed(() => !!this.currentMembership() && !this.isEditing());
 
@@ -395,6 +396,24 @@ export class ClientDetailsPageComponent {
     }
   }
 
+  getMembershipAlertChips(client: Client): Array<{ label: string; tone: 'warning' | 'info' | 'success' }> {
+    const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
+
+    if (client.membresiaProximaAVencer) {
+      chips.push({ label: 'Proxima a vencer', tone: 'warning' });
+
+      if (!client.membresiaVencimientoNotificado) {
+        chips.push({ label: 'Sin notificar', tone: 'info' });
+      }
+    }
+
+    if (client.membresiaVencimientoNotificado) {
+      chips.push({ label: 'Notificado', tone: 'success' });
+    }
+
+    return chips;
+  }
+
   private getPaymentId(payment: ClientRelationRecord): number | null {
     const rawId = this.getPaymentField(payment, ['id', 'paymentid']);
 
@@ -548,6 +567,8 @@ export class ClientDetailsPageComponent {
   }
 
   private populateForm(client: Client): void {
+    const membership = this.getEffectiveMembership(client);
+
     this.form.patchValue({
       nombre: client.nombre,
       apellido: client.apellido,
@@ -556,10 +577,10 @@ export class ClientDetailsPageComponent {
       telefono: client.telefono,
       email: client.email,
       direccion: client.direccion,
-      membershipPlanId: client.membership?.membershipPlanId ?? null,
-      fechaInicio: this.toDateInputValue(client.membership?.fechaInicio),
-      fechaFin: this.toDateInputValue(client.membership?.fechaFin),
-      precioFinal: client.membership?.precioFinal ?? 0
+      membershipPlanId: membership?.membershipPlanId ?? null,
+      fechaInicio: this.toDateInputValue(membership?.fechaInicio),
+      fechaFin: this.toDateInputValue(membership?.fechaFin),
+      precioFinal: membership?.precioFinal ?? 0
     });
   }
 
@@ -613,5 +634,29 @@ export class ClientDetailsPageComponent {
     const date = new Date(`${dateInput}T00:00:00`);
     date.setDate(date.getDate() + days);
     return date.toISOString().slice(0, 10);
+  }
+
+  private getEffectiveMembership(client: Client | null): ClientMembership | null {
+    if (!client) {
+      return null;
+    }
+
+    if (client.membership) {
+      return client.membership;
+    }
+
+    return this.getMembershipsHistory(client)[0] ?? null;
+  }
+
+  private getMembershipsHistory(client: Client | null): ClientMembership[] {
+    if (!client?.membershipsHistory?.length) {
+      return [];
+    }
+
+    return [...client.membershipsHistory].sort((left, right) => {
+      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
+      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
+      return rightDate - leftDate;
+    });
   }
 }

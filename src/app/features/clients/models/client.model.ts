@@ -14,6 +14,10 @@ export interface ClientMembership {
   plan?: MembershipPlan | null;
 }
 
+export interface ClientAppAccessPayload {
+  createAccess: boolean;
+}
+
 export interface Client {
   id: number;
   branchId: number;
@@ -30,6 +34,8 @@ export interface Client {
   payments: ClientRelationRecord[];
   debePago: boolean;
   ultimoPagoFecha?: string | null;
+  membresiaProximaAVencer?: boolean;
+  membresiaVencimientoNotificado?: boolean;
 }
 
 export interface ClientCreatePayload {
@@ -41,6 +47,7 @@ export interface ClientCreatePayload {
   telefono: string;
   email: string;
   direccion: string;
+  appAccess?: ClientAppAccessPayload | null;
   membership: ClientMembership;
 }
 

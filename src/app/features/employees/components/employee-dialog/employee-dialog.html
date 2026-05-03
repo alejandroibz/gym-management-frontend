@@ -52,7 +52,11 @@
       <mat-form-field appearance="outline">
         <mat-label>Email</mat-label>
         <input matInput type="email" formControlName="email" />
-        <mat-error>Ingresa un email valido.</mat-error>
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>El email es obligatorio para crear acceso.</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Ingresa un email valido.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -72,6 +76,23 @@
         <input matInput type="number" min="0" step="0.01" formControlName="sueldo" />
         <mat-error>Ingresa un sueldo valido.</mat-error>
       </mat-form-field>
+
+      <div class="access-section">
+        <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
+        <p>Si lo activas, se crea el usuario del empleado en Auth0.</p>
+      </div>
+
+      @if (form.controls.createAccess.value) {
+        <mat-form-field appearance="outline">
+          <mat-label>Rol del sistema</mat-label>
+          <mat-select formControlName="appRole">
+            @for (role of appRoleOptions; track role) {
+              <mat-option [value]="role">{{ role }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>Selecciona un rol.</mat-error>
+        </mat-form-field>
+      }
     </div>
 
     <div class="dialog-actions">

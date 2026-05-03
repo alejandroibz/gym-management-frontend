@@ -144,6 +144,12 @@
   color: var(--employee-detail-ink);
 }
 
+.hero-pill-active {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
 .hero-actions {
   align-items: flex-start;
   flex-wrap: wrap;
@@ -202,6 +208,32 @@
 
 .summary-item strong {
   color: var(--employee-detail-ink);
+}
+
+.access-box {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--employee-detail-border);
+  background: var(--employee-detail-soft);
+}
+
+.access-eyebrow,
+.access-copy {
+  margin: 0;
+}
+
+.access-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--employee-detail-blue);
+}
+
+.access-copy {
+  color: var(--app-text-muted);
 }
 
 :host ::ng-deep .employee-details-page .mat-mdc-form-field {

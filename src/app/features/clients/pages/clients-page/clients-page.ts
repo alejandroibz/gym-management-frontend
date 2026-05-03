@@ -16,6 +16,7 @@ import { Client, ClientCreatePayload, ClientFilters, ClientUpdatePayload } from 
 import { ClientsService } from '../../services/clients.service';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
+import { ClientMembership } from '../../models/client.model';
 
 @Component({
   selector: 'app-clients-page',
@@ -262,11 +263,12 @@ export class ClientsPageComponent {
   }
 
   getMembershipLabel(client: Client): string {
-    return client.membership?.plan?.nombre ?? (client.membership ? `Plan #${client.membership.membershipPlanId}` : 'Sin membresia');
+    const membership = this.getEffectiveMembership(client);
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia');
   }
 
   getMembershipEndDate(client: Client): string | null {
-    return client.membership?.fechaFin ?? null;
+    return this.getEffectiveMembership(client)?.fechaFin ?? null;
   }
 
   getPaymentStatusLabel(client: Client): string {
@@ -275,6 +277,24 @@ export class ClientsPageComponent {
 
   isPaymentPending(client: Client): boolean {
     return client.debePago;
+  }
+
+  getMembershipNotificationChips(client: Client): Array<{ label: string; tone: 'warning' | 'info' | 'success' }> {
+    const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
+
+    if (client.membresiaProximaAVencer) {
+      chips.push({ label: 'Proxima a vencer', tone: 'warning' });
+
+      if (!client.membresiaVencimientoNotificado) {
+        chips.push({ label: 'Sin notificar', tone: 'info' });
+      }
+    }
+
+    if (client.membresiaVencimientoNotificado) {
+      chips.push({ label: 'Notificado', tone: 'success' });
+    }
+
+    return chips;
   }
 
   private loadMembershipPlans(): void {
@@ -308,6 +328,7 @@ export class ClientsPageComponent {
       telefono: result.telefono,
       email: result.email,
       direccion: result.direccion,
+      appAccess: result.appAccess ?? null,
       membership: {
         membershipPlanId: result.membership.membershipPlanId,
         fechaInicio: result.membership.fechaInicio,
@@ -315,6 +336,24 @@ export class ClientsPageComponent {
         precioFinal: result.membership.precioFinal
       }
     };
+  }
+
+  private getEffectiveMembership(client: Client): ClientMembership | null {
+    if (client.membership) {
+      return client.membership;
+    }
+
+    const history = client.membershipsHistory ?? [];
+
+    if (history.length === 0) {
+      return null;
+    }
+
+    return [...history].sort((left, right) => {
+      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
+      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
+      return rightDate - leftDate;
+    })[0] ?? null;
   }
 
   private getInitialFiltersExpanded(): boolean {

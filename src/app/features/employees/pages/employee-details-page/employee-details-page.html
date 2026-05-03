@@ -38,6 +38,9 @@
           <span class="hero-pill">Nacimiento {{ currentEmployee.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
           <span class="hero-pill">Ingreso {{ currentEmployee.fechaIngreso | date: 'dd/MM/yyyy' }}</span>
           <span class="hero-pill">Sueldo ${{ currentEmployee.sueldo }}</span>
+          <span class="hero-pill" [class.hero-pill-active]="currentEmployee.hasAppAccess">
+            {{ currentEmployee.hasAppAccess ? ('Acceso ' + (currentEmployee.appRole || 'activo')) : 'Sin acceso al sistema' }}
+          </span>
         </div>
       </div>
 
@@ -109,6 +112,11 @@
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput type="email" formControlName="email" />
+              @if (form.controls.email.hasError('required')) {
+                <mat-error>El email es obligatorio para acceso al sistema.</mat-error>
+              } @else if (form.controls.email.hasError('email')) {
+                <mat-error>Ingresa un email valido.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -125,6 +133,29 @@
               <mat-label>Sueldo</mat-label>
               <input matInput type="number" min="0" step="0.01" formControlName="sueldo" />
             </mat-form-field>
+
+            <div class="access-box">
+              <p class="access-eyebrow">Acceso al sistema</p>
+
+              @if (hasAppAccess()) {
+                <p class="access-copy">Este empleado ya tiene acceso creado. Puedes actualizar su rol.</p>
+              } @else {
+                <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
+                <p class="access-copy">Si lo activas, el backend creara el usuario del empleado en Auth0.</p>
+              }
+            </div>
+
+            @if (hasAppAccess() || form.controls.createAccess.value) {
+              <mat-form-field appearance="outline">
+                <mat-label>Rol del sistema</mat-label>
+                <mat-select formControlName="appRole">
+                  @for (role of appRoleOptions; track role) {
+                    <mat-option [value]="role">{{ role }}</mat-option>
+                  }
+                </mat-select>
+                <mat-error>Selecciona un rol.</mat-error>
+              </mat-form-field>
+            }
           </div>
         </form>
       </mat-card>
@@ -165,6 +196,14 @@
           <article class="summary-item">
             <span>Sueldo</span>
             <strong>${{ currentEmployee.sueldo }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Acceso app</span>
+            <strong>{{ currentEmployee.hasAppAccess ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Rol app</span>
+            <strong>{{ currentEmployee.appRole || 'Sin rol' }}</strong>
           </article>
         </div>
       </mat-card>

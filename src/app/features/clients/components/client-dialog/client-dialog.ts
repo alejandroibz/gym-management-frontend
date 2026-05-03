@@ -1,14 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
-import { Client, ClientMembership } from '../../models/client.model';
+import { Client, ClientAppAccessPayload, ClientMembership } from '../../models/client.model';
 
 export interface ClientDialogData {
   client?: Client;
@@ -25,6 +27,7 @@ export interface ClientDialogResult {
   telefono: string;
   email: string;
   direccion: string;
+  appAccess?: ClientAppAccessPayload | null;
   membership: ClientMembership;
 }
 
@@ -36,6 +39,7 @@ export interface ClientDialogResult {
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -47,6 +51,7 @@ export interface ClientDialogResult {
 })
 export class ClientDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<ClientDialogComponent, ClientDialogResult>);
   readonly data = inject<ClientDialogData>(MAT_DIALOG_DATA);
   readonly today = new Date().toISOString().slice(0, 10);
@@ -71,14 +76,12 @@ export class ClientDialogComponent {
       this.data.client?.telefono ?? '',
       [Validators.required, Validators.minLength(6), Validators.maxLength(30)]
     ],
-    email: [
-      this.data.client?.email ?? '',
-      [Validators.required, Validators.email, Validators.maxLength(120)]
-    ],
+    email: [this.data.client?.email ?? '', [Validators.email, Validators.maxLength(120)]],
     direccion: [
       this.data.client?.direccion ?? '',
       [Validators.required, Validators.minLength(3), Validators.maxLength(160)]
     ],
+    createAccess: [false],
     membershipPlanId: [this.currentMembership?.membershipPlanId ?? null, [Validators.required]],
     fechaInicio: [
       this.toDateInputValue(this.currentMembership?.fechaInicio) || this.today,
@@ -90,6 +93,16 @@ export class ClientDialogComponent {
     ],
     precioFinal: [this.currentMembership?.precioFinal ?? null, [Validators.required, Validators.min(0)]]
   });
+
+  constructor() {
+    this.form.controls.createAccess.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateEmailValidators();
+      });
+
+    this.updateEmailValidators();
+  }
 
   get isEditing(): boolean {
     return !!this.data.client;
@@ -158,6 +171,7 @@ export class ClientDialogComponent {
       telefono: value.telefono.trim(),
       email: value.email.trim(),
       direccion: value.direccion.trim(),
+      appAccess: value.createAccess ? { createAccess: true } : null,
       membership: {
         membershipPlanId: Number(value.membershipPlanId),
         fechaInicio: new Date(`${value.fechaInicio}T00:00:00`).toISOString(),
@@ -180,5 +194,17 @@ export class ClientDialogComponent {
     const date = new Date(`${dateInput}T00:00:00`);
     date.setDate(date.getDate() + days);
     return date.toISOString().slice(0, 10);
+  }
+
+  private updateEmailValidators(): void {
+    const emailControl = this.form.controls.email;
+    const validators = [Validators.email, Validators.maxLength(120)];
+
+    if (this.form.controls.createAccess.value) {
+      validators.unshift(Validators.required);
+    }
+
+    emailControl.setValidators(validators);
+    emailControl.updateValueAndValidity({ emitEvent: false });
   }
 }

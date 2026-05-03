@@ -1,3 +1,10 @@
+export type EmployeeAppRole = 'Admin' | 'SuperAdmin';
+
+export interface EmployeeAppAccessPayload {
+  createAccess?: boolean;
+  role?: EmployeeAppRole | null;
+}
+
 export interface Employee {
   id: number;
   branchId: number;
@@ -11,6 +18,8 @@ export interface Employee {
   fechaIngreso: string;
   sueldo: number;
   fechaCreacion?: string;
+  hasAppAccess?: boolean;
+  appRole?: string | null;
 }
 
 export interface EmployeeCreatePayload {
@@ -24,6 +33,7 @@ export interface EmployeeCreatePayload {
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
+  appAccess?: EmployeeAppAccessPayload | null;
 }
 
 export interface EmployeeUpdatePayload extends EmployeeCreatePayload {

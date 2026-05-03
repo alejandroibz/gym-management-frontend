@@ -81,6 +81,24 @@
   box-shadow: 0 10px 24px rgba(148, 163, 184, 0.12);
 }
 
+.hero-pill-warning {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.hero-pill-info {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0c4a6e;
+}
+
+.hero-pill-success {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;

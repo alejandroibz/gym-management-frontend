@@ -193,6 +193,7 @@
               <th>Empleado</th>
               <th>DNI</th>
               <th>Categoria</th>
+              <th>Acceso app</th>
               <th>Fechas</th>
               <th>Contacto</th>
               <th>Acciones</th>
@@ -204,7 +205,6 @@
                 <td data-label="Empleado">
                   <div class="employee-cell">
                     <strong>{{ employee.nombre }} {{ employee.apellido }}</strong>
-                    <span>{{ employee.email }}</span>
                   </div>
                 </td>
                 <td data-label="DNI">
@@ -213,6 +213,13 @@
                 <td data-label="Categoria" class="category-column">
                   <div class="category-cell">
                     <span class="category-chip">{{ getCategoryName(employee.employeeCategoryId) }}</span>
+                  </div>
+                </td>
+                <td data-label="Acceso app">
+                  <div class="access-cell">
+                    <span class="access-chip" [class.access-chip-enabled]="employee.hasAppAccess" [class.access-chip-disabled]="!employee.hasAppAccess">
+                      {{ getAppAccessLabel(employee) }}
+                    </span>
                   </div>
                 </td>
                 <td data-label="Fechas">

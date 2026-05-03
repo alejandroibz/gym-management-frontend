@@ -1,0 +1,28 @@
+<section class="login-page">
+  <div class="login-card">
+    <h1>Simbiosis Gym</h1>
+    <p>Ingresá al sistema de gestión del gimnasio.</p>
+
+    <ng-container *ngIf="isLoading$ | async; else content">
+      <p>Cargando...</p>
+    </ng-container>
+
+    <ng-template #content>
+      <button
+        *ngIf="!(isAuthenticated$ | async)"
+        type="button"
+        class="login-button"
+        (click)="login()">
+        Iniciar sesión
+      </button>
+
+      <button
+        *ngIf="isAuthenticated$ | async"
+        type="button"
+        class="login-button"
+        (click)="logout()">
+        Cerrar sesión
+      </button>
+    </ng-template>
+  </div>
+</section>

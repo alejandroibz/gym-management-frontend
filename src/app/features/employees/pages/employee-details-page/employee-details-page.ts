@@ -1,8 +1,10 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,7 +15,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
-import { Employee } from '../../models/employee.model';
+import { Employee, EmployeeAppRole, EmployeeUpdatePayload } from '../../models/employee.model';
 import { EmployeesService } from '../../services/employees.service';
 
 @Component({
@@ -25,6 +27,7 @@ import { EmployeesService } from '../../services/employees.service';
     RouterLink,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
@@ -39,6 +42,7 @@ import { EmployeesService } from '../../services/employees.service';
 })
 export class EmployeeDetailsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
@@ -51,6 +55,7 @@ export class EmployeeDetailsPageComponent {
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
   readonly errorMessage = signal('');
+  readonly appRoleOptions: EmployeeAppRole[] = ['Admin', 'SuperAdmin'];
 
   readonly form = this.formBuilder.nonNullable.group({
     employeeCategoryId: [null as number | null, [Validators.required]],
@@ -61,7 +66,9 @@ export class EmployeeDetailsPageComponent {
     email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
     fechaNacimiento: ['', [Validators.required]],
     fechaIngreso: ['', [Validators.required]],
-    sueldo: [0, [Validators.required, Validators.min(0)]]
+    sueldo: [0, [Validators.required, Validators.min(0)]],
+    createAccess: [false],
+    appRole: ['' as EmployeeAppRole | '']
   });
 
   readonly employeeName = computed(() => {
@@ -78,9 +85,16 @@ export class EmployeeDetailsPageComponent {
 
     return this.getCategoryName(employee.employeeCategoryId);
   });
+  readonly hasAppAccess = computed(() => this.employee()?.hasAppAccess ?? false);
 
   constructor() {
     this.form.disable({ emitEvent: false });
+    this.form.controls.createAccess.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateAppAccessValidators();
+      });
+
     this.loadCategories();
     this.loadEmployee();
   }
@@ -243,29 +257,21 @@ export class EmployeeDetailsPageComponent {
       email: employee.email,
       fechaNacimiento: this.toDateInputValue(employee.fechaNacimiento),
       fechaIngreso: this.toDateInputValue(employee.fechaIngreso),
-      sueldo: employee.sueldo
+      sueldo: employee.sueldo,
+      createAccess: false,
+      appRole: employee.hasAppAccess ? ((employee.appRole as EmployeeAppRole | null) ?? 'Admin') : 'Admin'
     });
+
+    this.updateAppAccessValidators();
   }
 
   private saveChanges(id: number, branchId: number): void {
-    const raw = this.form.getRawValue();
+    const payload = this.buildUpdatePayload(id, branchId);
 
     this.isSaving.set(true);
     this.errorMessage.set('');
 
-    this.employeesService.update(id, {
-      id,
-      branchId,
-      employeeCategoryId: Number(raw.employeeCategoryId),
-      nombre: raw.nombre.trim(),
-      apellido: raw.apellido.trim(),
-      dni: raw.dni.trim(),
-      telefono: raw.telefono.trim(),
-      email: raw.email.trim(),
-      fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
-      fechaIngreso: new Date(`${raw.fechaIngreso}T00:00:00`).toISOString(),
-      sueldo: Number(raw.sueldo)
-    }).subscribe({
+    this.employeesService.update(id, payload).subscribe({
       next: () => {
         this.isSaving.set(false);
         this.loadEmployee();
@@ -279,5 +285,56 @@ export class EmployeeDetailsPageComponent {
 
   private toDateInputValue(value?: string | null): string {
     return value ? value.slice(0, 10) : '';
+  }
+
+  private buildUpdatePayload(id: number, branchId: number): EmployeeUpdatePayload {
+    const raw = this.form.getRawValue();
+    const employee = this.employee();
+
+    return {
+      id,
+      branchId,
+      employeeCategoryId: Number(raw.employeeCategoryId),
+      nombre: raw.nombre.trim(),
+      apellido: raw.apellido.trim(),
+      dni: raw.dni.trim(),
+      telefono: raw.telefono.trim(),
+      email: raw.email.trim(),
+      fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
+      fechaIngreso: new Date(`${raw.fechaIngreso}T00:00:00`).toISOString(),
+      sueldo: Number(raw.sueldo),
+      appAccess: employee?.hasAppAccess
+        ? {
+            role: (raw.appRole || null) as EmployeeAppRole | null
+          }
+        : raw.createAccess
+          ? {
+              createAccess: true,
+              role: raw.appRole as EmployeeAppRole
+            }
+          : null
+    };
+  }
+
+  private updateAppAccessValidators(): void {
+    const employee = this.employee();
+    const emailControl = this.form.controls.email;
+    const appRoleControl = this.form.controls.appRole;
+    const requiresAccessFields = Boolean(employee?.hasAppAccess) || this.form.controls.createAccess.value;
+
+    emailControl.setValidators(
+      requiresAccessFields
+        ? [Validators.required, Validators.email, Validators.maxLength(120)]
+        : [Validators.email, Validators.maxLength(120)]
+    );
+
+    appRoleControl.setValidators(requiresAccessFields ? [Validators.required] : []);
+
+    if (!requiresAccessFields) {
+      appRoleControl.setValue('Admin', { emitEvent: false });
+    }
+
+    emailControl.updateValueAndValidity({ emitEvent: false });
+    appRoleControl.updateValueAndValidity({ emitEvent: false });
   }
 }

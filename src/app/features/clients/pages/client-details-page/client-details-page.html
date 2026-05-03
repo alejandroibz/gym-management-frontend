@@ -36,7 +36,12 @@
         <div class="hero-pills">
           <span class="hero-pill">{{ getMembershipLabel() }}</span>
           <span class="hero-pill">{{ currentClient.debePago ? 'Debe pago' : 'Pago al dia' }}</span>
-          <span class="hero-pill">{{ getMembershipStateLabel(currentClient.membership?.estado) }}</span>
+          <span class="hero-pill">{{ getMembershipStateLabel(currentMembership()?.estado) }}</span>
+          @for (chip of getMembershipAlertChips(currentClient); track chip.label) {
+            <span class="hero-pill" [class.hero-pill-warning]="chip.tone === 'warning'" [class.hero-pill-info]="chip.tone === 'info'" [class.hero-pill-success]="chip.tone === 'success'">
+              {{ chip.label }}
+            </span>
+          }
         </div>
       </div>
 
@@ -170,7 +175,7 @@
           </article>
           <article class="summary-item">
             <span>Estado membresia</span>
-            <strong>{{ getMembershipStateLabel(currentClient.membership?.estado) }}</strong>
+            <strong>{{ getMembershipStateLabel(currentMembership()?.estado) }}</strong>
           </article>
           <article class="summary-item">
             <span>Fecha alta</span>
@@ -186,9 +191,61 @@
           </article>
           <article class="summary-item">
             <span>Monto actual</span>
-            <strong>${{ currentClient.membership?.precioFinal ?? 0 }}</strong>
+            <strong>${{ currentMembership()?.precioFinal ?? 0 }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Proxima a vencer</span>
+            <strong>{{ currentClient.membresiaProximaAVencer ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Notificado</span>
+            <strong>{{ currentClient.membresiaVencimientoNotificado ? 'Si' : 'No' }}</strong>
           </article>
         </div>
+      </mat-card>
+
+      <mat-card class="content-card span-full">
+        <div class="card-heading">
+          <div>
+            <h2>Historial de membresias</h2>
+            <p>Detalle de la membresia actual o de las ultimas membresias informadas por la API.</p>
+          </div>
+        </div>
+
+        @if (membershipsHistory().length === 0 && !currentMembership()) {
+          <div class="empty-state compact">
+            <mat-icon>card_membership</mat-icon>
+            <p>No hay membresias registradas para este cliente.</p>
+          </div>
+        } @else {
+          <div class="payments-grid">
+            @for (membership of membershipsHistory().length > 0 ? membershipsHistory() : [currentMembership()!]; track membership.id ?? $index) {
+              <article class="payment-card">
+                <div class="payment-card-header">
+                  <div class="payment-card-copy">
+                    <strong>{{ membership.plan?.nombre || ('Plan #' + membership.membershipPlanId) }}</strong>
+                    <span>{{ getMembershipStateLabel(membership.estado) }}</span>
+                  </div>
+                </div>
+
+                <div class="payment-fields-grid">
+                  <div class="payment-field">
+                    <span>Inicio</span>
+                    <strong>{{ membership.fechaInicio | date: 'dd/MM/yyyy' }}</strong>
+                  </div>
+                  <div class="payment-field">
+                    <span>Fin</span>
+                    <strong>{{ membership.fechaFin | date: 'dd/MM/yyyy' }}</strong>
+                  </div>
+                  <div class="payment-field">
+                    <span>Precio final</span>
+                    <strong>${{ membership.precioFinal }}</strong>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
       </mat-card>
 
       <mat-card class="content-card span-full">

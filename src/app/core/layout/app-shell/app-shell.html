@@ -36,6 +36,7 @@
         </a>
 
         <a
+          *ngIf="isSuperAdmin$ | async"
           mat-list-item
           routerLink="/employees"
           routerLinkActive="active-link"
@@ -69,12 +70,24 @@
         </a>
       </mat-nav-list>
 
-      <div class="sidebar-footer" *ngIf="!isCollapsed">
-        <div class="footer-dot"></div>
-        <div>
-          <strong>Gestion central</strong>
-          <p>Accesos rapidos del sistema</p>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-card" *ngIf="!isCollapsed">
+          <div class="footer-dot"></div>
+          <div>
+            <strong>Gestion central</strong>
+            <p>Accesos rapidos del sistema</p>
+          </div>
         </div>
+
+        <button
+          mat-stroked-button
+          type="button"
+          class="logout-button"
+          (click)="logout()"
+          [attr.aria-label]="isCollapsed ? 'Cerrar sesion' : null">
+          <mat-icon>logout</mat-icon>
+          <span *ngIf="!isCollapsed">Cerrar sesion</span>
+        </button>
       </div>
     </div>
   </mat-sidenav>

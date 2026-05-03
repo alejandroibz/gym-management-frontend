@@ -2,11 +2,13 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '@auth0/auth0-angular';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { RoleService } from '../../auth/role';
 
 @Component({
   selector: 'app-shell',
@@ -28,7 +30,12 @@ import { MatButtonModule } from '@angular/material/button';
 export class AppShell {
   private readonly router = inject(Router);
   private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly roleService = inject(RoleService);
+  private readonly auth = inject(AuthService);
 
+
+  isSuperAdmin$ = this.roleService.hasRole('SuperAdmin');
+  isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
   isCollapsed = true;
   isMobile = false;
   isMobileSidebarOpen = false;
@@ -111,6 +118,14 @@ export class AppShell {
       this.isMobileSidebarOpen = false;
       this.syncLayout();
     }
+  }
+
+  logout(): void {
+    this.auth.logout({
+      logoutParams: {
+        returnTo: window.location.origin
+      }
+    });
   }
 
   private syncLayout(): void {

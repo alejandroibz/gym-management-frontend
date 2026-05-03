@@ -204,6 +204,15 @@
                     <span>
                       {{ getMembershipEndDate(client) ? ('Vence ' + (getMembershipEndDate(client) | date: 'dd/MM/yyyy')) : 'Sin vencimiento informado' }}
                     </span>
+                    @if (getMembershipNotificationChips(client).length > 0) {
+                      <div class="chip-row">
+                        @for (chip of getMembershipNotificationChips(client); track chip.label) {
+                          <span class="relation-pill" [class.relation-pill-warning]="chip.tone === 'warning'" [class.relation-pill-info]="chip.tone === 'info'" [class.relation-pill-notified]="chip.tone === 'success'">
+                            {{ chip.label }}
+                          </span>
+                        }
+                      </div>
+                    }
                   </div>
                 </td>
                 <td data-label="Contacto">

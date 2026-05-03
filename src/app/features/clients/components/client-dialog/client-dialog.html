@@ -41,12 +41,22 @@
       <mat-form-field appearance="outline">
         <mat-label>Email</mat-label>
         <input matInput type="email" formControlName="email" />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>El email es obligatorio para crear acceso.</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Ingresa un email valido.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Direccion</mat-label>
         <input matInput formControlName="direccion" />
       </mat-form-field>
+
+      <div class="access-section span-2">
+        <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
+        <p>Si lo activas, el backend creara el usuario del cliente en Auth0 con rol `User`.</p>
+      </div>
 
       <div class="membership-section span-2">
         <div class="membership-section-copy">

@@ -18,7 +18,7 @@ import {
   EmployeeDialogComponent,
   EmployeeDialogResult
 } from '../../components/employee-dialog/employee-dialog';
-import { Employee, EmployeeFilters } from '../../models/employee.model';
+import { Employee, EmployeeCreatePayload, EmployeeFilters, EmployeeUpdatePayload } from '../../models/employee.model';
 import { EmployeesService } from '../../services/employees.service';
 
 @Component({
@@ -136,6 +136,14 @@ export class EmployeesPageComponent {
     return `mailto:${email}`;
   }
 
+  getAppAccessLabel(employee: Employee): string {
+    if (!employee.hasAppAccess) {
+      return 'Sin acceso';
+    }
+
+    return employee.appRole ? employee.appRole : 'Con acceso';
+  }
+
   private openDialog(employee?: Employee): void {
     const dialogRef = this.dialog.open(EmployeeDialogComponent, {
       width: '860px',
@@ -157,18 +165,7 @@ export class EmployeesPageComponent {
       this.isSaving.set(true);
       this.errorMessage.set('');
 
-      const payload = {
-        branchId: 1,
-        employeeCategoryId: result.employeeCategoryId,
-        nombre: result.nombre,
-        apellido: result.apellido,
-        dni: result.dni,
-        telefono: result.telefono,
-        email: result.email,
-        fechaNacimiento: result.fechaNacimiento,
-        fechaIngreso: result.fechaIngreso,
-        sueldo: result.sueldo
-      };
+      const payload = this.buildEmployeePayload(result);
 
       if (result.id !== undefined) {
         this.employeesService
@@ -276,6 +273,22 @@ export class EmployeesPageComponent {
       apellido: raw.apellido.trim() || undefined,
       dni: raw.dni.trim() || undefined,
       employeeCategoryId: raw.employeeCategoryId ? Number(raw.employeeCategoryId) : undefined
+    };
+  }
+
+  private buildEmployeePayload(result: EmployeeDialogResult): EmployeeCreatePayload | EmployeeUpdatePayload {
+    return {
+      branchId: result.branchId,
+      employeeCategoryId: result.employeeCategoryId,
+      nombre: result.nombre,
+      apellido: result.apellido,
+      dni: result.dni,
+      telefono: result.telefono,
+      email: result.email,
+      fechaNacimiento: result.fechaNacimiento,
+      fechaIngreso: result.fechaIngreso,
+      sueldo: result.sueldo,
+      appAccess: result.appAccess ?? null
     };
   }
 
