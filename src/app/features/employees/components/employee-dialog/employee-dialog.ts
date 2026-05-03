@@ -132,7 +132,7 @@ export class EmployeeDialogComponent {
 
     this.dialogRef.close({
       id: this.data.employee?.id,
-      branchId: this.data.employee?.branchId ?? 1,
+      branchId: this.data.employee?.branchId ?? 2,
       employeeCategoryId: Number(value.employeeCategoryId),
       nombre: value.nombre.trim(),
       apellido: value.apellido.trim(),

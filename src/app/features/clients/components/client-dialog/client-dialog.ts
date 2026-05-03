@@ -163,7 +163,7 @@ export class ClientDialogComponent {
 
     this.dialogRef.close({
       id: this.data.client?.id,
-      branchId: this.data.client?.branchId ?? 1,
+      branchId: this.data.client?.branchId ?? 2,
       nombre: value.nombre.trim(),
       apellido: value.apellido.trim(),
       dni: value.dni.trim(),
