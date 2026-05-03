@@ -9,7 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
@@ -35,7 +34,6 @@ import { EmployeesService } from '../../services/employees.service';
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
-    MatSelectModule,
     RouterLink
   ],
   templateUrl: './employees-page.html',
@@ -59,13 +57,9 @@ export class EmployeesPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
-  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
-    nombre: [''],
-    apellido: [''],
-    dni: [''],
-    employeeCategoryId: ['']
+    search: ['']
   });
 
   readonly totalEmployees = computed(() => this.totalCount());
@@ -73,7 +67,13 @@ export class EmployeesPageComponent {
   readonly visiblePayrollTotal = computed(() => this.employees().reduce((sum, employee) => sum + employee.sueldo, 0));
   readonly activeFiltersCount = computed(() => {
     const raw = this.filtersForm.getRawValue();
-    return [raw.nombre, raw.apellido, raw.dni, raw.employeeCategoryId].filter(value => String(value).trim().length > 0).length;
+    return raw.search.trim().length > 0 ? 1 : 0;
+  });
+  readonly activeFilterChips = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    const search = raw.search.trim();
+
+    return search ? [{ label: 'Busqueda', value: search }] : [];
   });
 
   constructor() {
@@ -90,23 +90,14 @@ export class EmployeesPageComponent {
   applyFilters(): void {
     this.pageNumber.set(1);
     this.loadEmployees();
-    this.collapseFiltersOnMobile();
   }
 
   resetFilters(): void {
     this.filtersForm.reset({
-      nombre: '',
-      apellido: '',
-      dni: '',
-      employeeCategoryId: ''
+      search: ''
     });
     this.pageNumber.set(1);
     this.loadEmployees();
-    this.collapseFiltersOnMobile();
-  }
-
-  toggleFilters(): void {
-    this.filtersExpanded.update(value => !value);
   }
 
   openCreateModal(): void {
@@ -120,6 +111,10 @@ export class EmployeesPageComponent {
 
   openEmployeeDetails(employee: Employee): void {
     this.router.navigate(['/employees', employee.id]);
+  }
+
+  editEmployee(employee: Employee): void {
+    this.openDialog(employee);
   }
 
   getCategoryName(categoryId: number): string {
@@ -142,6 +137,10 @@ export class EmployeesPageComponent {
     }
 
     return employee.appRole ? employee.appRole : 'Con acceso';
+  }
+
+  hasActiveFilters(): boolean {
+    return this.activeFiltersCount() > 0;
   }
 
   private openDialog(employee?: Employee): void {
@@ -267,13 +266,18 @@ export class EmployeesPageComponent {
 
   private getFilters(): EmployeeFilters {
     const raw = this.filtersForm.getRawValue();
+    const search = raw.search.trim();
+    const filters: EmployeeFilters = {};
 
-    return {
-      nombre: raw.nombre.trim() || undefined,
-      apellido: raw.apellido.trim() || undefined,
-      dni: raw.dni.trim() || undefined,
-      employeeCategoryId: raw.employeeCategoryId ? Number(raw.employeeCategoryId) : undefined
-    };
+    if (search) {
+      if (/^\d+$/.test(search)) {
+        filters.dni = search;
+      } else {
+        filters.nombre = search;
+      }
+    }
+
+    return filters;
   }
 
   private buildEmployeePayload(result: EmployeeDialogResult): EmployeeCreatePayload | EmployeeUpdatePayload {
@@ -298,15 +302,5 @@ export class EmployeesPageComponent {
     requestAnimationFrame(() => {
       window.dispatchEvent(new Event('resize'));
     });
-  }
-
-  private getInitialFiltersExpanded(): boolean {
-    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
-  }
-
-  private collapseFiltersOnMobile(): void {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
-      this.filtersExpanded.set(false);
-    }
   }
 }

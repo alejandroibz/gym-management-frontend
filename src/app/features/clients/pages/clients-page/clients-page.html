@@ -1,103 +1,71 @@
 <section class="clients-page">
   <header class="page-header">
-    <div class="page-header-copy">
-      <span class="eyebrow-pill">
-        <mat-icon>groups</mat-icon>
-        ABM de clientes
-      </span>
-
-      <div>
-        <p class="eyebrow">Comunidad activa</p>
-        <h1>Clientes</h1>
-        <p class="subtitle">
-          Gestiona altas, filtros y seguimiento comercial con una vista mas clara, ordenada y lista para trabajar desde cualquier dispositivo.
-        </p>
-      </div>
-
-      <div class="header-highlights">
-        <div class="highlight-chip">
-          <mat-icon>badge</mat-icon>
-          <span>Datos personales</span>
+    <div class="page-title">
+      <h1>Clientes</h1>
+      <p>Gestion de clientes</p>
+      <div class="header-stats" aria-label="Metricas de clientes">
+        <div class="metric-item">
+          <span class="metric-label">Total</span>
+          <strong class="metric-value">{{ totalClients() }}</strong>
         </div>
-
-        <div class="highlight-chip">
-          <mat-icon>call</mat-icon>
-          <span>Contacto rapido</span>
+        <div class="metric-item">
+          <span class="metric-label">Con membresia</span>
+          <strong class="metric-value">{{ clientsWithMembership() }}</strong>
         </div>
-
-        <div class="highlight-chip">
-          <mat-icon>card_membership</mat-icon>
-          <span>Membresias vinculadas</span>
+        <div class="metric-item">
+          <span class="metric-label">Pagos pendientes</span>
+          <strong class="metric-value">{{ pendingPaymentsCount() }}</strong>
         </div>
       </div>
     </div>
 
-    <div class="page-header-side">
-      <div class="header-actions">
-        <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
-          <mat-icon>person_add</mat-icon>
-          Nuevo cliente
-        </button>
+    <div class="header-actions" aria-label="Acciones principales de clientes">
+      <button mat-stroked-button type="button" class="secondary-action compact-action" routerLink="/dashboard">
+        <mat-icon>space_dashboard</mat-icon>
+        Panel
+      </button>
 
-        <button mat-stroked-button type="button" class="secondary-action" routerLink="/membership-plans">
-          <mat-icon>card_membership</mat-icon>
-          Planes
-        </button>
-      </div>
+      <button mat-stroked-button type="button" class="secondary-action" routerLink="/membership-plans">
+        <mat-icon>card_membership</mat-icon>
+        Planes
+      </button>
 
-      <div class="header-note">
-        <mat-icon>insights</mat-icon>
-        <span>Centraliza informacion clave para ventas, seguimiento y atencion al cliente.</span>
-      </div>
+      <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+        <mat-icon>person_add</mat-icon>
+        Nuevo cliente
+      </button>
     </div>
   </header>
 
-  <section class="stats-grid">
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell accent">
-        <mat-icon>groups</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Total clientes</span>
-        <strong>{{ totalClients() }}</strong>
-        <small>Registros informados por la API</small>
-      </div>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell info">
-        <mat-icon>card_membership</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Con membresia asignada</span>
-        <strong>{{ clientsWithMembership() }}</strong>
-        <small>Clientes cargados en la vista actual con plan vinculado</small>
-      </div>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell success">
-        <mat-icon>payments</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Pagos pendientes</span>
-        <strong>{{ pendingPaymentsCount() }}</strong>
-        <small>Clientes de esta vista que requieren seguimiento de cobro</small>
-      </div>
-    </mat-card>
-  </section>
-
   <mat-card class="list-card">
-    <div class="card-heading">
-      <div class="card-heading-copy">
-        <h2>Clientes del gimnasio</h2>
-        <p>Filtra por datos principales y opera sobre cada cliente sin perder contexto.</p>
-      </div>
+    <div class="list-toolbar">
+      <form class="quick-search" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Buscar por nombre o DNI</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input
+            matInput
+            formControlName="search"
+            autocomplete="off"
+            placeholder="Buscar por nombre o DNI"
+            aria-label="Buscar por nombre o DNI" />
+        </mat-form-field>
 
-      <div class="heading-badge">
-        <mat-icon>tune</mat-icon>
-        <span>Panel operativo</span>
-      </div>
+        <button mat-flat-button type="submit" class="search-button" [disabled]="isLoading()">
+          <mat-icon>search</mat-icon>
+          Buscar
+        </button>
+      </form>
+    </div>
+
+    <div class="filters-feedback" aria-live="polite">
+      @if (activeFilterChips().length === 0) {
+        <span class="filters-empty">Sin filtros activos</span>
+      } @else {
+        @for (chip of activeFilterChips(); track chip.label) {
+          <span class="filter-chip">{{ chip.label }}: {{ chip.value }}</span>
+        }
+      }
     </div>
 
     @if (errorMessage()) {
@@ -107,60 +75,6 @@
       </div>
     }
 
-    <div class="filters-toolbar">
-      <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleFilters()">
-        <mat-icon>{{ filtersExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
-        {{ filtersExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
-      </button>
-
-      <span class="filters-summary">
-        {{ activeFiltersCount() === 0 ? 'Sin filtros activos' : activeFiltersCount() + ' filtros activos' }}
-      </span>
-    </div>
-
-    @if (filtersExpanded()) {
-      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
-        <div class="filter-block">
-          <span class="filter-label">Nombre</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Buscar por nombre</mat-label>
-            <mat-icon matPrefix>person_search</mat-icon>
-            <input matInput formControlName="nombre" />
-          </mat-form-field>
-        </div>
-
-        <div class="filter-block">
-          <span class="filter-label">Apellido</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Buscar por apellido</mat-label>
-            <mat-icon matPrefix>badge</mat-icon>
-            <input matInput formControlName="apellido" />
-          </mat-form-field>
-        </div>
-
-        <div class="filter-block">
-          <span class="filter-label">Documento</span>
-          <mat-form-field appearance="outline">
-            <mat-label>Buscar por DNI</mat-label>
-            <mat-icon matPrefix>credit_card</mat-icon>
-            <input matInput formControlName="dni" />
-          </mat-form-field>
-        </div>
-
-        <div class="filter-actions">
-          <button mat-flat-button type="submit" class="action-submit" [disabled]="isLoading()">
-            <mat-icon>search</mat-icon>
-            Aplicar filtros
-          </button>
-
-          <button mat-stroked-button type="button" class="action-reset" [disabled]="isLoading()" (click)="resetFilters()">
-            <mat-icon>restart_alt</mat-icon>
-            Limpiar
-          </button>
-        </div>
-      </form>
-    }
-
     @if (isLoading()) {
       <div class="loading-state">
         <mat-spinner diameter="36"></mat-spinner>
@@ -168,12 +82,28 @@
       </div>
     } @else if (clients().length === 0) {
       <div class="empty-state">
-        <mat-icon>person</mat-icon>
-        <h3>Sin clientes para mostrar</h3>
-        <p>Crea un nuevo cliente o ajusta los filtros para encontrar resultados.</p>
+        <div class="empty-icon">
+          <mat-icon>person_search</mat-icon>
+        </div>
+        <h2>{{ hasActiveFilters() ? 'Sin clientes para mostrar' : 'No hay clientes todavia' }}</h2>
+        <p>Crea tu primer cliente o ajusta los filtros para encontrar resultados.</p>
+
+        <div class="empty-actions">
+          @if (hasActiveFilters()) {
+            <button mat-stroked-button type="button" class="action-reset" (click)="resetFilters()">
+              <mat-icon>restart_alt</mat-icon>
+              Limpiar filtros
+            </button>
+          } @else {
+            <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
+              <mat-icon>person_add</mat-icon>
+              Crear cliente
+            </button>
+          }
+        </div>
       </div>
     } @else {
-      <div class="table-wrapper">
+      <div class="table-wrapper desktop-list">
         <table class="clients-table">
           <thead>
             <tr>
@@ -181,24 +111,23 @@
               <th>DNI</th>
               <th>Membresia</th>
               <th>Contacto</th>
-              <th>Direccion</th>
-              <th>Estado de pago</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (client of clients(); track client.id) {
               <tr>
-                <td data-label="Cliente">
+                <td>
                   <div class="client-cell">
                     <strong>{{ client.nombre }} {{ client.apellido }}</strong>
                     <span>{{ client.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
                   </div>
                 </td>
-                <td data-label="DNI">
+                <td>
                   <span class="dni-pill">{{ client.dni }}</span>
                 </td>
-                <td data-label="Membresia">
+                <td>
                   <div class="client-cell">
                     <strong>{{ getMembershipLabel(client) }}</strong>
                     <span>
@@ -215,13 +144,9 @@
                     }
                   </div>
                 </td>
-                <td data-label="Contacto">
+                <td>
                   <div class="contact-cell">
-                    <a
-                      class="contact-link"
-                      [href]="getWhatsAppLink(client.telefono)"
-                      target="_blank"
-                      rel="noopener noreferrer">
+                    <a class="contact-link" [href]="getWhatsAppLink(client.telefono)" target="_blank" rel="noopener noreferrer">
                       {{ client.telefono }}
                     </a>
                     <a class="contact-link" [href]="getMailLink(client.email)">
@@ -229,25 +154,19 @@
                     </a>
                   </div>
                 </td>
-                <td data-label="Direccion">{{ client.direccion }}</td>
-                <td data-label="Estado de pago">
-                  <div class="relations-cell">
-                    <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
-                      {{ getPaymentStatusLabel(client) }}
-                    </span>
-                  </div>
+                <td>
+                  <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
+                    {{ getPaymentStatusLabel(client) }}
+                  </span>
                 </td>
-                <td data-label="Acciones">
+                <td>
                   <div class="action-buttons">
-                    <button
-                      mat-icon-button
-                      type="button"
-                      class="icon-action-button"
-                      [disabled]="isSaving()"
-                      title="Abrir cliente"
-                      aria-label="Abrir cliente"
-                      (click)="openClientDetails(client)">
-                      <mat-icon>arrow_forward</mat-icon>
+                    <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
+                      <mat-icon>visibility</mat-icon>
+                      Ver
+                    </button>
+                    <button mat-icon-button type="button" class="icon-action-button" [disabled]="isSaving()" aria-label="Editar cliente" (click)="editClient(client)">
+                      <mat-icon>edit</mat-icon>
                     </button>
                   </div>
                 </td>
@@ -255,6 +174,64 @@
             }
           </tbody>
         </table>
+      </div>
+
+      <div class="mobile-list" aria-label="Listado de clientes">
+        @for (client of clients(); track client.id) {
+          <article class="client-card">
+            <div class="client-card-header">
+              <div>
+                <h2>{{ client.nombre }} {{ client.apellido }}</h2>
+                <span>DNI {{ client.dni }}</span>
+              </div>
+              <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
+                {{ getPaymentStatusLabel(client) }}
+              </span>
+            </div>
+
+            <div class="client-card-body">
+              <div>
+                <mat-icon>card_membership</mat-icon>
+                <span>{{ getMembershipLabel(client) }}</span>
+              </div>
+              <div>
+                <mat-icon>event</mat-icon>
+                <span>
+                  {{ getMembershipEndDate(client) ? ('Vence ' + (getMembershipEndDate(client) | date: 'dd/MM/yyyy')) : 'Sin vencimiento informado' }}
+                </span>
+              </div>
+              <div>
+                <mat-icon>call</mat-icon>
+                <a [href]="getWhatsAppLink(client.telefono)" target="_blank" rel="noopener noreferrer">{{ client.telefono }}</a>
+              </div>
+              <div>
+                <mat-icon>mail</mat-icon>
+                <a [href]="getMailLink(client.email)">{{ client.email }}</a>
+              </div>
+            </div>
+
+            @if (getMembershipNotificationChips(client).length > 0) {
+              <div class="chip-row">
+                @for (chip of getMembershipNotificationChips(client); track chip.label) {
+                  <span class="relation-pill" [class.relation-pill-warning]="chip.tone === 'warning'" [class.relation-pill-info]="chip.tone === 'info'" [class.relation-pill-notified]="chip.tone === 'success'">
+                    {{ chip.label }}
+                  </span>
+                }
+              </div>
+            }
+
+            <div class="client-card-actions">
+              <button mat-flat-button type="button" class="row-action primary-row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
+                <mat-icon>visibility</mat-icon>
+                Ver
+              </button>
+              <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="editClient(client)">
+                <mat-icon>edit</mat-icon>
+                Editar
+              </button>
+            </div>
+          </article>
+        }
       </div>
     }
 

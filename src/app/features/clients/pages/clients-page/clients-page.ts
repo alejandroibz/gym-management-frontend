@@ -53,12 +53,9 @@ export class ClientsPageComponent {
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
-  readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
-    nombre: [''],
-    apellido: [''],
-    dni: ['']
+    search: ['']
   });
 
   readonly totalClients = computed(() => this.totalCount());
@@ -66,7 +63,17 @@ export class ClientsPageComponent {
   readonly pendingPaymentsCount = computed(() => this.clients().filter(client => client.debePago).length);
   readonly activeFiltersCount = computed(() => {
     const raw = this.filtersForm.getRawValue();
-    return [raw.nombre, raw.apellido, raw.dni].filter(value => value.trim().length > 0).length;
+    return raw.search.trim().length > 0 ? 1 : 0;
+  });
+  readonly activeFilterChips = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    const chips: Array<{ label: string; value: string }> = [];
+
+    if (raw.search.trim()) {
+      chips.push({ label: 'Busqueda', value: raw.search.trim() });
+    }
+
+    return chips;
   });
 
   constructor() {
@@ -83,22 +90,14 @@ export class ClientsPageComponent {
   applyFilters(): void {
     this.pageNumber.set(1);
     this.loadClients();
-    this.collapseFiltersOnMobile();
   }
 
   resetFilters(): void {
     this.filtersForm.reset({
-      nombre: '',
-      apellido: '',
-      dni: ''
+      search: ''
     });
     this.pageNumber.set(1);
     this.loadClients();
-    this.collapseFiltersOnMobile();
-  }
-
-  toggleFilters(): void {
-    this.filtersExpanded.update(value => !value);
   }
 
   openCreateModal(): void {
@@ -112,6 +111,10 @@ export class ClientsPageComponent {
 
   openClientDetails(client: Client): void {
     this.router.navigate(['/clients', client.id]);
+  }
+
+  editClient(client: Client): void {
+    this.openDialog(client);
   }
 
   removeClient(client: Client): void {
@@ -157,6 +160,10 @@ export class ClientsPageComponent {
 
   getMailLink(email: string): string {
     return `mailto:${email}`;
+  }
+
+  hasActiveFilters(): boolean {
+    return this.activeFiltersCount() > 0;
   }
 
   private openDialog(client?: Client): void {
@@ -310,12 +317,23 @@ export class ClientsPageComponent {
 
   private getFilters(): ClientFilters {
     const raw = this.filtersForm.getRawValue();
+    const search = raw.search.trim();
+    const filters: ClientFilters = {};
 
-    return {
-      nombre: raw.nombre.trim() || undefined,
-      apellido: raw.apellido.trim() || undefined,
-      dni: raw.dni.trim() || undefined
-    };
+    if (search) {
+      if (/^\d+$/.test(search)) {
+        filters.dni = search;
+      } else {
+        const [nombre, ...apellidoParts] = search.split(/\s+/);
+        filters.nombre = nombre;
+
+        if (apellidoParts.length > 0) {
+          filters.apellido = apellidoParts.join(' ');
+        }
+      }
+    }
+
+    return filters;
   }
 
   private buildClientPayload(result: ClientDialogResult): ClientCreatePayload | ClientUpdatePayload {
@@ -354,15 +372,5 @@ export class ClientsPageComponent {
       const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
       return rightDate - leftDate;
     })[0] ?? null;
-  }
-
-  private getInitialFiltersExpanded(): boolean {
-    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
-  }
-
-  private collapseFiltersOnMobile(): void {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
-      this.filtersExpanded.set(false);
-    }
   }
 }

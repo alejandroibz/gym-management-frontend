@@ -1,57 +1,48 @@
 <section class="movements-page">
   <header class="page-header">
-    <div class="page-header-copy">
-      <span class="eyebrow-pill">
-        <mat-icon>payments</mat-icon>
-        Centro financiero
-      </span>
-
-      <div>
-        <p class="eyebrow">Pagos y caja</p>
-        <h1>Movimientos</h1>
-        <p class="subtitle">
-          Registra cobros, carga ingresos o egresos manuales y sigue el estado de la caja desde una sola pantalla.
-        </p>
-      </div>
-
-      <div class="section-shortcuts">
-        <a class="shortcut-chip" href="#pagos">
-          <mat-icon>receipt_long</mat-icon>
-          Pagos
-        </a>
-        <a class="shortcut-chip" href="#caja">
-          <mat-icon>swap_horiz</mat-icon>
-          Caja
-        </a>
-        <a class="shortcut-chip" href="#analisis">
-          <mat-icon>insights</mat-icon>
-          Analisis
-        </a>
+    <div class="page-title">
+      <h1>Movimientos</h1>
+      <p>Gestion de pagos y caja</p>
+      <div class="header-stats" aria-label="Metricas de movimientos">
+        <div class="metric-item">
+          <span class="metric-label">Balance</span>
+          <strong class="metric-value">{{ formatCurrency(balance()) }}</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Neto del mes</span>
+          <strong class="metric-value">{{ formatCurrency(monthlyNetAmount()) }}</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Pagos visibles</span>
+          <strong class="metric-value">{{ payments().length }}</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Movimientos</span>
+          <strong class="metric-value">{{ cashMovements().length }}</strong>
+        </div>
       </div>
     </div>
 
-    <div class="page-header-side">
-      <div class="header-actions">
-        <button mat-flat-button type="button" class="header-action-primary" [disabled]="isLoadingLookups() || isSavingPayment()" (click)="openPaymentDialog()">
-          <mat-icon>add_card</mat-icon>
-          Registrar pago
-        </button>
+    <div class="header-actions" aria-label="Acciones principales de movimientos">
+      <button mat-stroked-button type="button" class="header-action-secondary" routerLink="/dashboard">
+        <mat-icon>space_dashboard</mat-icon>
+        Panel
+      </button>
 
-        <button mat-stroked-button type="button" class="header-action-secondary" [disabled]="isLoadingLookups() || isSavingMovement()" (click)="openMovementDialog()">
-          <mat-icon>playlist_add</mat-icon>
-          Registrar movimiento
-        </button>
+      <button mat-stroked-button type="button" class="header-action-secondary" routerLink="/movements/categories">
+        <mat-icon>category</mat-icon>
+        Categorias
+      </button>
 
-        <button mat-stroked-button type="button" class="header-action-secondary" routerLink="/movements/categories">
-          <mat-icon>category</mat-icon>
-          Categorias
-        </button>
-      </div>
+      <button mat-stroked-button type="button" class="header-action-secondary" [disabled]="isLoadingLookups() || isSavingMovement()" (click)="openMovementDialog()">
+        <mat-icon>playlist_add</mat-icon>
+        Movimiento
+      </button>
 
-      <div class="header-note">
-        <mat-icon>account_balance_wallet</mat-icon>
-        <span>Unifica cobros, movimientos manuales y lectura financiera mensual sin cambiar de modulo.</span>
-      </div>
+      <button mat-flat-button type="button" class="header-action-primary" [disabled]="isLoadingLookups() || isSavingPayment()" (click)="openPaymentDialog()">
+        <mat-icon>add_card</mat-icon>
+        Registrar pago
+      </button>
     </div>
   </header>
 
@@ -61,52 +52,6 @@
       <span>{{ errorMessage() }}</span>
     </div>
   }
-
-  <section class="stats-grid">
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell accent">
-        <mat-icon>account_balance_wallet</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Balance actual</span>
-        <strong>{{ formatCurrency(balance()) }}</strong>
-        <small>Saldo informado por la API</small>
-      </div>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell success">
-        <mat-icon>trending_up</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Neto del mes</span>
-        <strong>{{ formatCurrency(monthlyNetAmount()) }}</strong>
-        <small>Resumen por categorias del periodo analizado</small>
-      </div>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell info">
-        <mat-icon>receipt_long</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Pagos visibles</span>
-        <strong>{{ payments().length }}</strong>
-        <small>{{ formatCurrency(paymentTotalAmount()) }} en el filtro actual</small>
-      </div>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <div class="stat-icon-shell warn">
-        <mat-icon>swap_horiz</mat-icon>
-      </div>
-      <div class="stat-copy">
-        <span class="stat-label">Movimientos visibles</span>
-        <strong>{{ cashMovements().length }}</strong>
-        <small>{{ formatCurrency(visibleNetAmount()) }} netos en pantalla</small>
-      </div>
-    </mat-card>
-  </section>
 
   <section class="content-grid">
     <div class="main-column">
@@ -187,7 +132,47 @@
             <p>No hay pagos para mostrar con los filtros actuales.</p>
           </div>
         } @else {
-          <div class="cards-list">
+          <div class="table-wrapper desktop-list">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Metodo</th>
+                  <th>Periodo</th>
+                  <th>Fecha</th>
+                  <th>Categoria</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (payment of payments(); track payment.id) {
+                  <tr>
+                    <td>
+                      <div class="record-cell">
+                        <strong>{{ getClientName(payment.clientId) }}</strong>
+                        <span>{{ payment.membershipPlanNombre || 'Membresia sin nombre' }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <strong class="amount-cell">{{ formatCurrency(payment.monto) }}</strong>
+                    </td>
+                    <td>
+                      <span class="status-chip" [class.confirmed]="isConfirmedPayment(payment.estado)" [class.pending]="!isConfirmedPayment(payment.estado)">
+                        {{ isConfirmedPayment(payment.estado) ? 'Confirmado' : payment.estado }}
+                      </span>
+                    </td>
+                    <td>{{ payment.paymentMethodNombre || 'Sin dato' }}</td>
+                    <td>{{ formatMonthYear(paymentFiltersForm.controls.periodMonth.value, paymentFiltersForm.controls.periodYear.value) }}</td>
+                    <td>{{ payment.fechaPago | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ payment.cashMovementCategoryNombre || 'Sin dato' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cards-list mobile-list">
             @for (payment of payments(); track payment.id) {
               <article class="record-card">
                 <div class="record-head">
@@ -313,7 +298,50 @@
             <p>No hay movimientos para mostrar con los filtros actuales.</p>
           </div>
         } @else {
-          <div class="cards-list">
+          <div class="table-wrapper desktop-list">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Movimiento</th>
+                  <th>Monto</th>
+                  <th>Tipo</th>
+                  <th>Metodo</th>
+                  <th>Fecha</th>
+                  <th>Origen</th>
+                  <th>Descripcion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (movement of cashMovements(); track movement.id) {
+                  <tr [class.expense-row]="movement.tipoMovimiento === 2">
+                    <td>
+                      <div class="record-cell">
+                        <strong>{{ getCategoryName(movement.cashMovementCategoryId) }}</strong>
+                        <span>{{ movement.descripcion }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <strong class="amount-cell" [class.expense-amount]="movement.tipoMovimiento === 2">
+                        {{ formatCurrency(movement.monto) }}
+                      </strong>
+                    </td>
+                    <td>
+                      <span class="status-chip" [class.confirmed]="movement.tipoMovimiento === 1" [class.expense]="movement.tipoMovimiento === 2">
+                        <mat-icon>{{ getMovementTypeIcon(movement.tipoMovimiento) }}</mat-icon>
+                        {{ getMovementTypeLabel(movement.tipoMovimiento) }}
+                      </span>
+                    </td>
+                    <td>{{ movement.metodoPago || 'No informado' }}</td>
+                    <td>{{ movement.fechaMovimiento | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ movement.paymentId ? 'Vinculado a pago' : (movement.employeeId ? 'Vinculado a empleado' : 'Manual') }}</td>
+                    <td>{{ movement.descripcion }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cards-list mobile-list">
             @for (movement of cashMovements(); track movement.id) {
               <article class="record-card" [class.record-card-expense]="movement.tipoMovimiento === 2">
                 <div class="record-head">
