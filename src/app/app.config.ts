@@ -6,6 +6,12 @@ import { authHttpInterceptorFn, provideAuth0 } from '@auth0/auth0-angular';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 
+const appBasePath = '/gym-management-frontend/';
+
+const redirectUri = window.location.hostname.includes('github.io')
+  ? `${window.location.origin}${appBasePath}`
+  : window.location.origin;
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -15,7 +21,7 @@ export const appConfig: ApplicationConfig = {
       domain: environment.auth0.domain,
       clientId: environment.auth0.clientId,
       authorizationParams: {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
         audience: environment.auth0.audience
       },
       httpInterceptor: {

@@ -40,9 +40,15 @@ export class LoginComponent {
   }
 
   logout(): void {
+    const appBasePath = '/gym-management-frontend/';
+
+    const returnTo = window.location.hostname.includes('github.io')
+      ? `${window.location.origin}${appBasePath}`
+      : window.location.origin;
+
     this.auth.logout({
       logoutParams: {
-        returnTo: window.location.origin
+        returnTo
       }
     });
   }
