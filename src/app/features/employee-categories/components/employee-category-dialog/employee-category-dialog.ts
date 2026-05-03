@@ -76,7 +76,7 @@ export class EmployeeCategoryDialogComponent {
       id: this.data.category?.id,
       nombre: value.nombre.trim(),
       descripcion: value.descripcion.trim(),
-      gymId: this.data.category?.gymId ?? 1
+      gymId: this.data.category?.gymId ?? 2
     });
   }
 }

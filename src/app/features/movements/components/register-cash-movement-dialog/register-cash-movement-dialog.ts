@@ -106,8 +106,8 @@ export class RegisterCashMovementDialogComponent {
     const raw = this.form.getRawValue();
 
     this.dialogRef.close({
-      gymId: 1,
-      branchId: 1,
+      gymId: 2,
+      branchId: 2,
       cashMovementCategoryId: Number(raw.cashMovementCategoryId),
       tipoMovimiento: Number(raw.tipoMovimiento) as CashMovementType,
       monto: Number(raw.monto),

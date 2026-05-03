@@ -85,7 +85,7 @@ export class CashMovementCategoryDialogComponent {
 
     this.dialogRef.close({
       id: this.data.category?.id,
-      gymId: this.data.category?.gymId ?? 1,
+      gymId: this.data.category?.gymId ?? 2,
       nombre: value.nombre.trim(),
       descripcion: value.descripcion.trim(),
       tipoMovimiento: value.tipoMovimiento

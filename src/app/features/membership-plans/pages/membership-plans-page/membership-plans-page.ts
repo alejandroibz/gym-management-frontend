@@ -194,7 +194,7 @@ export class MembershipPlansPageComponent {
       this.errorMessage.set('');
 
       const payload = {
-        gymId: plan?.gymId ?? 1,
+        gymId: plan?.gymId ?? 2,
         nombre: result.nombre,
         descripcion: result.descripcion,
         precio: result.precio,
