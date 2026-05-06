@@ -9,7 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
-import { Client } from '../../../clients/models/client.model';
+import { Client, ClientMembership } from '../../../clients/models/client.model';
+import { ClientsService } from '../../../clients/services/clients.service';
 import { Employee } from '../../../employees/models/employee.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { Payment, PaymentCreatePayload } from '../../../payments/models/payment.model';
@@ -47,10 +48,13 @@ export interface RegisterPaymentDialogData {
 export class RegisterPaymentDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<RegisterPaymentDialogComponent, PaymentCreatePayload>);
+  private readonly clientsService = inject(ClientsService);
+  private selectedClientLookupId = 0;
   readonly data = inject<RegisterPaymentDialogData>(MAT_DIALOG_DATA);
 
   readonly isEditing = !!this.data.payment;
   readonly selectedClient = signal<Client | null>(this.getInitialClient());
+  readonly isLoadingSelectedClient = signal(false);
 
   readonly form = this.formBuilder.group({
     clientId: [this.data.payment?.clientId ?? (null as number | null), [Validators.required]],
@@ -71,8 +75,8 @@ export class RegisterPaymentDialogComponent {
   readonly submitLabel = this.isEditing ? 'Guardar cambios' : 'Registrar cobro';
 
   readonly membershipLabel = computed(() => {
-    const client = this.selectedClient();
-    return client?.membership?.plan?.nombre ?? (client?.membership ? `Plan #${client.membership.membershipPlanId}` : 'Sin membresia activa');
+    const membership = this.getEffectiveMembership(this.selectedClient());
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia activa');
   });
 
   close(): void {
@@ -82,21 +86,23 @@ export class RegisterPaymentDialogComponent {
   onClientChange(): void {
     const clientId = Number(this.form.controls.clientId.value);
     const client = this.data.clients.find(item => item.id === clientId) ?? null;
+    const membership = this.getEffectiveMembership(client);
 
     this.selectedClient.set(client);
 
-    if (!client?.membership?.id) {
-      this.form.patchValue({
-        clientMembershipId: 0,
-        monto: 0
-      });
+    if (this.applyMembership(membership)) {
+      this.cancelSelectedClientLookup();
       return;
     }
 
-    this.form.patchValue({
-      clientMembershipId: client.membership.id,
-      monto: client.membership.precioFinal
-    });
+    this.clearMembership();
+
+    if (clientId) {
+      this.loadSelectedClientDetails(clientId);
+      return;
+    }
+
+    this.cancelSelectedClientLookup();
   }
 
   submit(): void {
@@ -136,9 +142,88 @@ export class RegisterPaymentDialogComponent {
     return !!employee.email?.trim();
   }
 
+  hasSelectedClientMembership(): boolean {
+    return !!this.getEffectiveMembership(this.selectedClient())?.id;
+  }
+
   private getInitialClient(): Client | null {
     const clientId = this.data.payment?.clientId;
     return clientId ? this.data.clients.find(item => item.id === clientId) ?? null : null;
+  }
+
+  private loadSelectedClientDetails(clientId: number): void {
+    const lookupId = ++this.selectedClientLookupId;
+    this.isLoadingSelectedClient.set(true);
+
+    this.clientsService.getById(clientId).subscribe({
+      next: client => {
+        if (lookupId !== this.selectedClientLookupId || Number(this.form.controls.clientId.value) !== clientId) {
+          return;
+        }
+
+        this.selectedClient.set(client);
+        this.applyMembership(this.getEffectiveMembership(client)) || this.clearMembership();
+        this.isLoadingSelectedClient.set(false);
+      },
+      error: () => {
+        if (lookupId !== this.selectedClientLookupId) {
+          return;
+        }
+
+        if (Number(this.form.controls.clientId.value) === clientId) {
+          this.clearMembership();
+        }
+
+        this.isLoadingSelectedClient.set(false);
+      }
+    });
+  }
+
+  private cancelSelectedClientLookup(): void {
+    this.selectedClientLookupId++;
+    this.isLoadingSelectedClient.set(false);
+  }
+
+  private applyMembership(membership: ClientMembership | null): boolean {
+    if (!membership?.id) {
+      return false;
+    }
+
+    this.form.patchValue({
+      clientMembershipId: membership.id,
+      monto: membership.precioFinal
+    });
+
+    return true;
+  }
+
+  private clearMembership(): void {
+    this.form.patchValue({
+      clientMembershipId: 0,
+      monto: 0
+    });
+  }
+
+  private getEffectiveMembership(client: Client | null): ClientMembership | null {
+    if (!client) {
+      return null;
+    }
+
+    if (client.membership) {
+      return client.membership;
+    }
+
+    const history = client.membershipsHistory ?? [];
+
+    if (history.length === 0) {
+      return null;
+    }
+
+    return [...history].sort((left, right) => {
+      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
+      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
+      return rightDate - leftDate;
+    })[0] ?? null;
   }
 
   private toDateInputValue(value: string): string {

@@ -25,7 +25,9 @@
       <div class="context-box span-2">
         <span class="context-label">Membresia activa</span>
         <strong>{{ membershipLabel() }}</strong>
-        @if (!selectedClient()?.membership?.id && form.controls.clientId.value) {
+        @if (isLoadingSelectedClient()) {
+          <small>Buscando la membresia del cliente...</small>
+        } @else if (!hasSelectedClientMembership() && form.controls.clientId.value) {
           <small>El cliente seleccionado no tiene una membresia activa para asociar el cobro.</small>
         }
       </div>
