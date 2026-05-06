@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResponse } from '../../../core/models/paged-response.model';
-import { Payment, PaymentCreatePayload, PaymentFilters } from '../models/payment.model';
+import { Payment, PaymentCreatePayload, PaymentFilters, PaymentUpdatePayload } from '../models/payment.model';
 
 interface RawPagedResponse<T> {
   items?: T[];
@@ -46,6 +46,14 @@ export class PaymentsService {
 
   create(payload: PaymentCreatePayload): Observable<void> {
     return this.http.post<void>(this.apiUrl, payload);
+  }
+
+  update(id: number, payload: PaymentUpdatePayload): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   confirm(id: number, cashMovementCategoryId: number): Observable<void> {

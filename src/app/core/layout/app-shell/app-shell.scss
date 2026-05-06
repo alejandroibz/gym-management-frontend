@@ -197,6 +197,29 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+.sidebar-user-card {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+}
+
+.sidebar-user-card span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sidebar-user-card strong {
+  color: #fff;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .footer-dot {
   width: 10px;
   height: 10px;

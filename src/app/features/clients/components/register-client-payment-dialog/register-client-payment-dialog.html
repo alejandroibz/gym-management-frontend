@@ -63,6 +63,18 @@
           <mat-label>Ano del periodo</mat-label>
           <input matInput type="number" min="2000" formControlName="periodYear" />
         </mat-form-field>
+
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>Empleado responsable</mat-label>
+          <mat-select formControlName="collectedByEmployeeEmail">
+            @for (employee of employees(); track employee.id) {
+              <mat-option [value]="employee.email" [disabled]="!canSelectEmployee(employee)">
+                {{ getEmployeeLabel(employee) }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-error>Selecciona un empleado con email.</mat-error>
+        </mat-form-field>
       </div>
 
       <div class="dialog-actions">

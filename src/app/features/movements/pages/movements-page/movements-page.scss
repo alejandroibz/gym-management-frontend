@@ -178,7 +178,7 @@
 }
 
 .content-grid {
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+  grid-template-columns: 1fr;
   align-items: start;
 }
 
@@ -465,7 +465,7 @@ mat-paginator {
   background: transparent;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1600px) {
   .content-grid {
     grid-template-columns: 1fr;
   }

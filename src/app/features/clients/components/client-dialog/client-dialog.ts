@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -27,8 +27,10 @@ export interface ClientDialogResult {
   telefono: string;
   email: string;
   direccion: string;
+  tieneLesion: boolean;
+  observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
-  membership: ClientMembership;
+  membership?: ClientMembership | null;
 }
 
 @Component({
@@ -55,6 +57,7 @@ export class ClientDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<ClientDialogComponent, ClientDialogResult>);
   readonly data = inject<ClientDialogData>(MAT_DIALOG_DATA);
   readonly today = new Date().toISOString().slice(0, 10);
+  readonly observacionesMaxLength = 3000;
 
   private readonly currentMembership = this.data.client?.membership ?? null;
 
@@ -81,7 +84,13 @@ export class ClientDialogComponent {
       this.data.client?.direccion ?? '',
       [Validators.required, Validators.minLength(3), Validators.maxLength(160)]
     ],
+    tieneLesion: [this.data.client?.tieneLesion ?? false],
+    observaciones: [
+      this.data.client?.observaciones ?? '',
+      [Validators.maxLength(this.observacionesMaxLength)]
+    ],
     createAccess: [false],
+    hasMembership: [!!this.currentMembership || (!this.isEditing && this.data.membershipPlans.length > 0)],
     membershipPlanId: [this.currentMembership?.membershipPlanId ?? null, [Validators.required]],
     fechaInicio: [
       this.toDateInputValue(this.currentMembership?.fechaInicio) || this.today,
@@ -93,6 +102,8 @@ export class ClientDialogComponent {
     ],
     precioFinal: [this.currentMembership?.precioFinal ?? null, [Validators.required, Validators.min(0)]]
   });
+  readonly observacionesLength = signal(this.form.controls.observaciones.value.length);
+  readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
 
   constructor() {
     this.form.controls.createAccess.valueChanges
@@ -101,7 +112,20 @@ export class ClientDialogComponent {
         this.updateEmailValidators();
       });
 
+    this.form.controls.hasMembership.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateMembershipValidators();
+      });
+
+    this.form.controls.observaciones.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(value => {
+        this.observacionesLength.set(value.length);
+      });
+
     this.updateEmailValidators();
+    this.updateMembershipValidators();
   }
 
   get isEditing(): boolean {
@@ -171,14 +195,18 @@ export class ClientDialogComponent {
       telefono: value.telefono.trim(),
       email: value.email.trim(),
       direccion: value.direccion.trim(),
+      tieneLesion: value.tieneLesion,
+      observaciones: value.observaciones.trim(),
       appAccess: value.createAccess ? { createAccess: true } : null,
-      membership: {
-        membershipPlanId: Number(value.membershipPlanId),
-        fechaInicio: new Date(`${value.fechaInicio}T00:00:00`).toISOString(),
-        fechaFin: new Date(`${value.fechaFin}T00:00:00`).toISOString(),
-        precioFinal: Number(value.precioFinal),
-        plan: this.getSelectedPlan() ?? null
-      }
+      membership: value.hasMembership
+        ? {
+            membershipPlanId: Number(value.membershipPlanId),
+            fechaInicio: new Date(`${value.fechaInicio}T00:00:00`).toISOString(),
+            fechaFin: new Date(`${value.fechaFin}T00:00:00`).toISOString(),
+            precioFinal: Number(value.precioFinal),
+            plan: this.getSelectedPlan() ?? null
+          }
+        : null
     });
   }
 
@@ -206,5 +234,36 @@ export class ClientDialogComponent {
 
     emailControl.setValidators(validators);
     emailControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateMembershipValidators(): void {
+    const hasMembership = this.form.controls.hasMembership.value;
+    const membershipPlanControl = this.form.controls.membershipPlanId;
+    const fechaInicioControl = this.form.controls.fechaInicio;
+    const fechaFinControl = this.form.controls.fechaFin;
+    const precioFinalControl = this.form.controls.precioFinal;
+
+    if (hasMembership) {
+      membershipPlanControl.setValidators([Validators.required]);
+      fechaInicioControl.setValidators([Validators.required]);
+      fechaFinControl.setValidators([Validators.required]);
+      precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
+    } else {
+      membershipPlanControl.clearValidators();
+      fechaInicioControl.clearValidators();
+      fechaFinControl.clearValidators();
+      precioFinalControl.clearValidators();
+      this.form.patchValue({
+        membershipPlanId: null,
+        fechaInicio: this.today,
+        fechaFin: this.today,
+        precioFinal: null
+      }, { emitEvent: false });
+    }
+
+    membershipPlanControl.updateValueAndValidity({ emitEvent: false });
+    fechaInicioControl.updateValueAndValidity({ emitEvent: false });
+    fechaFinControl.updateValueAndValidity({ emitEvent: false });
+    precioFinalControl.updateValueAndValidity({ emitEvent: false });
   }
 }

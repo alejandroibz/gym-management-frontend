@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthService } from '@auth0/auth0-angular';
+import { take } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -20,13 +22,12 @@ import { Employee } from '../../../employees/models/employee.model';
 import { EmployeesService } from '../../../employees/services/employees.service';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
-import { Payment, PaymentCreatePayload } from '../../../payments/models/payment.model';
+import { Payment, PaymentCreatePayload, PaymentUpdatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { RegisterCashMovementDialogComponent } from '../../components/register-cash-movement-dialog/register-cash-movement-dialog';
 import { RegisterPaymentDialogComponent } from '../../components/register-payment-dialog/register-payment-dialog';
 import {
   CashMovement,
-  CashMovementCategoryMonthlySummary,
   CashMovementCreatePayload
 } from '../../models/cash-movement.model';
 import { CashMovementsService } from '../../services/cash-movements.service';
@@ -55,6 +56,7 @@ export class MovementsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
   private readonly paymentsService = inject(PaymentsService);
@@ -72,16 +74,16 @@ export class MovementsPageComponent {
   readonly categories = signal<CashMovementCategory[]>([]);
   readonly payments = signal<Payment[]>([]);
   readonly cashMovements = signal<CashMovement[]>([]);
-  readonly monthlySummary = signal<CashMovementCategoryMonthlySummary[]>([]);
   readonly balance = signal(0);
+  readonly monthlyNet = signal(0);
 
   readonly isLoadingLookups = signal(true);
   readonly isLoadingPayments = signal(false);
   readonly isLoadingMovements = signal(false);
-  readonly isLoadingInsights = signal(false);
   readonly isSavingPayment = signal(false);
   readonly isSavingMovement = signal(false);
   readonly errorMessage = signal('');
+  readonly currentUserEmail = signal<string | null>(null);
 
   readonly paymentPageNumber = signal(1);
   readonly paymentPageSize = signal(10);
@@ -92,7 +94,6 @@ export class MovementsPageComponent {
   readonly movementPageSize = signal(10);
   readonly movementTotalCount = signal(0);
   readonly movementFiltersExpanded = signal(this.getInitialFiltersExpanded());
-  readonly insightsExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly paymentFiltersForm = this.formBuilder.nonNullable.group({
     clientId: [''],
@@ -102,13 +103,9 @@ export class MovementsPageComponent {
 
   readonly movementFiltersForm = this.formBuilder.nonNullable.group({
     tipo: [''],
-    categoryId: ['']
-  });
-
-  readonly insightsForm = this.formBuilder.nonNullable.group({
-    year: [this.currentYear],
-    month: [this.currentMonth],
-    categoryIds: [[] as number[]]
+    categoryId: [''],
+    fechaMovimientoDesde: [this.getCurrentMonthStartDate()],
+    fechaMovimientoHasta: [this.getCurrentMonthEndDate()]
   });
 
   readonly incomeCategories = computed(() => this.categories().filter(category => category.tipoMovimiento === 1));
@@ -127,7 +124,7 @@ export class MovementsPageComponent {
       .reduce((sum, movement) => sum + movement.monto, 0)
   );
   readonly visibleNetAmount = computed(() => this.visibleIncomeAmount() - this.visibleExpenseAmount());
-  readonly monthlyNetAmount = computed(() => this.monthlySummary().reduce((sum, item) => sum + item.net, 0));
+  readonly monthlyNetAmount = computed(() => this.monthlyNet());
   readonly activePaymentFiltersCount = computed(() => {
     const raw = this.paymentFiltersForm.getRawValue();
     let count = 0;
@@ -144,28 +141,26 @@ export class MovementsPageComponent {
   });
   readonly activeMovementFiltersCount = computed(() => {
     const raw = this.movementFiltersForm.getRawValue();
-    return [raw.tipo, raw.categoryId].filter(value => String(value).trim().length > 0).length;
-  });
-  readonly activeInsightsFiltersCount = computed(() => {
-    const raw = this.insightsForm.getRawValue();
-    let count = 0;
-    if (Number(raw.year) !== this.currentYear) {
+    let count = [raw.tipo, raw.categoryId].filter(value => String(value).trim().length > 0).length;
+
+    if (raw.fechaMovimientoDesde !== this.getCurrentMonthStartDate()) {
       count += 1;
     }
-    if (Number(raw.month) !== this.currentMonth) {
+
+    if (raw.fechaMovimientoHasta !== this.getCurrentMonthEndDate()) {
       count += 1;
     }
-    if (raw.categoryIds.length > 0) {
-      count += 1;
-    }
+
     return count;
   });
 
   constructor() {
+    this.auth.user$.pipe(take(1)).subscribe(user => {
+      this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
+    });
     this.loadLookups();
     this.loadPayments();
     this.loadCashMovements();
-    this.loadInsights();
     this.loadBalance();
   }
 
@@ -192,7 +187,7 @@ export class MovementsPageComponent {
     this.loadPayments();
   }
 
-  openPaymentDialog(): void {
+  openPaymentDialog(payment?: Payment): void {
     if (this.categories().length === 0) {
       this.openMissingCategoriesDialog();
       return;
@@ -206,11 +201,14 @@ export class MovementsPageComponent {
       backdropClass: 'employee-dialog-backdrop',
       data: {
         clients: this.clients(),
+        employees: this.employees(),
         paymentMethods: this.paymentMethods(),
         incomeCategories: this.incomeCategories(),
         defaultDate: this.toDateInputValue(this.today.toISOString()),
-        defaultMonth: this.currentMonth,
-        defaultYear: this.currentYear
+        defaultMonth: this.getPaymentPeriodMonth(payment),
+        defaultYear: this.getPaymentPeriodYear(payment),
+        defaultEmployeeEmail: this.currentUserEmail(),
+        payment
       }
     });
 
@@ -222,23 +220,99 @@ export class MovementsPageComponent {
       this.isSavingPayment.set(true);
       this.errorMessage.set('');
 
-      this.paymentsService.create(payload).subscribe({
+      const request = payment
+        ? this.paymentsService.update(payment.id, this.toPaymentUpdatePayload(payment.id, payload))
+        : this.paymentsService.create(payload);
+
+      request.subscribe({
         next: () => {
           this.isSavingPayment.set(false);
           this.loadPayments();
-          this.loadCashMovements();
-          this.loadInsights();
-          this.loadBalance();
         },
-        error: () => {
+        error: error => {
           this.isSavingPayment.set(false);
-          this.errorMessage.set('No se pudo registrar el pago.');
+          this.errorMessage.set(this.getApiErrorMessage(error, payment ? 'No se pudo editar el pago.' : 'No se pudo registrar el pago.'));
         }
       });
     });
   }
 
-  openMovementDialog(): void {
+  deletePayment(payment: Payment): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Eliminar pago',
+        message: `Se eliminara el pago de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isSavingPayment.set(true);
+      this.errorMessage.set('');
+
+      this.paymentsService.delete(payment.id).subscribe({
+        next: () => {
+          this.isSavingPayment.set(false);
+          this.loadPayments();
+        },
+        error: () => {
+          this.isSavingPayment.set(false);
+          this.errorMessage.set('No se pudo eliminar el pago.');
+        }
+      });
+    });
+  }
+
+  confirmPayment(payment: Payment): void {
+    if (!payment.cashMovementCategoryId) {
+      this.errorMessage.set('No se pudo identificar el tipo de cobro para confirmar el pago.');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Confirmar cobro',
+        message: `Se marcara como confirmado el cobro de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
+        confirmLabel: 'Confirmar',
+        cancelLabel: 'Cancelar',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isSavingPayment.set(true);
+      this.errorMessage.set('');
+
+      this.paymentsService.confirm(payment.id, payment.cashMovementCategoryId!).subscribe({
+        next: () => {
+          this.isSavingPayment.set(false);
+          this.loadPayments();
+        },
+        error: () => {
+          this.isSavingPayment.set(false);
+          this.errorMessage.set('No se pudo confirmar el cobro.');
+        }
+      });
+    });
+  }
+
+  openMovementDialog(movement?: CashMovement): void {
     if (this.categories().length === 0) {
       this.openMissingCategoriesDialog();
       return;
@@ -254,7 +328,9 @@ export class MovementsPageComponent {
         categories: this.categories(),
         employees: this.employees(),
         paymentMethods: this.paymentMethods(),
-        defaultDate: this.toDateInputValue(this.today.toISOString())
+        defaultDate: this.toDateInputValue(this.today.toISOString()),
+        defaultEmployeeEmail: this.currentUserEmail(),
+        movement
       }
     });
 
@@ -266,16 +342,55 @@ export class MovementsPageComponent {
       this.isSavingMovement.set(true);
       this.errorMessage.set('');
 
-      this.cashMovementsService.create(payload).subscribe({
+      const request = movement
+        ? this.cashMovementsService.update(movement.id, payload)
+        : this.cashMovementsService.create(payload);
+
+      request.subscribe({
         next: () => {
           this.isSavingMovement.set(false);
           this.loadCashMovements();
-          this.loadInsights();
+          this.loadBalance();
+        },
+        error: error => {
+          this.isSavingMovement.set(false);
+          this.errorMessage.set(this.getApiErrorMessage(error, movement ? 'No se pudo editar el movimiento.' : 'No se pudo registrar el movimiento.'));
+        }
+      });
+    });
+  }
+
+  deleteMovement(movement: CashMovement): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Eliminar movimiento externo',
+        message: `Se eliminara el movimiento ${this.getCategoryName(movement.cashMovementCategoryId)} por ${this.formatCurrency(movement.monto)}.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isSavingMovement.set(true);
+      this.errorMessage.set('');
+
+      this.cashMovementsService.delete(movement.id).subscribe({
+        next: () => {
+          this.isSavingMovement.set(false);
+          this.loadCashMovements();
           this.loadBalance();
         },
         error: () => {
           this.isSavingMovement.set(false);
-          this.errorMessage.set('No se pudo registrar el movimiento.');
+          this.errorMessage.set('No se pudo eliminar el movimiento.');
         }
       });
     });
@@ -290,7 +405,9 @@ export class MovementsPageComponent {
   resetMovementFilters(): void {
     this.movementFiltersForm.reset({
       tipo: '',
-      categoryId: ''
+      categoryId: '',
+      fechaMovimientoDesde: this.getCurrentMonthStartDate(),
+      fechaMovimientoHasta: this.getCurrentMonthEndDate()
     });
     this.movementPageNumber.set(1);
     this.loadCashMovements();
@@ -303,21 +420,12 @@ export class MovementsPageComponent {
     this.loadCashMovements();
   }
 
-  applyInsights(): void {
-    this.loadInsights();
-    this.collapseSectionOnMobile(this.insightsExpanded);
-  }
-
   togglePaymentFilters(): void {
     this.paymentFiltersExpanded.update(value => !value);
   }
 
   toggleMovementFilters(): void {
     this.movementFiltersExpanded.update(value => !value);
-  }
-
-  toggleInsights(): void {
-    this.insightsExpanded.update(value => !value);
   }
 
   getClientLabel(client: Client): string {
@@ -360,6 +468,22 @@ export class MovementsPageComponent {
 
   formatMonthYear(month: number, year: number): string {
     return `${String(month).padStart(2, '0')}/${year}`;
+  }
+
+  getPaymentPeriodLabel(payment: Payment): string {
+    return this.formatMonthYear(this.getPaymentPeriodMonth(payment), this.getPaymentPeriodYear(payment));
+  }
+
+  getPaymentCollectorLabel(payment: Payment): string {
+    return payment.collectedByEmployeeNombre || payment.collectedByEmployeeEmail || 'Sin dato';
+  }
+
+  getMovementRegisteredByLabel(movement: CashMovement): string {
+    return movement.registeredByEmployeeNombre || movement.registeredByEmployeeEmail || 'Sin dato';
+  }
+
+  getMovementRelatedEmployeeLabel(movement: CashMovement): string {
+    return movement.relatedEmployeeNombre || (movement.relatedEmployeeId ? `Empleado #${movement.relatedEmployeeId}` : 'Sin empleado relacionado');
   }
 
   getCategoriesByType(type: CashMovementType): CashMovementCategory[] {
@@ -467,6 +591,41 @@ export class MovementsPageComponent {
     });
   }
 
+  private toPaymentUpdatePayload(id: number, payload: PaymentCreatePayload): PaymentUpdatePayload {
+    const method = this.paymentMethods().find(item => item.id === payload.paymentMethodId);
+
+    return {
+      id,
+      clientId: payload.clientId,
+      clientMembershipId: payload.clientMembershipId,
+      fechaPago: payload.fechaPago,
+      monto: payload.monto,
+      medioPago: method ? this.getPaymentMethodLabel(method) : `Metodo #${payload.paymentMethodId}`,
+      estado: this.payments().find(payment => payment.id === id)?.estado ?? 'Pendiente',
+      paymentMethodId: payload.paymentMethodId,
+      periodYear: payload.periodYear,
+      periodMonth: payload.periodMonth,
+      collectedByEmployeeEmail: payload.collectedByEmployeeEmail
+    };
+  }
+
+  private getApiErrorMessage(error: unknown, fallback: string): string {
+    const apiError = error as { error?: { error?: unknown; message?: unknown } | string };
+    const rawMessage = typeof apiError.error === 'string'
+      ? apiError.error
+      : typeof apiError.error?.error === 'string'
+        ? apiError.error.error
+        : typeof apiError.error?.message === 'string'
+          ? apiError.error.message
+          : '';
+
+    if (rawMessage.toLowerCase().includes('active employee with email') && rawMessage.toLowerCase().includes('not found')) {
+      return 'No se encontro un empleado activo con ese email. Revisa el empleado seleccionado.';
+    }
+
+    return rawMessage || fallback;
+  }
+
   private loadCashMovements(): void {
     this.isLoadingMovements.set(true);
     this.errorMessage.set('');
@@ -475,7 +634,9 @@ export class MovementsPageComponent {
 
     this.cashMovementsService.getPaged(this.movementPageNumber(), this.movementPageSize(), {
       tipo: filtersRaw.tipo ? Number(filtersRaw.tipo) as CashMovementType : undefined,
-      categoryId: filtersRaw.categoryId ? Number(filtersRaw.categoryId) : undefined
+      categoryId: filtersRaw.categoryId ? Number(filtersRaw.categoryId) : undefined,
+      fechaMovimientoDesde: filtersRaw.fechaMovimientoDesde ? this.toDateTimeStart(filtersRaw.fechaMovimientoDesde) : undefined,
+      fechaMovimientoHasta: filtersRaw.fechaMovimientoHasta ? this.toDateTimeEnd(filtersRaw.fechaMovimientoHasta) : undefined
     }).subscribe({
       next: response => {
         this.cashMovements.set(response.items);
@@ -493,40 +654,45 @@ export class MovementsPageComponent {
     });
   }
 
-  private loadInsights(): void {
-    this.isLoadingInsights.set(true);
-    const raw = this.insightsForm.getRawValue();
-
-    this.cashMovementsService.getMonthlyByCategories(
-      Number(raw.year),
-      Number(raw.month),
-      raw.categoryIds.map(Number)
-    ).subscribe({
-      next: summary => {
-        this.monthlySummary.set(summary);
-        this.isLoadingInsights.set(false);
-      },
-      error: () => {
-        this.monthlySummary.set([]);
-        this.isLoadingInsights.set(false);
-        this.errorMessage.set('No se pudo cargar el resumen mensual por categorias.');
-      }
-    });
-  }
-
   private loadBalance(): void {
     this.cashMovementsService.getBalance().subscribe({
-      next: balance => {
-        this.balance.set(balance);
+      next: response => {
+        this.balance.set(response.balance);
+        this.monthlyNet.set(response.netoMes);
       },
       error: () => {
         this.balance.set(0);
+        this.monthlyNet.set(0);
       }
     });
   }
 
   private toDateInputValue(value: string): string {
     return value.slice(0, 10);
+  }
+
+  private getPaymentPeriodYear(payment?: Payment): number {
+    return payment?.periodYear ?? (Number(this.paymentFiltersForm.controls.periodYear.value) || this.currentYear);
+  }
+
+  private getPaymentPeriodMonth(payment?: Payment): number {
+    return payment?.periodMonth ?? (Number(this.paymentFiltersForm.controls.periodMonth.value) || this.currentMonth);
+  }
+
+  private getCurrentMonthStartDate(): string {
+    return `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-01`;
+  }
+
+  private getCurrentMonthEndDate(): string {
+    return new Date(this.currentYear, this.currentMonth, 0).toISOString().slice(0, 10);
+  }
+
+  private toDateTimeStart(dateInput: string): string {
+    return new Date(`${dateInput}T00:00:00`).toISOString();
+  }
+
+  private toDateTimeEnd(dateInput: string): string {
+    return new Date(`${dateInput}T23:59:59`).toISOString();
   }
 
   private getInitialFiltersExpanded(): boolean {

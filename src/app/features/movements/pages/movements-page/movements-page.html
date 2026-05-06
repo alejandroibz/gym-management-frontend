@@ -2,7 +2,7 @@
   <header class="page-header">
     <div class="page-title">
       <h1>Movimientos</h1>
-      <p>Gestion de pagos y caja</p>
+      <p>Cobros de clientes y movimientos externos de caja</p>
       <div class="header-stats" aria-label="Metricas de movimientos">
         <div class="metric-item">
           <span class="metric-label">Balance</span>
@@ -13,11 +13,11 @@
           <strong class="metric-value">{{ formatCurrency(monthlyNetAmount()) }}</strong>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Pagos visibles</span>
+          <span class="metric-label">Cobros visibles</span>
           <strong class="metric-value">{{ payments().length }}</strong>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Movimientos</span>
+          <span class="metric-label">Caja externa</span>
           <strong class="metric-value">{{ cashMovements().length }}</strong>
         </div>
       </div>
@@ -36,12 +36,12 @@
 
       <button mat-stroked-button type="button" class="header-action-secondary" [disabled]="isLoadingLookups() || isSavingMovement()" (click)="openMovementDialog()">
         <mat-icon>playlist_add</mat-icon>
-        Movimiento
+        Caja externa
       </button>
 
       <button mat-flat-button type="button" class="header-action-primary" [disabled]="isLoadingLookups() || isSavingPayment()" (click)="openPaymentDialog()">
         <mat-icon>add_card</mat-icon>
-        Registrar pago
+        Registrar cobro
       </button>
     </div>
   </header>
@@ -58,9 +58,9 @@
       <mat-card class="panel-card" id="pagos">
         <div class="panel-heading">
           <div>
-            <p class="panel-kicker">Cobros</p>
-            <h2>Pagos registrados de membresias</h2>
-            <p>Filtra por cliente y periodo para revisar rapidamente el historial de cobros.</p>
+            <p class="panel-kicker">Cobros de clientes</p>
+            <h2>Pagos registrados por alumnos/clientes</h2>
+            <p>Estos registros son cobros de membresias, clases u otros pagos de clientes. No son movimientos manuales de caja.</p>
           </div>
           <div class="heading-side">
             <div class="heading-metrics">
@@ -70,7 +70,7 @@
 
             <button mat-flat-button type="button" class="section-action-button" [disabled]="isLoadingLookups() || isSavingPayment()" (click)="openPaymentDialog()">
               <mat-icon>add_card</mat-icon>
-              Registrar pago
+              Registrar cobro
             </button>
           </div>
         </div>
@@ -124,12 +124,12 @@
         @if (isLoadingPayments()) {
           <div class="loading-state compact">
             <mat-spinner diameter="32"></mat-spinner>
-            <span>Cargando pagos...</span>
+            <span>Cargando cobros de clientes...</span>
           </div>
         } @else if (payments().length === 0) {
           <div class="empty-state compact">
             <mat-icon>receipt_long</mat-icon>
-            <p>No hay pagos para mostrar con los filtros actuales.</p>
+            <p>No hay cobros de clientes para mostrar con los filtros actuales.</p>
           </div>
         } @else {
           <div class="table-wrapper desktop-list">
@@ -140,9 +140,11 @@
                   <th>Monto</th>
                   <th>Estado</th>
                   <th>Metodo</th>
+                  <th>Cobrado por</th>
                   <th>Periodo</th>
                   <th>Fecha</th>
                   <th>Categoria</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -163,9 +165,25 @@
                       </span>
                     </td>
                     <td>{{ payment.paymentMethodNombre || 'Sin dato' }}</td>
-                    <td>{{ formatMonthYear(paymentFiltersForm.controls.periodMonth.value, paymentFiltersForm.controls.periodYear.value) }}</td>
+                    <td>{{ getPaymentCollectorLabel(payment) }}</td>
+                    <td>{{ getPaymentPeriodLabel(payment) }}</td>
                     <td>{{ payment.fechaPago | date: 'dd/MM/yyyy' }}</td>
                     <td>{{ payment.cashMovementCategoryNombre || 'Sin dato' }}</td>
+                    <td>
+                      <div class="row-actions">
+                        @if (!isConfirmedPayment(payment.estado)) {
+                          <button mat-icon-button type="button" aria-label="Confirmar cobro" [disabled]="isSavingPayment()" (click)="confirmPayment(payment)">
+                            <mat-icon>check_circle</mat-icon>
+                          </button>
+                        }
+                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSavingPayment()" (click)="openPaymentDialog(payment)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSavingPayment()" (click)="deletePayment(payment)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -200,13 +218,34 @@
                     <strong>{{ payment.cashMovementCategoryNombre || 'Sin dato' }}</strong>
                   </div>
                   <div>
+                    <span>Cobrado por</span>
+                    <strong>{{ getPaymentCollectorLabel(payment) }}</strong>
+                  </div>
+                  <div>
                     <span>Periodo</span>
-                    <strong>{{ formatMonthYear(paymentFiltersForm.controls.periodMonth.value, paymentFiltersForm.controls.periodYear.value) }}</strong>
+                    <strong>{{ getPaymentPeriodLabel(payment) }}</strong>
                   </div>
                   <div>
                     <span>Membresia</span>
                     <strong>{{ payment.membershipPlanNombre || 'Sin dato' }}</strong>
                   </div>
+                </div>
+
+                <div class="record-actions">
+                  @if (!isConfirmedPayment(payment.estado)) {
+                    <button mat-stroked-button type="button" [disabled]="isSavingPayment()" (click)="confirmPayment(payment)">
+                      <mat-icon>check_circle</mat-icon>
+                      Confirmar
+                    </button>
+                  }
+                  <button mat-stroked-button type="button" [disabled]="isSavingPayment()" (click)="openPaymentDialog(payment)">
+                    <mat-icon>edit</mat-icon>
+                    Editar
+                  </button>
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingPayment()" (click)="deletePayment(payment)">
+                    <mat-icon>delete</mat-icon>
+                    Eliminar
+                  </button>
                 </div>
               </article>
             }
@@ -225,9 +264,9 @@
       <mat-card class="panel-card" id="caja">
         <div class="panel-heading">
           <div>
-            <p class="panel-kicker">Caja</p>
-            <h2>Movimientos de caja</h2>
-            <p>Consulta ingresos y egresos del gimnasio con filtros simples y lectura rapida.</p>
+            <p class="panel-kicker">Caja externa</p>
+            <h2>Ingresos y egresos que no son cobros de clientes</h2>
+            <p>Usa esta seccion para pagos de sueldos, gastos operativos, ajustes, compras u otros movimientos manuales.</p>
           </div>
           <div class="heading-side">
             <div class="heading-metrics">
@@ -237,7 +276,7 @@
 
             <button mat-stroked-button type="button" class="section-action-button section-action-secondary" [disabled]="isLoadingLookups() || isSavingMovement()" (click)="openMovementDialog()">
               <mat-icon>playlist_add</mat-icon>
-              Registrar movimiento
+              Registrar movimiento externo
             </button>
           </div>
         </div>
@@ -274,6 +313,16 @@
               </mat-select>
             </mat-form-field>
 
+            <mat-form-field appearance="outline">
+              <mat-label>Desde</mat-label>
+              <input matInput type="date" formControlName="fechaMovimientoDesde" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Hasta</mat-label>
+              <input matInput type="date" formControlName="fechaMovimientoHasta" />
+            </mat-form-field>
+
             <div class="inline-actions">
               <button mat-flat-button type="submit" [disabled]="isLoadingMovements()">
                 <mat-icon>search</mat-icon>
@@ -290,12 +339,12 @@
         @if (isLoadingMovements()) {
           <div class="loading-state compact">
             <mat-spinner diameter="32"></mat-spinner>
-            <span>Cargando movimientos...</span>
+            <span>Cargando movimientos externos...</span>
           </div>
         } @else if (cashMovements().length === 0) {
           <div class="empty-state compact">
             <mat-icon>swap_horiz</mat-icon>
-            <p>No hay movimientos para mostrar con los filtros actuales.</p>
+            <p>No hay movimientos externos de caja para mostrar con los filtros actuales.</p>
           </div>
         } @else {
           <div class="table-wrapper desktop-list">
@@ -307,8 +356,10 @@
                   <th>Tipo</th>
                   <th>Metodo</th>
                   <th>Fecha</th>
-                  <th>Origen</th>
+                  <th>Registrado por</th>
+                  <th>Empleado relacionado</th>
                   <th>Descripcion</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,8 +384,19 @@
                     </td>
                     <td>{{ movement.metodoPago || 'No informado' }}</td>
                     <td>{{ movement.fechaMovimiento | date: 'dd/MM/yyyy' }}</td>
-                    <td>{{ movement.paymentId ? 'Vinculado a pago' : (movement.employeeId ? 'Vinculado a empleado' : 'Manual') }}</td>
+                    <td>{{ getMovementRegisteredByLabel(movement) }}</td>
+                    <td>{{ getMovementRelatedEmployeeLabel(movement) }}</td>
                     <td>{{ movement.descripcion }}</td>
+                    <td>
+                      <div class="row-actions">
+                        <button mat-icon-button type="button" aria-label="Editar movimiento externo" [disabled]="isSavingMovement()" (click)="openMovementDialog(movement)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar movimiento externo" class="danger-icon-button" [disabled]="isSavingMovement()" (click)="deleteMovement(movement)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -370,13 +432,28 @@
                     <strong>{{ getCategoryName(movement.cashMovementCategoryId) }}</strong>
                   </div>
                   <div>
-                    <span>Origen</span>
-                    <strong>{{ movement.paymentId ? 'Vinculado a pago' : (movement.employeeId ? 'Vinculado a empleado' : 'Manual') }}</strong>
+                    <span>Registrado por</span>
+                    <strong>{{ getMovementRegisteredByLabel(movement) }}</strong>
+                  </div>
+                  <div>
+                    <span>Empleado relacionado</span>
+                    <strong>{{ getMovementRelatedEmployeeLabel(movement) }}</strong>
                   </div>
                   <div>
                     <span>Descripcion</span>
                     <strong>{{ movement.descripcion }}</strong>
                   </div>
+                </div>
+
+                <div class="record-actions">
+                  <button mat-stroked-button type="button" [disabled]="isSavingMovement()" (click)="openMovementDialog(movement)">
+                    <mat-icon>edit</mat-icon>
+                    Editar
+                  </button>
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingMovement()" (click)="deleteMovement(movement)">
+                    <mat-icon>delete</mat-icon>
+                    Eliminar
+                  </button>
                 </div>
               </article>
             }
@@ -390,86 +467,6 @@
           [pageSizeOptions]="[5, 10, 20, 50]"
           (page)="handleMovementPageChange($event)">
         </mat-paginator>
-      </mat-card>
-    </div>
-
-    <div class="side-column">
-      <mat-card class="panel-card analysis-card" id="analisis">
-        <div class="panel-heading compact-heading">
-          <div>
-            <p class="panel-kicker">Analisis</p>
-            <h2>Mes por categorias</h2>
-            <p>Lee rapidamente que categorias impulsan la caja del periodo.</p>
-          </div>
-        </div>
-
-        <div class="filters-toolbar">
-          <button mat-stroked-button type="button" class="filters-toggle" (click)="toggleInsights()">
-            <mat-icon>{{ insightsExpanded() ? 'filter_list_off' : 'filter_list' }}</mat-icon>
-            {{ insightsExpanded() ? 'Ocultar filtros' : 'Mostrar filtros' }}
-          </button>
-
-          <span class="filters-summary">
-            {{ activeInsightsFiltersCount() === 0 ? 'Periodo actual' : activeInsightsFiltersCount() + ' filtros activos' }}
-          </span>
-        </div>
-
-        @if (insightsExpanded()) {
-          <form class="stack-form" [formGroup]="insightsForm" (ngSubmit)="applyInsights()">
-            <div class="double-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>Mes</mat-label>
-                <input matInput type="number" min="1" max="12" formControlName="month" />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Ano</mat-label>
-                <input matInput type="number" min="2000" formControlName="year" />
-              </mat-form-field>
-            </div>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Categorias</mat-label>
-              <mat-select formControlName="categoryIds" multiple>
-                @for (category of categories(); track category.id) {
-                  <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <button mat-stroked-button type="submit" class="full-button" [disabled]="isLoadingInsights()">
-              <mat-icon>query_stats</mat-icon>
-              Actualizar analisis
-            </button>
-          </form>
-        }
-
-        @if (isLoadingInsights()) {
-          <div class="loading-state compact">
-            <mat-spinner diameter="28"></mat-spinner>
-            <span>Calculando resumen...</span>
-          </div>
-        } @else if (monthlySummary().length === 0) {
-          <div class="empty-state compact">
-            <mat-icon>bar_chart</mat-icon>
-            <p>No hay resumen disponible para ese periodo.</p>
-          </div>
-        } @else {
-          <div class="summary-stack">
-            @for (item of monthlySummary(); track item.cashMovementCategoryId) {
-              <article class="summary-row">
-                <div>
-                  <strong>{{ item.categoryName }}</strong>
-                  <span>{{ formatCurrency(item.net) }} netos</span>
-                </div>
-                <div class="summary-values">
-                  <span class="mini-pill positive">Ingresos {{ formatCurrency(item.totalIngresos) }}</span>
-                  <span class="mini-pill negative">Egresos {{ formatCurrency(item.totalEgresos) }}</span>
-                </div>
-              </article>
-            }
-          </div>
-        }
       </mat-card>
     </div>
   </section>

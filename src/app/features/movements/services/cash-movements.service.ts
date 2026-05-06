@@ -41,6 +41,14 @@ export class CashMovementsService {
       params = params.set('CategoryId', filters.categoryId);
     }
 
+    if (filters.fechaMovimientoDesde) {
+      params = params.set('FechaMovimientoDesde', filters.fechaMovimientoDesde);
+    }
+
+    if (filters.fechaMovimientoHasta) {
+      params = params.set('FechaMovimientoHasta', filters.fechaMovimientoHasta);
+    }
+
     return this.http
       .get<RawPagedResponse<CashMovement> | CashMovement[]>(this.apiUrl, { params })
       .pipe(map(response => this.normalizePagedResponse(response, pageNumber, pageSize)));
@@ -48,6 +56,14 @@ export class CashMovementsService {
 
   create(payload: CashMovementCreatePayload): Observable<void> {
     return this.http.post<void>(this.apiUrl, payload);
+  }
+
+  update(id: number, payload: CashMovementCreatePayload): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   getMonthlyByCategories(year: number, month: number, categoryIds: number[] = []): Observable<CashMovementCategoryMonthlySummary[]> {
@@ -62,8 +78,8 @@ export class CashMovementsService {
     return this.http.get<CashMovementCategoryMonthlySummary[]>(`${this.apiUrl}/monthly-by-categories`, { params });
   }
 
-  getBalance(): Observable<number> {
-    return this.http.get<CashBalanceResponse>(`${this.apiUrl}/balance`).pipe(map(response => response.balance));
+  getBalance(): Observable<CashBalanceResponse> {
+    return this.http.get<CashBalanceResponse>(`${this.apiUrl}/balance`);
   }
 
   private normalizePagedResponse(

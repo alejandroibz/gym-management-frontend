@@ -36,6 +36,7 @@ export class AppShell {
 
   isSuperAdmin$ = this.roleService.hasRole('SuperAdmin');
   isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
+  user$ = this.auth.user$;
   isCollapsed = true;
   isMobile = false;
   isMobileSidebarOpen = false;
@@ -121,17 +122,33 @@ export class AppShell {
   }
 
   logout(): void {
-    const appBasePath = '/gym-management-frontend/';
-
-    const returnTo = window.location.hostname.includes('github.io')
-      ? `${window.location.origin}${appBasePath}`
-      : window.location.origin;
+    const returnTo = window.location.origin;
 
     this.auth.logout({
       logoutParams: {
         returnTo
       }
     });
+  }
+
+  getUserDisplayName(user: Record<string, unknown> | null | undefined): string {
+    const name = user?.['name'];
+    const nickname = user?.['nickname'];
+    const email = user?.['email'];
+
+    if (typeof name === 'string' && name.trim()) {
+      return name;
+    }
+
+    if (typeof nickname === 'string' && nickname.trim()) {
+      return nickname;
+    }
+
+    if (typeof email === 'string' && email.trim()) {
+      return email;
+    }
+
+    return 'usuario';
   }
 
   private syncLayout(): void {

@@ -10,13 +10,19 @@ export interface CashMovement {
   fechaMovimiento: string;
   descripcion: string;
   metodoPago?: string | null;
-  employeeId?: number | null;
+  relatedEmployeeId?: number | null;
+  relatedEmployeeNombre?: string | null;
+  registeredByEmployeeId?: number | null;
+  registeredByEmployeeEmail?: string | null;
+  registeredByEmployeeNombre?: string | null;
   paymentId?: number | null;
 }
 
 export interface CashMovementFilters {
   tipo?: CashMovementType;
   categoryId?: number;
+  fechaMovimientoDesde?: string;
+  fechaMovimientoHasta?: string;
 }
 
 export interface CashMovementCreatePayload {
@@ -28,8 +34,8 @@ export interface CashMovementCreatePayload {
   fechaMovimiento: string;
   descripcion: string;
   metodoPago?: string | null;
-  employeeId?: number | null;
-  paymentId?: number | null;
+  relatedEmployeeId?: number | null;
+  registeredByEmployeeEmail: string;
 }
 
 export interface CashMovementCategoryMonthlySummary {
@@ -42,4 +48,5 @@ export interface CashMovementCategoryMonthlySummary {
 
 export interface CashBalanceResponse {
   balance: number;
+  netoMes: number;
 }

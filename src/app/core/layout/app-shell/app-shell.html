@@ -86,6 +86,13 @@
           </div>
         </div>
 
+        @if (!isCollapsed && (user$ | async); as user) {
+          <div class="sidebar-user-card">
+            <span>Bienvenido/a</span>
+            <strong>{{ getUserDisplayName(user) }}</strong>
+          </div>
+        }
+
         <button
           mat-stroked-button
           type="button"

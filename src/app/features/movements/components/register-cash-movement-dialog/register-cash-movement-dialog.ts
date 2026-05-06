@@ -10,13 +10,15 @@ import { MatSelectModule } from '@angular/material/select';
 import { CashMovementCategory, CashMovementType } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { Employee } from '../../../employees/models/employee.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
-import { CashMovementCreatePayload } from '../../models/cash-movement.model';
+import { CashMovement, CashMovementCreatePayload } from '../../models/cash-movement.model';
 
 export interface RegisterCashMovementDialogData {
   categories: CashMovementCategory[];
   employees: Employee[];
   paymentMethods: PaymentMethod[];
   defaultDate: string;
+  defaultEmployeeEmail?: string | null;
+  movement?: CashMovement;
 }
 
 @Component({
@@ -40,10 +42,15 @@ export class RegisterCashMovementDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<RegisterCashMovementDialogComponent, CashMovementCreatePayload>);
   readonly data = inject<RegisterCashMovementDialogData>(MAT_DIALOG_DATA);
+  readonly isEditing = !!this.data.movement;
 
-  readonly selectedType = signal<CashMovementType>(1);
-  readonly selectedCategoryId = signal<number | null>(this.data.categories.find(category => category.tipoMovimiento === 1)?.id ?? null);
-  readonly selectedEmployeeId = signal<number | null>(null);
+  readonly selectedType = signal<CashMovementType>(this.data.movement?.tipoMovimiento ?? 1);
+  readonly selectedCategoryId = signal<number | null>(
+    this.data.movement?.cashMovementCategoryId
+      ?? this.data.categories.find(category => category.tipoMovimiento === this.selectedType())?.id
+      ?? null
+  );
+  readonly selectedEmployeeId = signal<number | null>(this.data.movement?.relatedEmployeeId ?? null);
   readonly filteredCategories = computed(() => this.data.categories.filter(category => category.tipoMovimiento === this.selectedType()));
   readonly selectedCategory = computed(() => {
     const categoryId = this.selectedCategoryId();
@@ -58,15 +65,18 @@ export class RegisterCashMovementDialogComponent {
     return this.selectedType() === 2 && category?.nombre.trim().toLowerCase() === 'pago de sueldos';
   });
   readonly amountLabel = computed(() => this.shouldShowEmployeeField() ? 'Sueldo empleado' : 'Monto');
+  readonly title = this.isEditing ? 'Editar movimiento externo' : 'Registrar movimiento externo';
+  readonly submitLabel = this.isEditing ? 'Guardar cambios' : 'Registrar movimiento externo';
 
   readonly form = this.formBuilder.group({
-    cashMovementCategoryId: [this.filteredCategories()[0]?.id ?? null, [Validators.required]],
-    tipoMovimiento: [1 as CashMovementType, [Validators.required]],
-    monto: [0, [Validators.required, Validators.min(0)]],
-    fechaMovimiento: [this.data.defaultDate, [Validators.required]],
-    descripcion: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(160)]],
-    metodoPago: [null as string | null],
-    employeeId: [null as number | null],
+    cashMovementCategoryId: [this.selectedCategoryId(), [Validators.required]],
+    tipoMovimiento: [this.selectedType(), [Validators.required]],
+    monto: [this.data.movement?.monto ?? 0, [Validators.required, Validators.min(0)]],
+    fechaMovimiento: [this.toDateInputValue(this.data.movement?.fechaMovimiento ?? this.data.defaultDate), [Validators.required]],
+    descripcion: [this.data.movement?.descripcion ?? '', [Validators.required, Validators.minLength(3), Validators.maxLength(160)]],
+    metodoPago: [this.data.movement?.metodoPago ?? null as string | null],
+    relatedEmployeeId: [this.data.movement?.relatedEmployeeId ?? null as number | null],
+    registeredByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
   });
 
   close(): void {
@@ -88,7 +98,7 @@ export class RegisterCashMovementDialogComponent {
   }
 
   onEmployeeChange(): void {
-    const employeeId = Number(this.form.controls.employeeId.value) || null;
+    const employeeId = Number(this.form.controls.relatedEmployeeId.value) || null;
     this.selectedEmployeeId.set(employeeId);
 
     const employee = this.selectedEmployee();
@@ -114,7 +124,8 @@ export class RegisterCashMovementDialogComponent {
       fechaMovimiento: new Date(`${raw.fechaMovimiento}T00:00:00`).toISOString(),
       descripcion: raw.descripcion?.trim() ?? '',
       metodoPago: raw.metodoPago?.trim() || null,
-      employeeId: raw.employeeId ? Number(raw.employeeId) : null,
+      relatedEmployeeId: raw.relatedEmployeeId ? Number(raw.relatedEmployeeId) : null,
+      registeredByEmployeeEmail: raw.registeredByEmployeeEmail ?? ''
     });
   }
 
@@ -126,10 +137,32 @@ export class RegisterCashMovementDialogComponent {
     return `${employee.nombre} ${employee.apellido} - DNI ${employee.dni}`;
   }
 
+  getResponsibleEmployeeLabel(employee: Employee): string {
+    return `${employee.nombre} ${employee.apellido} - ${employee.email || 'Sin email'}`;
+  }
+
+  canSelectResponsibleEmployee(employee: Employee): boolean {
+    return !!employee.email?.trim();
+  }
+
   private syncEmployeeFieldVisibility(): void {
     if (!this.shouldShowEmployeeField()) {
       this.selectedEmployeeId.set(null);
-      this.form.controls.employeeId.setValue(null);
+      this.form.controls.relatedEmployeeId.setValue(null);
     }
+  }
+
+  private getInitialEmployeeEmail(): string {
+    const movementEmail = this.data.movement?.registeredByEmployeeEmail?.trim();
+    const defaultEmail = this.data.defaultEmployeeEmail?.trim().toLowerCase();
+    const matchedDefault = defaultEmail
+      ? this.data.employees.find(employee => employee.email?.trim().toLowerCase() === defaultEmail)
+      : null;
+
+    return movementEmail || matchedDefault?.email || this.data.employees.find(employee => employee.email?.trim())?.email || '';
+  }
+
+  private toDateInputValue(value: string): string {
+    return value.slice(0, 10);
   }
 }

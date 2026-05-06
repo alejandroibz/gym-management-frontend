@@ -1,11 +1,13 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -28,6 +30,7 @@ import { ClientsService } from '../../services/clients.service';
     RouterLink,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
@@ -43,6 +46,7 @@ import { ClientsService } from '../../services/clients.service';
 export class ClientDetailsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly clientsService = inject(ClientsService);
@@ -55,6 +59,7 @@ export class ClientDetailsPageComponent {
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
   readonly errorMessage = signal('');
+  readonly observacionesMaxLength = 3000;
 
   readonly form = this.formBuilder.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
@@ -64,6 +69,9 @@ export class ClientDetailsPageComponent {
     telefono: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
     direccion: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(160)]],
+    tieneLesion: [false],
+    observaciones: ['', [Validators.maxLength(this.observacionesMaxLength)]],
+    hasMembership: [false],
     membershipPlanId: [null as number | null, [Validators.required]],
     fechaInicio: ['', [Validators.required]],
     fechaFin: ['', [Validators.required]],
@@ -78,10 +86,23 @@ export class ClientDetailsPageComponent {
   readonly currentMembership = computed(() => this.getEffectiveMembership(this.client()));
   readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
-  readonly canRegisterPayment = computed(() => !!this.currentMembership() && !this.isEditing());
+  readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing());
+  readonly observacionesLength = signal(0);
+  readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
 
   constructor() {
     this.form.disable({ emitEvent: false });
+    this.form.controls.observaciones.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(value => {
+        this.observacionesLength.set(value.length);
+      });
+    this.form.controls.hasMembership.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateMembershipValidators();
+      });
+    this.updateMembershipValidators();
     this.loadMembershipPlans();
     this.loadClient();
   }
@@ -218,7 +239,7 @@ export class ClientDetailsPageComponent {
     const client = this.client();
     const membership = this.currentMembership();
 
-    if (!client || !membership?.id) {
+    if (!client) {
       return;
     }
 
@@ -230,8 +251,8 @@ export class ClientDetailsPageComponent {
       backdropClass: 'employee-dialog-backdrop',
       data: {
         clientId: client.id,
-        clientMembershipId: membership.id,
-        defaultAmount: membership.precioFinal
+        clientMembershipId: membership?.id ?? null,
+        defaultAmount: membership?.precioFinal ?? 0
       }
     });
 
@@ -248,9 +269,9 @@ export class ClientDetailsPageComponent {
           this.isSaving.set(false);
           this.loadClient();
         },
-        error: () => {
+        error: error => {
           this.isSaving.set(false);
-          this.errorMessage.set('No se pudo registrar el pago.');
+          this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo registrar el pago.'));
         }
       });
     });
@@ -316,12 +337,15 @@ export class ClientDetailsPageComponent {
   }
 
   getVisiblePaymentFields(payment: ClientRelationRecord): Array<{ label: string; value: string }> {
-    return Object.entries(payment)
-      .filter(([key]) => !this.isPaymentIdField(key))
+    const fields = Object.entries(payment)
+      .filter(([key]) => !this.isPaymentHiddenField(key))
       .map(([key, value]) => ({
         label: this.getPaymentFieldLabel(key),
         value: this.formatPaymentFieldValue(key, value)
       }));
+    const collector = this.getPaymentCollectorLabel(payment);
+
+    return collector ? [...fields, { label: 'Cobrado por', value: collector }] : fields;
   }
 
   getPaymentStateLabel(payment: ClientRelationRecord): string {
@@ -445,6 +469,29 @@ export class ClientDetailsPageComponent {
   private isPaymentIdField(key: string): boolean {
     const normalizedKey = key.trim().toLowerCase();
     return normalizedKey === 'id' || normalizedKey.endsWith('id');
+  }
+
+  private isPaymentHiddenField(key: string): boolean {
+    const normalizedKey = key.trim().toLowerCase();
+    return this.isPaymentIdField(key)
+      || normalizedKey === 'collectedbyemployeeemail'
+      || normalizedKey === 'collectedbyemployeenombre'
+      || normalizedKey === 'collectedbyemployeename';
+  }
+
+  private getPaymentCollectorLabel(payment: ClientRelationRecord): string | null {
+    const name = this.getPaymentField(payment, ['collectedbyemployeenombre', 'collectedbyemployeename']);
+    const email = this.getPaymentField(payment, ['collectedbyemployeeemail']);
+
+    if (typeof name === 'string' && name.trim()) {
+      return name;
+    }
+
+    if (typeof email === 'string' && email.trim()) {
+      return email;
+    }
+
+    return null;
   }
 
   private getPaymentFieldLabel(key: string): string {
@@ -577,11 +624,16 @@ export class ClientDetailsPageComponent {
       telefono: client.telefono,
       email: client.email,
       direccion: client.direccion,
+      tieneLesion: client.tieneLesion,
+      observaciones: client.observaciones ?? '',
+      hasMembership: !!membership,
       membershipPlanId: membership?.membershipPlanId ?? null,
       fechaInicio: this.toDateInputValue(membership?.fechaInicio),
       fechaFin: this.toDateInputValue(membership?.fechaFin),
       precioFinal: membership?.precioFinal ?? 0
     });
+    this.updateMembershipValidators();
+    this.observacionesLength.set((client.observaciones ?? '').length);
   }
 
   private saveChanges(id: number, branchId: number): void {
@@ -617,12 +669,16 @@ export class ClientDetailsPageComponent {
       telefono: raw.telefono.trim(),
       email: raw.email.trim(),
       direccion: raw.direccion.trim(),
-      membership: {
-        membershipPlanId: Number(raw.membershipPlanId),
-        fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
-        fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
-        precioFinal: Number(raw.precioFinal)
-      }
+      tieneLesion: raw.tieneLesion,
+      observaciones: raw.observaciones.trim(),
+      membership: raw.hasMembership
+        ? {
+            membershipPlanId: Number(raw.membershipPlanId),
+            fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
+            fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
+            precioFinal: Number(raw.precioFinal)
+          }
+        : null
     };
   }
 
@@ -658,5 +714,47 @@ export class ClientDetailsPageComponent {
       const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
       return rightDate - leftDate;
     });
+  }
+
+  private updateMembershipValidators(): void {
+    const hasMembership = this.form.controls.hasMembership.value;
+    const membershipPlanControl = this.form.controls.membershipPlanId;
+    const fechaInicioControl = this.form.controls.fechaInicio;
+    const fechaFinControl = this.form.controls.fechaFin;
+    const precioFinalControl = this.form.controls.precioFinal;
+
+    if (hasMembership) {
+      membershipPlanControl.setValidators([Validators.required]);
+      fechaInicioControl.setValidators([Validators.required]);
+      fechaFinControl.setValidators([Validators.required]);
+      precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
+    } else {
+      membershipPlanControl.clearValidators();
+      fechaInicioControl.clearValidators();
+      fechaFinControl.clearValidators();
+      precioFinalControl.clearValidators();
+    }
+
+    membershipPlanControl.updateValueAndValidity({ emitEvent: false });
+    fechaInicioControl.updateValueAndValidity({ emitEvent: false });
+    fechaFinControl.updateValueAndValidity({ emitEvent: false });
+    precioFinalControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private getApiErrorMessage(error: unknown, fallback: string): string {
+    const apiError = error as { error?: { error?: unknown; message?: unknown } | string };
+    const rawMessage = typeof apiError.error === 'string'
+      ? apiError.error
+      : typeof apiError.error?.error === 'string'
+        ? apiError.error.error
+        : typeof apiError.error?.message === 'string'
+          ? apiError.error.message
+          : '';
+
+    if (rawMessage.toLowerCase().includes('active employee with email') && rawMessage.toLowerCase().includes('not found')) {
+      return 'No se encontro un empleado activo con ese email. Revisa el empleado seleccionado.';
+    }
+
+    return rawMessage || fallback;
   }
 }

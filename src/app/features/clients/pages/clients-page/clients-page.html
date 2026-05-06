@@ -158,6 +158,9 @@
                   <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
                     {{ getPaymentStatusLabel(client) }}
                   </span>
+                  @if (client.tieneLesion) {
+                    <span class="relation-pill relation-pill-warning">Con lesion</span>
+                  }
                 </td>
                 <td>
                   <div class="action-buttons">
@@ -187,6 +190,9 @@
               <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
                 {{ getPaymentStatusLabel(client) }}
               </span>
+              @if (client.tieneLesion) {
+                <span class="relation-pill relation-pill-warning">Con lesion</span>
+              }
             </div>
 
             <div class="client-card-body">

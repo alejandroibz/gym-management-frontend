@@ -101,11 +101,6 @@ export class ClientsPageComponent {
   }
 
   openCreateModal(): void {
-    if (this.membershipPlans().length === 0) {
-      this.openMissingMembershipPlansDialog();
-      return;
-    }
-
     this.openDialog();
   }
 
@@ -346,13 +341,17 @@ export class ClientsPageComponent {
       telefono: result.telefono,
       email: result.email,
       direccion: result.direccion,
+      tieneLesion: result.tieneLesion,
+      observaciones: result.observaciones,
       appAccess: result.appAccess ?? null,
-      membership: {
-        membershipPlanId: result.membership.membershipPlanId,
-        fechaInicio: result.membership.fechaInicio,
-        fechaFin: result.membership.fechaFin,
-        precioFinal: result.membership.precioFinal
-      }
+      membership: result.membership
+        ? {
+            membershipPlanId: result.membership.membershipPlanId,
+            fechaInicio: result.membership.fechaInicio,
+            fechaFin: result.membership.fechaFin,
+            precioFinal: result.membership.precioFinal
+          }
+        : null
     };
   }
 

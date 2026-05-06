@@ -28,6 +28,8 @@ export interface Client {
   telefono: string;
   email: string;
   direccion: string;
+  tieneLesion: boolean;
+  observaciones?: string | null;
   fechaAlta?: string;
   membership?: ClientMembership | null;
   membershipsHistory?: ClientMembership[];
@@ -47,8 +49,10 @@ export interface ClientCreatePayload {
   telefono: string;
   email: string;
   direccion: string;
+  tieneLesion: boolean;
+  observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
-  membership: ClientMembership;
+  membership?: ClientMembership | null;
 }
 
 export interface ClientUpdatePayload extends ClientCreatePayload {

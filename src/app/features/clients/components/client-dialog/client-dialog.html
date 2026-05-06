@@ -54,10 +54,27 @@
       </mat-form-field>
 
       <div class="access-section span-2">
+        <mat-checkbox formControlName="tieneLesion">Tiene lesion</mat-checkbox>
+      </div>
+
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Observaciones</mat-label>
+        <textarea matInput formControlName="observaciones" rows="5" [maxlength]="observacionesMaxLength"></textarea>
+        <mat-hint align="end">Te quedan {{ observacionesRemaining() }} caracteres</mat-hint>
+        <mat-error>Las observaciones no pueden superar {{ observacionesMaxLength }} caracteres.</mat-error>
+      </mat-form-field>
+
+      <div class="access-section span-2">
         <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
         <p>Si lo activas, el backend creara el usuario del cliente en Auth0 con rol `User`.</p>
       </div>
 
+      <div class="access-section span-2">
+        <mat-checkbox formControlName="hasMembership">Asignar membresia</mat-checkbox>
+        <p>Desactivalo para crear clientes sin membresia, por ejemplo para clases particulares.</p>
+      </div>
+
+      @if (form.controls.hasMembership.value) {
       <div class="membership-section span-2">
         <div class="membership-section-copy">
           <p class="membership-eyebrow">Membresia</p>
@@ -94,6 +111,7 @@
           </mat-form-field>
         </div>
       </div>
+      }
     </div>
 
     <div class="dialog-actions">

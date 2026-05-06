@@ -8,11 +8,7 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { SpanishPaginatorIntl } from './core/services/spanish-paginator-intl';
 
-const appBasePath = '/gym-management-frontend/';
-
-const redirectUri = window.location.hostname.includes('github.io')
-  ? `${window.location.origin}${appBasePath}`
-  : window.location.origin;
+const redirectUri = window.location.origin;
 
 export const appConfig: ApplicationConfig = {
   providers: [

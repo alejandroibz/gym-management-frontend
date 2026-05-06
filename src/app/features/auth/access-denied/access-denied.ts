@@ -25,11 +25,7 @@ export class AccessDeniedComponent {
   isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
 
   logout(): void {
-    const appBasePath = '/gym-management-frontend/';
-
-    const returnTo = window.location.hostname.includes('github.io')
-      ? `${window.location.origin}${appBasePath}`
-      : window.location.origin;
+    const returnTo = window.location.origin;
 
     this.auth.logout({
       logoutParams: {

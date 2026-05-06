@@ -1,9 +1,9 @@
 <div class="dialog-shell">
   <div class="dialog-header">
     <div>
-      <p class="dialog-eyebrow">Caja manual</p>
-      <h2>Registrar movimiento</h2>
-      <p class="dialog-subtitle">Carga ingresos o egresos manuales de forma clara y ordenada.</p>
+      <p class="dialog-eyebrow">Caja externa</p>
+      <h2>{{ title }}</h2>
+      <p class="dialog-subtitle">Carga ingresos o egresos que no sean cobros de clientes, como sueldos, gastos o ajustes.</p>
     </div>
 
     <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
@@ -33,7 +33,7 @@
       @if (shouldShowEmployeeField()) {
         <mat-form-field appearance="outline" class="span-2">
           <mat-label>Empleado relacionado</mat-label>
-          <mat-select formControlName="employeeId" (selectionChange)="onEmployeeChange()">
+          <mat-select formControlName="relatedEmployeeId" (selectionChange)="onEmployeeChange()">
             <mat-option [value]="null">Sin empleado</mat-option>
             @for (employee of data.employees; track employee.id) {
               <mat-option [value]="employee.id">{{ getEmployeeLabel(employee) }}</mat-option>
@@ -66,11 +66,23 @@
           }
         </mat-select>
       </mat-form-field>
+
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Empleado responsable</mat-label>
+        <mat-select formControlName="registeredByEmployeeEmail">
+          @for (employee of data.employees; track employee.id) {
+            <mat-option [value]="employee.email" [disabled]="!canSelectResponsibleEmployee(employee)">
+              {{ getResponsibleEmployeeLabel(employee) }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-error>Selecciona un empleado con email.</mat-error>
+      </mat-form-field>
     </div>
 
     <div class="dialog-actions">
       <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
-      <button mat-flat-button type="submit">Registrar movimiento</button>
+      <button mat-flat-button type="submit">{{ submitLabel }}</button>
     </div>
   </form>
 </div>

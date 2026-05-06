@@ -37,6 +37,9 @@
           <span class="hero-pill">{{ getMembershipLabel() }}</span>
           <span class="hero-pill">{{ currentClient.debePago ? 'Debe pago' : 'Pago al dia' }}</span>
           <span class="hero-pill">{{ getMembershipStateLabel(currentMembership()?.estado) }}</span>
+          @if (currentClient.tieneLesion) {
+            <span class="hero-pill hero-pill-warning">Con lesion</span>
+          }
           @for (chip of getMembershipAlertChips(currentClient); track chip.label) {
             <span class="hero-pill" [class.hero-pill-warning]="chip.tone === 'warning'" [class.hero-pill-info]="chip.tone === 'info'" [class.hero-pill-success]="chip.tone === 'success'">
               {{ chip.label }}
@@ -122,6 +125,22 @@
             </mat-form-field>
 
             <div class="membership-box span-2">
+              <mat-checkbox formControlName="tieneLesion">Tiene lesion</mat-checkbox>
+            </div>
+
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Observaciones</mat-label>
+              <textarea matInput formControlName="observaciones" rows="5" [maxlength]="observacionesMaxLength"></textarea>
+              <mat-hint align="end">Te quedan {{ observacionesRemaining() }} caracteres</mat-hint>
+              <mat-error>Las observaciones no pueden superar {{ observacionesMaxLength }} caracteres.</mat-error>
+            </mat-form-field>
+
+            <div class="membership-box span-2">
+              <mat-checkbox formControlName="hasMembership">Asignar membresia</mat-checkbox>
+            </div>
+
+            @if (form.controls.hasMembership.value) {
+            <div class="membership-box span-2">
               <div class="membership-copy">
                 <p class="membership-eyebrow">Membresia</p>
                 <h3>Datos del plan vigente</h3>
@@ -156,6 +175,7 @@
                 </mat-form-field>
               </div>
             </div>
+            }
           </div>
         </form>
       </mat-card>
@@ -200,6 +220,14 @@
           <article class="summary-item">
             <span>Notificado</span>
             <strong>{{ currentClient.membresiaVencimientoNotificado ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Tiene lesion</span>
+            <strong>{{ currentClient.tieneLesion ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Observaciones</span>
+            <strong>{{ currentClient.observaciones || 'Sin observaciones' }}</strong>
           </article>
         </div>
       </mat-card>

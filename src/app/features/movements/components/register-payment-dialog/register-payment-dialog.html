@@ -2,8 +2,8 @@
   <div class="dialog-header">
     <div>
       <p class="dialog-eyebrow">Cobro</p>
-      <h2>Registrar pago</h2>
-      <p class="dialog-subtitle">Carga un pago de cliente con todos los datos necesarios sin salir de movimientos.</p>
+      <h2>{{ title }}</h2>
+      <p class="dialog-subtitle">{{ subtitle }}</p>
     </div>
 
     <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
@@ -26,7 +26,7 @@
         <span class="context-label">Membresia activa</span>
         <strong>{{ membershipLabel() }}</strong>
         @if (!selectedClient()?.membership?.id && form.controls.clientId.value) {
-          <small>El cliente seleccionado no tiene una membresia activa para asociar el pago.</small>
+          <small>El cliente seleccionado no tiene una membresia activa para asociar el cobro.</small>
         }
       </div>
 
@@ -40,12 +40,24 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Categoria movimiento</mat-label>
+        <mat-label>Tipo de cobro</mat-label>
         <mat-select formControlName="cashMovementCategoryId">
           @for (category of data.incomeCategories; track category.id) {
             <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
           }
         </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>Empleado responsable</mat-label>
+        <mat-select formControlName="collectedByEmployeeEmail">
+          @for (employee of data.employees; track employee.id) {
+            <mat-option [value]="employee.email" [disabled]="!canSelectEmployee(employee)">
+              {{ getEmployeeLabel(employee) }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-error>Selecciona un empleado con email.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -69,11 +81,9 @@
       </mat-form-field>
     </div>
 
-    <mat-checkbox formControlName="confirmado">Registrar ya confirmado</mat-checkbox>
-
     <div class="dialog-actions">
       <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
-      <button mat-flat-button type="submit">Registrar pago</button>
+      <button mat-flat-button type="submit">{{ submitLabel }}</button>
     </div>
   </form>
 </div>
