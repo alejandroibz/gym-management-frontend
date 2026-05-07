@@ -229,7 +229,7 @@
 }
 
 .filters-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
   margin-bottom: 1.25rem;
 }
@@ -265,6 +265,10 @@
   background: #fef3c7;
   border: 1px solid #fcd34d;
   color: var(--mov-yellow);
+}
+
+.status-chip.discount {
+  background: #ffedd5;
 }
 
 .metric-pill.negative,
@@ -337,6 +341,13 @@
 .amount-cell {
   font-size: 0.98rem;
   white-space: nowrap;
+}
+
+.amount-subline {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--mov-muted);
+  font-size: 0.78rem;
 }
 
 .expense-amount {
@@ -471,7 +482,7 @@ mat-paginator {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .record-grid {
     grid-template-columns: 1fr;
   }
@@ -508,7 +519,7 @@ mat-paginator {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .page-header,
   .panel-card {
     padding: 1rem;

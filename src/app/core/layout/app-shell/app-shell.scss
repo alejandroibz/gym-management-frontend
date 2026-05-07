@@ -278,9 +278,26 @@
   color: var(--app-accent);
 }
 
+.toolbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.toolbar-logo {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .toolbar-title {
   font-weight: 700;
   letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-content {
@@ -292,7 +309,7 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
   .app-sidenav,
   .app-sidenav.collapsed {
     width: min(86vw, 320px);
@@ -313,6 +330,11 @@
   .toolbar-title {
     font-size: 0.95rem;
     line-height: 1.25;
+  }
+
+  .toolbar-logo {
+    width: 24px;
+    height: 24px;
   }
 
   .app-content {

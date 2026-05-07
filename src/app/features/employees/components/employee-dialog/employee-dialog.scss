@@ -67,7 +67,7 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 26%);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dialog-shell {
     padding: 1rem;
     max-height: calc(100dvh - 1rem);

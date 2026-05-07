@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { take } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -32,6 +33,7 @@ export interface RegisterClientPaymentDialogData {
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -59,15 +61,23 @@ export class RegisterClientPaymentDialogComponent {
   readonly currentUserEmail = signal<string | null>(null);
   readonly today = new Date();
 
-  readonly form = this.formBuilder.nonNullable.group({
-    paymentMethodId: [null as number | null, [Validators.required]],
-    cashMovementCategoryId: [null as number | null, [Validators.required]],
-    fechaPago: [this.today.toISOString().slice(0, 10), [Validators.required]],
-    monto: [this.data.defaultAmount || 0, [Validators.required, Validators.min(0)]],
-    periodYear: [this.today.getFullYear(), [Validators.required, Validators.min(2000)]],
-    periodMonth: [this.today.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
-    collectedByEmployeeEmail: ['', [Validators.required]]
-  });
+  readonly form = this.formBuilder.group(
+    {
+      paymentMethodId: [null as number | null, [Validators.required]],
+      cashMovementCategoryId: [null as number | null, [Validators.required]],
+      fechaPago: [this.today.toISOString().slice(0, 10), [Validators.required]],
+      monto: [this.data.defaultAmount || 0, [Validators.required, Validators.min(0)]],
+      aplicarDescuento: [false],
+      montoOriginal: [this.data.defaultAmount || null as number | null, [Validators.min(0)]],
+      descuentoMonto: [0, [Validators.required, Validators.min(0)]],
+      descuentoPorcentaje: [null as number | null, [Validators.min(0), Validators.max(100)]],
+      descuentoMotivo: ['', [Validators.maxLength(160)]],
+      periodYear: [this.today.getFullYear(), [Validators.required, Validators.min(2000)]],
+      periodMonth: [this.today.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
+      collectedByEmployeeEmail: ['', [Validators.required]]
+    },
+    { validators: [this.discountValidator] }
+  );
 
   readonly incomeCategories = computed(() =>
     this.cashMovementCategories().filter(category => category.tipoMovimiento === 1)
@@ -99,6 +109,16 @@ export class RegisterClientPaymentDialogComponent {
       clientMembershipId: this.data.clientMembershipId,
       fechaPago: new Date(`${value.fechaPago}T00:00:00`).toISOString(),
       monto: Number(value.monto),
+      montoOriginal: value.aplicarDescuento && value.montoOriginal !== null && value.montoOriginal !== undefined
+        ? Number(value.montoOriginal)
+        : null,
+      descuentoMonto: value.aplicarDescuento
+        ? Number(value.descuentoMonto ?? 0)
+        : 0,
+      descuentoPorcentaje: value.aplicarDescuento && value.descuentoPorcentaje !== null && value.descuentoPorcentaje !== undefined
+        ? Number(value.descuentoPorcentaje)
+        : null,
+      descuentoMotivo: value.aplicarDescuento ? value.descuentoMotivo?.trim() || null : null,
       paymentMethodId: Number(value.paymentMethodId),
       cashMovementCategoryId: Number(value.cashMovementCategoryId),
       periodYear: Number(value.periodYear),
@@ -117,6 +137,71 @@ export class RegisterClientPaymentDialogComponent {
 
   canSelectEmployee(employee: Employee): boolean {
     return !!employee.email?.trim();
+  }
+
+  hasDiscount(): boolean {
+    return this.isDiscountApplied() && Number(this.form.controls.descuentoMonto.value ?? 0) > 0;
+  }
+
+  isDiscountApplied(): boolean {
+    return this.form.controls.aplicarDescuento.value === true;
+  }
+
+  onDiscountToggle(): void {
+    if (this.isDiscountApplied()) {
+      const currentAmount = Number(this.form.controls.monto.value ?? 0);
+
+      if (!this.form.controls.montoOriginal.value && currentAmount > 0) {
+        this.form.controls.montoOriginal.setValue(currentAmount, { emitEvent: false });
+      }
+
+      this.form.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+
+    this.form.patchValue({
+      monto: originalAmount > 0 ? originalAmount : this.form.controls.monto.value,
+      montoOriginal: null,
+      descuentoMonto: 0,
+      descuentoPorcentaje: null,
+      descuentoMotivo: ''
+    }, { emitEvent: false });
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onOriginalAmountInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    this.updateFinalAmountFromDiscount();
+  }
+
+  onDiscountAmountInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    this.updateFinalAmountFromDiscount();
+  }
+
+  onDiscountPercentageInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+    const percentage = Number(this.form.controls.descuentoPorcentaje.value ?? 0);
+
+    if (originalAmount <= 0 || percentage < 0 || percentage > 100) {
+      return;
+    }
+
+    const discountAmount = Math.round((originalAmount * percentage) / 100);
+    this.form.controls.descuentoMonto.setValue(discountAmount, { emitEvent: false });
+    this.updateFinalAmountFromDiscount();
   }
 
   private loadOptions(): void {
@@ -178,5 +263,55 @@ export class RegisterClientPaymentDialogComponent {
     const fallbackEmployee = this.employees().find(employee => employee.email?.trim());
 
     this.form.controls.collectedByEmployeeEmail.setValue(matchedEmployee?.email ?? fallbackEmployee?.email ?? '');
+  }
+
+  private updateFinalAmountFromDiscount(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+    const discountAmount = Number(this.form.controls.descuentoMonto.value ?? 0);
+
+    if (originalAmount <= 0 || discountAmount < 0) {
+      return;
+    }
+
+    this.form.controls.monto.setValue(Math.max(0, originalAmount - discountAmount), { emitEvent: false });
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private discountValidator(control: AbstractControl): ValidationErrors | null {
+    const rawValue = control.value as {
+      montoOriginal?: number | string | null;
+      descuentoMonto?: number | string | null;
+      descuentoPorcentaje?: number | string | null;
+      aplicarDescuento?: boolean | null;
+    };
+    if (rawValue.aplicarDescuento !== true) {
+      return null;
+    }
+
+    const originalAmount = rawValue.montoOriginal === null || rawValue.montoOriginal === undefined || rawValue.montoOriginal === ''
+      ? null
+      : Number(rawValue.montoOriginal);
+    const discountAmount = Number(rawValue.descuentoMonto ?? 0);
+    const discountPercentage = rawValue.descuentoPorcentaje === null || rawValue.descuentoPorcentaje === undefined || rawValue.descuentoPorcentaje === ''
+      ? null
+      : Number(rawValue.descuentoPorcentaje);
+
+    if (discountAmount < 0) {
+      return { discountAmountNegative: true };
+    }
+
+    if (originalAmount !== null && discountAmount > originalAmount) {
+      return { discountGreaterThanOriginal: true };
+    }
+
+    if (discountPercentage !== null && (discountPercentage < 0 || discountPercentage > 100)) {
+      return { discountPercentageRange: true };
+    }
+
+    return null;
   }
 }

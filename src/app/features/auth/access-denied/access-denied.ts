@@ -5,6 +5,7 @@ import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RoleService } from '../../../core/auth/role';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-access-denied',
@@ -25,7 +26,7 @@ export class AccessDeniedComponent {
   isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
 
   logout(): void {
-    const returnTo = window.location.origin;
+    const returnTo = environment.auth0.logoutReturnTo || window.location.origin;
 
     this.auth.logout({
       logoutParams: {

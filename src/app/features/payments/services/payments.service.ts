@@ -39,6 +39,10 @@ export class PaymentsService {
       params = params.set('PeriodMonth', filters.periodMonth);
     }
 
+    if (filters.hasDiscount !== undefined) {
+      params = params.set('hasDiscount', filters.hasDiscount);
+    }
+
     return this.http
       .get<RawPagedResponse<Payment> | Payment[]>(this.apiUrl, { params })
       .pipe(map(response => this.normalizePagedResponse(response, pageNumber, pageSize)));

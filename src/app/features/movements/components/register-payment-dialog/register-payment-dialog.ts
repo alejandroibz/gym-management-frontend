@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AuthService } from '@auth0/auth0-angular';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -49,6 +51,8 @@ export class RegisterPaymentDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<RegisterPaymentDialogComponent, PaymentCreatePayload>);
   private readonly clientsService = inject(ClientsService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   private selectedClientLookupId = 0;
   readonly data = inject<RegisterPaymentDialogData>(MAT_DIALOG_DATA);
 
@@ -56,17 +60,25 @@ export class RegisterPaymentDialogComponent {
   readonly selectedClient = signal<Client | null>(this.getInitialClient());
   readonly isLoadingSelectedClient = signal(false);
 
-  readonly form = this.formBuilder.group({
-    clientId: [this.data.payment?.clientId ?? (null as number | null), [Validators.required]],
-    clientMembershipId: [this.data.payment?.clientMembershipId ?? 0, [Validators.required, Validators.min(1)]],
-    fechaPago: [this.toDateInputValue(this.data.payment?.fechaPago ?? this.data.defaultDate), [Validators.required]],
-    monto: [this.data.payment?.monto ?? 0, [Validators.required, Validators.min(0)]],
-    paymentMethodId: [this.data.payment?.paymentMethodId ?? (null as number | null), [Validators.required]],
-    cashMovementCategoryId: [this.data.payment?.cashMovementCategoryId ?? this.data.incomeCategories[0]?.id ?? null, [Validators.required]],
-    periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, [Validators.required, Validators.min(2000)]],
-    periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, [Validators.required, Validators.min(1), Validators.max(12)]],
-    collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
-  });
+  readonly form = this.formBuilder.group(
+    {
+      clientId: [this.data.payment?.clientId ?? (null as number | null), [Validators.required]],
+      clientMembershipId: [this.data.payment?.clientMembershipId ?? 0, [Validators.required, Validators.min(1)]],
+      fechaPago: [this.toDateInputValue(this.data.payment?.fechaPago ?? this.data.defaultDate), [Validators.required]],
+      monto: [this.data.payment?.monto ?? 0, [Validators.required, Validators.min(0)]],
+      aplicarDescuento: [this.hasInitialDiscount()],
+      montoOriginal: [this.data.payment?.montoOriginal ?? (null as number | null), [Validators.min(0)]],
+      descuentoMonto: [this.data.payment?.descuentoMonto ?? 0, [Validators.required, Validators.min(0)]],
+      descuentoPorcentaje: [this.data.payment?.descuentoPorcentaje ?? (null as number | null), [Validators.min(0), Validators.max(100)]],
+      descuentoMotivo: [this.data.payment?.descuentoMotivo ?? '', [Validators.maxLength(160)]],
+      paymentMethodId: [this.data.payment?.paymentMethodId ?? (null as number | null), [Validators.required]],
+      cashMovementCategoryId: [this.data.payment?.cashMovementCategoryId ?? this.data.incomeCategories[0]?.id ?? null, [Validators.required]],
+      periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, [Validators.required, Validators.min(2000)]],
+      periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, [Validators.required, Validators.min(1), Validators.max(12)]],
+      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
+    },
+    { validators: [this.discountValidator] }
+  );
 
   readonly title = this.isEditing ? 'Editar cobro de cliente' : 'Registrar cobro de cliente';
   readonly subtitle = this.isEditing
@@ -78,6 +90,14 @@ export class RegisterPaymentDialogComponent {
     const membership = this.getEffectiveMembership(this.selectedClient());
     return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia activa');
   });
+
+  constructor() {
+    this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
+      if (!this.isEditing && typeof user?.email === 'string') {
+        this.applyDefaultEmployeeEmail(user.email);
+      }
+    });
+  }
 
   close(): void {
     this.dialogRef.close();
@@ -118,6 +138,16 @@ export class RegisterPaymentDialogComponent {
       clientMembershipId: Number(raw.clientMembershipId),
       fechaPago: new Date(`${raw.fechaPago}T00:00:00`).toISOString(),
       monto: Number(raw.monto),
+      montoOriginal: raw.aplicarDescuento && raw.montoOriginal !== null && raw.montoOriginal !== undefined
+        ? Number(raw.montoOriginal)
+        : null,
+      descuentoMonto: raw.aplicarDescuento
+        ? Number(raw.descuentoMonto ?? 0)
+        : 0,
+      descuentoPorcentaje: raw.aplicarDescuento && raw.descuentoPorcentaje !== null && raw.descuentoPorcentaje !== undefined
+        ? Number(raw.descuentoPorcentaje)
+        : null,
+      descuentoMotivo: raw.aplicarDescuento ? raw.descuentoMotivo?.trim() || null : null,
       paymentMethodId: Number(raw.paymentMethodId),
       cashMovementCategoryId: Number(raw.cashMovementCategoryId),
       periodYear: Number(raw.periodYear),
@@ -144,6 +174,71 @@ export class RegisterPaymentDialogComponent {
 
   hasSelectedClientMembership(): boolean {
     return !!this.getEffectiveMembership(this.selectedClient())?.id;
+  }
+
+  hasDiscount(): boolean {
+    return this.isDiscountApplied() && Number(this.form.controls.descuentoMonto.value ?? 0) > 0;
+  }
+
+  isDiscountApplied(): boolean {
+    return this.form.controls.aplicarDescuento.value === true;
+  }
+
+  onDiscountToggle(): void {
+    if (this.isDiscountApplied()) {
+      const currentAmount = Number(this.form.controls.monto.value ?? 0);
+
+      if (!this.form.controls.montoOriginal.value && currentAmount > 0) {
+        this.form.controls.montoOriginal.setValue(currentAmount, { emitEvent: false });
+      }
+
+      this.form.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+
+    this.form.patchValue({
+      monto: originalAmount > 0 ? originalAmount : this.form.controls.monto.value,
+      montoOriginal: null,
+      descuentoMonto: 0,
+      descuentoPorcentaje: null,
+      descuentoMotivo: ''
+    }, { emitEvent: false });
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onDiscountAmountInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    this.updateFinalAmountFromDiscount();
+  }
+
+  onDiscountPercentageInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+    const percentage = Number(this.form.controls.descuentoPorcentaje.value ?? 0);
+
+    if (originalAmount <= 0 || percentage < 0 || percentage > 100) {
+      return;
+    }
+
+    const discountAmount = Math.round((originalAmount * percentage) / 100);
+    this.form.controls.descuentoMonto.setValue(discountAmount, { emitEvent: false });
+    this.updateFinalAmountFromDiscount();
+  }
+
+  onOriginalAmountInput(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    this.updateFinalAmountFromDiscount();
   }
 
   private getInitialClient(): Client | null {
@@ -191,7 +286,8 @@ export class RegisterPaymentDialogComponent {
 
     this.form.patchValue({
       clientMembershipId: membership.id,
-      monto: membership.precioFinal
+      monto: membership.precioFinal,
+      montoOriginal: this.data.payment?.montoOriginal ?? membership.precioFinal
     });
 
     return true;
@@ -200,8 +296,63 @@ export class RegisterPaymentDialogComponent {
   private clearMembership(): void {
     this.form.patchValue({
       clientMembershipId: 0,
-      monto: 0
+      monto: 0,
+      montoOriginal: null
     });
+  }
+
+  private updateFinalAmountFromDiscount(): void {
+    if (!this.isDiscountApplied()) {
+      return;
+    }
+
+    const originalAmount = Number(this.form.controls.montoOriginal.value ?? 0);
+    const discountAmount = Number(this.form.controls.descuentoMonto.value ?? 0);
+
+    if (originalAmount <= 0 || discountAmount < 0) {
+      return;
+    }
+
+    this.form.controls.monto.setValue(Math.max(0, originalAmount - discountAmount), { emitEvent: false });
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private discountValidator(control: AbstractControl): ValidationErrors | null {
+    const rawValue = control.value as {
+      montoOriginal?: number | string | null;
+      descuentoMonto?: number | string | null;
+      descuentoPorcentaje?: number | string | null;
+      aplicarDescuento?: boolean | null;
+    };
+    if (rawValue.aplicarDescuento !== true) {
+      return null;
+    }
+
+    const originalAmount = rawValue.montoOriginal === null || rawValue.montoOriginal === undefined || rawValue.montoOriginal === ''
+      ? null
+      : Number(rawValue.montoOriginal);
+    const discountAmount = Number(rawValue.descuentoMonto ?? 0);
+    const discountPercentage = rawValue.descuentoPorcentaje === null || rawValue.descuentoPorcentaje === undefined || rawValue.descuentoPorcentaje === ''
+      ? null
+      : Number(rawValue.descuentoPorcentaje);
+
+    if (discountAmount < 0) {
+      return { discountAmountNegative: true };
+    }
+
+    if (originalAmount !== null && discountAmount > originalAmount) {
+      return { discountGreaterThanOriginal: true };
+    }
+
+    if (discountPercentage !== null && (discountPercentage < 0 || discountPercentage > 100)) {
+      return { discountPercentageRange: true };
+    }
+
+    return null;
+  }
+
+  private hasInitialDiscount(): boolean {
+    return this.data.payment?.tieneDescuento === true || Number(this.data.payment?.descuentoMonto ?? 0) > 0;
   }
 
   private getEffectiveMembership(client: Client | null): ClientMembership | null {
@@ -238,5 +389,29 @@ export class RegisterPaymentDialogComponent {
       : null;
 
     return paymentEmail || matchedDefault?.email || this.data.employees.find(employee => employee.email?.trim())?.email || '';
+  }
+
+  private applyDefaultEmployeeEmail(email: string): void {
+    const control = this.form.controls.collectedByEmployeeEmail;
+
+    if (control.dirty) {
+      return;
+    }
+
+    const matchedEmployee = this.findEmployeeByEmail(email);
+
+    if (matchedEmployee?.email) {
+      control.setValue(matchedEmployee.email);
+    }
+  }
+
+  private findEmployeeByEmail(email: string): Employee | null {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    return this.data.employees.find(employee => employee.email?.trim().toLowerCase() === normalizedEmail) ?? null;
   }
 }

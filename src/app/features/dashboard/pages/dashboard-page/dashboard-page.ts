@@ -12,8 +12,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
-import { catchError, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import {
+  DashboardFinancialSummaryResponse,
   DashboardPendingPayment,
   DashboardRecentPayment,
   DashboardSummaryResponse,
@@ -94,8 +95,10 @@ export class DashboardPageComponent implements AfterViewInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.dashboardService
-      .getSummary()
+    forkJoin({
+      summary: this.dashboardService.getSummary(),
+      financialSummary: this.dashboardService.getFinancialSummary().pipe(catchError(() => of(null)))
+    })
       .pipe(
         catchError(() => {
           this.errorMessage.set('No se pudo cargar el resumen del dashboard.');
@@ -103,15 +106,15 @@ export class DashboardPageComponent implements AfterViewInit {
         })
       )
       .subscribe({
-        next: summary => {
-          if (!summary) {
+        next: response => {
+          if (!response) {
             this.dashboard.set(null);
             this.lastUpdated.set(new Date());
             this.isLoading.set(false);
             return;
           }
 
-          this.dashboard.set(this.buildViewModel(summary));
+          this.dashboard.set(this.buildViewModel(response.summary, response.financialSummary));
           this.lastUpdated.set(new Date());
           this.isLoading.set(false);
           this.stabilizeLayout();
@@ -119,7 +122,10 @@ export class DashboardPageComponent implements AfterViewInit {
       });
   }
 
-  private buildViewModel(summary: DashboardSummaryResponse): DashboardViewModel {
+  private buildViewModel(
+    summary: DashboardSummaryResponse,
+    financialSummary: DashboardFinancialSummaryResponse | null
+  ): DashboardViewModel {
     return {
       stats: [
         {
@@ -159,6 +165,42 @@ export class DashboardPageComponent implements AfterViewInit {
           tone: 'accent'
         },
         {
+          label: 'Descuentos hoy',
+          value: summary.todayDiscountAmount ?? 0,
+          displayValue: this.formatCurrency(summary.todayDiscountAmount ?? 0),
+          hint: 'Bonificado durante la jornada',
+          icon: 'sell',
+          kind: 'currency',
+          tone: 'neutral'
+        },
+        {
+          label: 'Descuentos del mes',
+          value: summary.monthDiscountAmount ?? 0,
+          displayValue: this.formatCurrency(summary.monthDiscountAmount ?? 0),
+          hint: 'Total mensual descontado',
+          icon: 'local_offer',
+          kind: 'currency',
+          tone: 'accent'
+        },
+        {
+          label: 'Pagos con descuento',
+          value: financialSummary?.discountedPaymentsCount ?? 0,
+          displayValue: this.formatNumber(financialSummary?.discountedPaymentsCount ?? 0),
+          hint: 'Cobros con bonificacion en el periodo',
+          icon: 'confirmation_number',
+          kind: 'number',
+          tone: 'info'
+        },
+        {
+          label: 'Promedio descuento',
+          value: financialSummary?.averageDiscountAmount ?? 0,
+          displayValue: this.formatCurrency(financialSummary?.averageDiscountAmount ?? 0),
+          hint: `Total descontado ${this.formatCurrency(financialSummary?.totalDiscountAmount ?? 0)}`,
+          icon: 'percent',
+          kind: 'currency',
+          tone: 'neutral'
+        },
+        {
           label: 'Total de empleados',
           value: summary.totalEmployees,
           displayValue: this.formatNumber(summary.totalEmployees),
@@ -195,8 +237,12 @@ export class DashboardPageComponent implements AfterViewInit {
   private mapRecentPayments(items: DashboardRecentPayment[]): DashboardTableRow[] {
     return items.map(item => ({
       title: item.clientFullName,
-      line1: `${item.membershipPlanName} · ${item.paymentMethodName}`,
-      line2: `${this.formatCurrency(item.amount)} · ${this.formatDateTime(item.paymentDate)}`,
+      line1: item.hasDiscount
+        ? `${item.membershipPlanName} · Con descuento`
+        : `${item.membershipPlanName} · ${item.paymentMethodName}`,
+      line2: item.hasDiscount
+        ? `${this.formatCurrency(item.amount)} final · descuento ${this.formatCurrency(item.discountAmount ?? 0)}`
+        : `${this.formatCurrency(item.amount)} · ${this.formatDateTime(item.paymentDate)}`,
       route: `/clients/${item.clientId}`
     }));
   }

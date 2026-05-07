@@ -266,11 +266,11 @@ export class MembershipPlansPageComponent {
   }
 
   private getInitialFiltersExpanded(): boolean {
-    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 1024px)').matches;
   }
 
   private collapseFiltersOnMobile(): void {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches) {
       this.filtersExpanded.set(false);
     }
   }

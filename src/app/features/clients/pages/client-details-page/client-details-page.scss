@@ -261,6 +261,12 @@
   border: 1px solid #86efac;
 }
 
+.status-chip.discount {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+
 .status-chip.confirmed .mat-icon {
   width: 1rem;
   height: 1rem;
@@ -347,7 +353,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .page-topbar,
   .hero-card,
   .hero-actions {

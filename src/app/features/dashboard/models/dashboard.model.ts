@@ -7,6 +7,8 @@ export interface DashboardSummaryResponse {
   pendingPayments: number;
   todayIncome: number;
   monthIncome: number;
+  todayDiscountAmount?: number;
+  monthDiscountAmount?: number;
   totalEmployees: number;
   recentPayments: DashboardRecentPayment[];
   upcomingExpirations: DashboardUpcomingExpiration[];
@@ -49,6 +51,11 @@ export interface DashboardRecentPayment {
   clientFullName: string;
   paymentDate: string;
   amount: number;
+  originalAmount?: number | null;
+  discountAmount?: number | null;
+  discountPercentage?: number | null;
+  discountReason?: string | null;
+  hasDiscount?: boolean;
   status?: string;
   paymentMethodName: string;
   membershipPlanName: string;
@@ -63,6 +70,9 @@ export interface DashboardFinancialSummaryResponse {
   pendingConfirmationCount: number;
   projectedIncome: number;
   averageConfirmedTicket: number;
+  totalDiscountAmount?: number;
+  discountedPaymentsCount?: number;
+  averageDiscountAmount?: number;
 }
 
 export interface DashboardEmployeeCountResponse {

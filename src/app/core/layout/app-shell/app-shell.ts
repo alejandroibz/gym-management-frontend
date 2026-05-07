@@ -9,6 +9,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { RoleService } from '../../auth/role';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-shell',
@@ -45,7 +46,7 @@ export class AppShell {
   movementsMenuOpen = false;
 
   constructor() {
-    this.breakpointObserver.observe('(max-width: 767px)').subscribe(({ matches }) => {
+    this.breakpointObserver.observe('(max-width: 1024px)').subscribe(({ matches }) => {
       this.isMobile = matches;
 
       if (matches) {
@@ -122,7 +123,7 @@ export class AppShell {
   }
 
   logout(): void {
-    const returnTo = window.location.origin;
+    const returnTo = environment.auth0.logoutReturnTo || window.location.origin;
 
     this.auth.logout({
       logoutParams: {

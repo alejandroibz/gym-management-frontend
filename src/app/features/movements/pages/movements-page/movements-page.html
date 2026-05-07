@@ -108,6 +108,15 @@
               <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
             </mat-form-field>
 
+            <mat-form-field appearance="outline">
+              <mat-label>Descuento</mat-label>
+              <mat-select formControlName="hasDiscount">
+                <mat-option value="">Todos</mat-option>
+                <mat-option value="true">Con descuento</mat-option>
+                <mat-option value="false">Sin descuento</mat-option>
+              </mat-select>
+            </mat-form-field>
+
             <div class="inline-actions">
               <button mat-flat-button type="submit" [disabled]="isLoadingPayments()">
                 <mat-icon>search</mat-icon>
@@ -137,7 +146,8 @@
               <thead>
                 <tr>
                   <th>Cliente</th>
-                  <th>Monto</th>
+                  <th>Monto final</th>
+                  <th>Descuento</th>
                   <th>Estado</th>
                   <th>Metodo</th>
                   <th>Cobrado por</th>
@@ -158,6 +168,18 @@
                     </td>
                     <td>
                       <strong class="amount-cell">{{ formatCurrency(payment.monto) }}</strong>
+                      @if (hasPaymentDiscount(payment)) {
+                        <span class="amount-subline">Original {{ getPaymentOriginalAmountLabel(payment) }}</span>
+                      }
+                    </td>
+                    <td>
+                      @if (hasPaymentDiscount(payment)) {
+                        <span class="status-chip discount">Con descuento</span>
+                        <span class="amount-subline">{{ getPaymentDiscountLabel(payment) }}</span>
+                        <span class="amount-subline">{{ getPaymentDiscountReason(payment) }}</span>
+                      } @else {
+                        <span class="soft-chip">Sin descuento</span>
+                      }
                     </td>
                     <td>
                       <span class="status-chip" [class.confirmed]="isConfirmedPayment(payment.estado)" [class.pending]="!isConfirmedPayment(payment.estado)">
@@ -196,6 +218,9 @@
                 <div class="record-head">
                   <div>
                     <strong class="record-amount">{{ formatCurrency(payment.monto) }}</strong>
+                    @if (hasPaymentDiscount(payment)) {
+                      <span class="amount-subline">Original {{ getPaymentOriginalAmountLabel(payment) }}</span>
+                    }
                     <p class="record-title">{{ getClientName(payment.clientId) }}</p>
                     <span class="record-subtitle">{{ payment.membershipPlanNombre || 'Membresia sin nombre' }}</span>
                   </div>
@@ -205,10 +230,29 @@
                       {{ isConfirmedPayment(payment.estado) ? 'Confirmado' : payment.estado }}
                     </span>
                     <span class="soft-chip">{{ payment.fechaPago | date: 'dd/MM/yyyy' }}</span>
+                    @if (hasPaymentDiscount(payment)) {
+                      <span class="status-chip discount">Con descuento</span>
+                    }
                   </div>
                 </div>
 
                 <div class="record-grid">
+                  <div>
+                    <span>Monto final</span>
+                    <strong>{{ formatCurrency(payment.monto) }}</strong>
+                  </div>
+                  <div>
+                    <span>Monto original</span>
+                    <strong>{{ hasPaymentDiscount(payment) ? getPaymentOriginalAmountLabel(payment) : 'Sin descuento' }}</strong>
+                  </div>
+                  <div>
+                    <span>Descuento aplicado</span>
+                    <strong>{{ getPaymentDiscountLabel(payment) }}</strong>
+                  </div>
+                  <div>
+                    <span>Motivo descuento</span>
+                    <strong>{{ hasPaymentDiscount(payment) ? getPaymentDiscountReason(payment) : 'Sin motivo' }}</strong>
+                  </div>
                   <div>
                     <span>Metodo</span>
                     <strong>{{ payment.paymentMethodNombre || 'Sin dato' }}</strong>

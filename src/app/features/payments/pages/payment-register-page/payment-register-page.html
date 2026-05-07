@@ -1,0 +1,195 @@
+<section class="payment-register-page">
+  <nav class="return-actions" aria-label="Accesos de vuelta">
+    <button mat-stroked-button type="button" routerLink="/clients">
+      <mat-icon>groups</mat-icon>
+      Pantalla clientes
+    </button>
+
+    <button mat-stroked-button type="button" routerLink="/movements">
+      <mat-icon>payments</mat-icon>
+      Pantalla movimientos
+    </button>
+  </nav>
+
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Cobros</p>
+      <h1>Registrar cobro</h1>
+      <p>Selecciona el cliente, el tipo de cobro y confirma el monto antes de registrarlo.</p>
+    </div>
+
+    <button mat-stroked-button type="button" (click)="cancel()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="feedback-banner error">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="36"></mat-spinner>
+      <span>Cargando datos para registrar el cobro...</span>
+    </div>
+  } @else {
+    <form class="payment-layout" [formGroup]="form" (ngSubmit)="confirmPayment()">
+      <mat-card class="form-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">Cliente y concepto</p>
+            <h2>Datos del cobro</h2>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="span-2">
+            <mat-label>Cliente</mat-label>
+            <mat-select formControlName="clientId" (selectionChange)="onClientChange()">
+              @for (client of clients(); track client.id) {
+                <mat-option [value]="client.id">{{ getClientLabel(client) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo de cobro</mat-label>
+            <mat-select formControlName="cashMovementCategoryId" (selectionChange)="onCategoryChange()">
+              @for (category of incomeCategories(); track category.id) {
+                <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Metodo de cobro</mat-label>
+            <mat-select formControlName="paymentMethodId">
+              @for (method of paymentMethods(); track method.id) {
+                <mat-option [value]="method.id">{{ getPaymentMethodLabel(method) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          @if (isMembershipPayment()) {
+            <div class="context-box span-2" [class.warning]="!currentMembership()?.id">
+              <span>{{ currentMembership()?.id ? 'Membresia asociada' : 'Sin membresia activa' }}</span>
+              <strong>{{ membershipLabel() }}</strong>
+              @if (!currentMembership()?.id) {
+                <small>Para cobrar membresia, el cliente debe tener una membresia activa.</small>
+              }
+            </div>
+          } @else {
+            <div class="context-box span-2">
+              <span>Tipo seleccionado</span>
+              <strong>{{ paymentTypeLabel() }}</strong>
+            </div>
+          }
+
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha de cobro</mat-label>
+            <input matInput type="date" formControlName="fechaPago" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Empleado responsable</mat-label>
+            <mat-select formControlName="collectedByEmployeeEmail">
+              @for (employee of employees(); track employee.id) {
+                <mat-option [value]="employee.email" [disabled]="!canSelectEmployee(employee)">
+                  {{ getEmployeeLabel(employee) }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </mat-card>
+
+      <mat-card class="form-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">Importes</p>
+            <h2>Monto a cobrar</h2>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Monto final cobrado</mat-label>
+            <input matInput type="number" min="0" step="0.01" formControlName="monto" />
+          </mat-form-field>
+
+          <div class="discount-toggle">
+            <mat-checkbox formControlName="aplicarDescuento" (change)="onDiscountToggle()">Aplicar descuento</mat-checkbox>
+            @if (hasDiscount()) {
+              <span class="discount-badge">Con descuento</span>
+            }
+          </div>
+
+          @if (isDiscountApplied()) {
+            <div class="discount-box span-2" [class.has-discount]="hasDiscount()">
+            <div class="discount-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Descuento %</mat-label>
+                <input matInput type="number" min="0" max="100" step="0.01" formControlName="descuentoPorcentaje" (input)="onDiscountPercentageInput()" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Descuento en pesos</mat-label>
+                <input matInput type="number" min="0" step="0.01" formControlName="descuentoMonto" (input)="onDiscountAmountInput()" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Monto original</mat-label>
+                <input matInput type="number" min="0" step="0.01" formControlName="montoOriginal" (input)="onOriginalAmountInput()" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                  <mat-label>Motivo del descuento</mat-label>
+                  <input matInput maxlength="160" formControlName="descuentoMotivo" />
+                </mat-form-field>
+              </div>
+
+              @if (form.hasError('discountGreaterThanOriginal')) {
+                <small>El descuento no puede superar el monto original.</small>
+              }
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <aside class="summary-card">
+        <div>
+          <p class="eyebrow">Resumen</p>
+          <h2>{{ formatCurrency(form.controls.monto.value ?? 0) }}</h2>
+          <span>Monto final cobrado</span>
+        </div>
+
+        <div class="summary-list">
+          <div>
+            <span>Cliente</span>
+            <strong>{{ selectedClient() ? getClientLabel(selectedClient()!) : 'Sin seleccionar' }}</strong>
+          </div>
+          <div>
+            <span>Concepto</span>
+            <strong>{{ isMembershipPayment() ? membershipLabel() : paymentTypeLabel() }}</strong>
+          </div>
+          <div>
+            <span>Descuento</span>
+            <strong>{{ hasDiscount() ? formatCurrency(form.controls.descuentoMonto.value ?? 0) : 'Sin descuento' }}</strong>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button mat-stroked-button type="button" (click)="cancel()">Cancelar</button>
+          <button mat-flat-button type="submit" [disabled]="isSaving() || form.invalid">
+            <mat-icon>check_circle</mat-icon>
+            Confirmar cobro
+          </button>
+        </div>
+      </aside>
+    </form>
+  }
+</section>

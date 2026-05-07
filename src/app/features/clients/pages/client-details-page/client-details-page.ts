@@ -15,9 +15,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
-import { PaymentCreatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
-import { RegisterClientPaymentDialogComponent } from '../../components/register-client-payment-dialog/register-client-payment-dialog';
 import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 
@@ -237,43 +235,16 @@ export class ClientDetailsPageComponent {
 
   openRegisterPaymentDialog(): void {
     const client = this.client();
-    const membership = this.currentMembership();
 
     if (!client) {
       return;
     }
 
-    const dialogRef = this.dialog.open(RegisterClientPaymentDialogComponent, {
-      width: '720px',
-      maxWidth: 'calc(100vw - 1rem)',
-      autoFocus: false,
-      panelClass: 'employee-dialog-panel',
-      backdropClass: 'employee-dialog-backdrop',
-      data: {
+    this.router.navigate(['/movements/payments/new'], {
+      queryParams: {
         clientId: client.id,
-        clientMembershipId: membership?.id ?? null,
-        defaultAmount: membership?.precioFinal ?? 0
+        from: 'clients'
       }
-    });
-
-    dialogRef.afterClosed().subscribe((payload?: PaymentCreatePayload) => {
-      if (!payload) {
-        return;
-      }
-
-      this.isSaving.set(true);
-      this.errorMessage.set('');
-
-      this.paymentsService.create(payload).subscribe({
-        next: () => {
-          this.isSaving.set(false);
-          this.loadClient();
-        },
-        error: error => {
-          this.isSaving.set(false);
-          this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo registrar el pago.'));
-        }
-      });
     });
   }
 
@@ -282,7 +253,7 @@ export class ClientDetailsPageComponent {
     const cashMovementCategoryId = this.getPaymentCashMovementCategoryId(payment);
 
     if (!paymentId || !cashMovementCategoryId) {
-      this.errorMessage.set('No se pudo identificar la categoria del movimiento para confirmar el pago.');
+      this.errorMessage.set('No se pudo identificar la categoria del movimiento para confirmar el cobro.');
       return;
     }
 
@@ -291,8 +262,8 @@ export class ClientDetailsPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Confirmar pago',
-        message: 'Se marcara este pago como confirmado.',
+        title: 'Confirmar cobro',
+        message: 'Se marcara este cobro como confirmado.',
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -314,7 +285,7 @@ export class ClientDetailsPageComponent {
         },
         error: () => {
           this.isSaving.set(false);
-          this.errorMessage.set('No se pudo confirmar el pago.');
+          this.errorMessage.set('No se pudo confirmar el cobro.');
         }
       });
     });
@@ -364,7 +335,7 @@ export class ClientDetailsPageComponent {
       }).format(amount);
     }
 
-    return 'Pago registrado';
+    return 'Cobro registrado';
   }
 
   getPaymentSupportingText(payment: ClientRelationRecord): string {
@@ -378,7 +349,7 @@ export class ClientDetailsPageComponent {
     const paymentDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
 
     if (typeof paymentDate === 'string' && this.looksLikeDate(paymentDate)) {
-      return `Pago del ${new Intl.DateTimeFormat('es-AR').format(new Date(paymentDate))}`;
+      return `Cobro del ${new Intl.DateTimeFormat('es-AR').format(new Date(paymentDate))}`;
     }
 
     return this.getPaymentStateLabel(payment);
@@ -387,6 +358,12 @@ export class ClientDetailsPageComponent {
   isPendingPayment(payment: ClientRelationRecord): boolean {
     const normalizedState = this.getPaymentRawState(payment)?.trim().toLowerCase();
     return normalizedState === 'pending' || normalizedState === 'pendiente';
+  }
+
+  hasPaymentDiscount(payment: ClientRelationRecord): boolean {
+    const hasDiscount = this.getPaymentField(payment, ['tienedescuento', 'hasdiscount']);
+    const discountAmount = this.getNumericPaymentField(payment, ['descuentomonto', 'discountamount']);
+    return hasDiscount === true || discountAmount !== null && discountAmount > 0;
   }
 
   getMembershipLabel(): string {
@@ -499,9 +476,24 @@ export class ClientDetailsPageComponent {
 
     switch (normalizedKey) {
       case 'fechapago':
-        return 'Fecha de pago';
+        return 'Fecha de cobro';
       case 'monto':
-        return 'Monto';
+        return 'Monto final';
+      case 'montooriginal':
+      case 'originalamount':
+        return 'Monto original';
+      case 'descuentomonto':
+      case 'discountamount':
+        return 'Descuento aplicado';
+      case 'descuentoporcentaje':
+      case 'discountpercentage':
+        return 'Descuento %';
+      case 'descuentomotivo':
+      case 'discountreason':
+        return 'Motivo descuento';
+      case 'tienedescuento':
+      case 'hasdiscount':
+        return 'Descuento';
       case 'estado':
         return 'Estado';
       case 'periodyear':
@@ -509,11 +501,11 @@ export class ClientDetailsPageComponent {
       case 'periodmonth':
         return 'Mes';
       case 'paymentmethod':
-        return 'Metodo de pago';
+        return 'Metodo de cobro';
       case 'paymentmethodname':
-        return 'Metodo de pago';
+        return 'Metodo de cobro';
       case 'paymentmethodnombre':
-        return 'Metodo de pago';
+        return 'Metodo de cobro';
       case 'cashmovementcategorynombre':
       case 'cashmovementcategoryname':
         return 'Categoria movimiento';
@@ -532,8 +524,26 @@ export class ClientDetailsPageComponent {
   }
 
   private formatPaymentFieldValue(key: string, value: unknown): string {
+    const normalizedKey = key.trim().toLowerCase();
+
     if (key.trim().toLowerCase() === 'estado' && typeof value === 'string') {
       return this.getMembershipStateLabel(value);
+    }
+
+    if (['monto', 'amount', 'montooriginal', 'originalamount', 'descuentomonto', 'discountamount'].includes(normalizedKey)) {
+      const numericValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : null;
+
+      if (numericValue !== null && !Number.isNaN(numericValue)) {
+        return new Intl.NumberFormat('es-AR', {
+          style: 'currency',
+          currency: 'ARS',
+          maximumFractionDigits: 0
+        }).format(numericValue);
+      }
+    }
+
+    if (['tienedescuento', 'hasdiscount'].includes(normalizedKey) && typeof value === 'boolean') {
+      return value ? 'Con descuento' : 'Sin descuento';
     }
 
     if (typeof value === 'string' && this.looksLikeDate(value)) {

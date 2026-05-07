@@ -8,7 +8,7 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { SpanishPaginatorIntl } from './core/services/spanish-paginator-intl';
 
-const redirectUri = window.location.origin;
+const redirectUri = environment.auth0.redirectUri || window.location.origin;
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -5,6 +5,8 @@ export const environment = {
     domain: 'simbiosisgymapp.us.auth0.com',
     clientId: 'sxYsO6V0lt851PnXYBV6JBmoMVF3bN5v',
     audience: 'https://gymmanagement-api',
-    rolesClaim: 'https://gymmanagement-api/roles'
+    rolesClaim: 'https://gymmanagement-api/roles',
+    redirectUri: 'http://localhost:4200',
+    logoutReturnTo: 'http://localhost:4200'
   }
 };

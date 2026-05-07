@@ -68,9 +68,53 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Monto</mat-label>
+        <mat-label>Monto final cobrado</mat-label>
         <input matInput type="number" min="0" step="0.01" formControlName="monto" />
       </mat-form-field>
+
+      <div class="discount-toggle span-2">
+        <mat-checkbox formControlName="aplicarDescuento" (change)="onDiscountToggle()">Aplicar descuento</mat-checkbox>
+        @if (hasDiscount()) {
+          <span class="discount-badge">Con descuento</span>
+        }
+      </div>
+
+      @if (isDiscountApplied()) {
+        <div class="discount-box span-2" [class.has-discount]="hasDiscount()">
+          <div class="discount-heading">
+            <div>
+              <span class="context-label">Descuento</span>
+              <strong>Detalle del descuento aplicado</strong>
+            </div>
+          </div>
+
+          <div class="discount-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Descuento %</mat-label>
+              <input matInput type="number" min="0" max="100" step="0.01" formControlName="descuentoPorcentaje" (input)="onDiscountPercentageInput()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Descuento en pesos</mat-label>
+              <input matInput type="number" min="0" step="0.01" formControlName="descuentoMonto" (input)="onDiscountAmountInput()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Monto original</mat-label>
+              <input matInput type="number" min="0" step="0.01" formControlName="montoOriginal" (input)="onOriginalAmountInput()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Motivo del descuento</mat-label>
+              <input matInput maxlength="160" formControlName="descuentoMotivo" />
+            </mat-form-field>
+          </div>
+
+          @if (form.hasError('discountGreaterThanOriginal')) {
+            <small>El descuento no puede superar el monto original.</small>
+          }
+        </div>
+      }
 
       <mat-form-field appearance="outline">
         <mat-label>Mes</mat-label>

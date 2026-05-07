@@ -57,7 +57,7 @@
 
           <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
             <mat-icon>payments</mat-icon>
-            Registrar pago
+            Registrar cobro
           </button>
 
           <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteClient()">
@@ -279,15 +279,15 @@
       <mat-card class="content-card span-full">
         <div class="card-heading">
           <div>
-            <h2>Pagos registrados de membresias.</h2>
-            <p>Historial de pagos asociado al cliente.</p>
+            <h2>Cobros registrados.</h2>
+            <p>Historial de cobros asociado al cliente.</p>
           </div>
         </div>
 
         @if (payments().length === 0) {
           <div class="empty-state compact">
             <mat-icon>receipt_long</mat-icon>
-            <p>No hay pagos registrados para este cliente.</p>
+            <p>No hay cobros registrados para este cliente.</p>
           </div>
         } @else {
           <div class="payments-grid">
@@ -295,15 +295,18 @@
               <article class="payment-card">
                 <div class="payment-card-header">
                   <div class="payment-card-copy">
-                    <strong>Pago registrado</strong>
+                    <strong>Cobro registrado</strong>
                     <span>{{ getPaymentStateLabel(payment) }}</span>
                   </div>
 
                   <div class="payment-card-actions">
+                    @if (hasPaymentDiscount(payment)) {
+                      <span class="status-chip discount">Con descuento</span>
+                    }
                     @if (isPendingPayment(payment)) {
                       <span class="status-chip pending">Pendiente</span>
                       <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="confirmPayment(payment)">
-                        Confirmar pago
+                        Confirmar cobro
                       </button>
                     }
                   </div>

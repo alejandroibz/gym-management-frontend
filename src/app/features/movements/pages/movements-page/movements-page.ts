@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
-import { take } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -57,6 +57,7 @@ export class MovementsPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
   private readonly paymentsService = inject(PaymentsService);
@@ -97,6 +98,7 @@ export class MovementsPageComponent {
 
   readonly paymentFiltersForm = this.formBuilder.nonNullable.group({
     clientId: [''],
+    hasDiscount: [''],
     periodYear: [this.currentYear],
     periodMonth: [this.currentMonth]
   });
@@ -131,6 +133,9 @@ export class MovementsPageComponent {
     if (raw.clientId) {
       count += 1;
     }
+    if (raw.hasDiscount) {
+      count += 1;
+    }
     if (Number(raw.periodYear) !== this.currentYear) {
       count += 1;
     }
@@ -155,8 +160,10 @@ export class MovementsPageComponent {
   });
 
   constructor() {
-    this.auth.user$.pipe(take(1)).subscribe(user => {
-      this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
+    this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
+      if (typeof user?.email === 'string' && user.email.trim()) {
+        this.currentUserEmail.set(user.email.trim());
+      }
     });
     this.loadLookups();
     this.loadPayments();
@@ -173,6 +180,7 @@ export class MovementsPageComponent {
   resetPaymentFilters(): void {
     this.paymentFiltersForm.reset({
       clientId: '',
+      hasDiscount: '',
       periodYear: this.currentYear,
       periodMonth: this.currentMonth
     });
@@ -188,6 +196,15 @@ export class MovementsPageComponent {
   }
 
   openPaymentDialog(payment?: Payment): void {
+    if (!payment) {
+      this.router.navigate(['/movements/payments/new'], {
+        queryParams: {
+          from: 'movements'
+        }
+      });
+      return;
+    }
+
     if (this.categories().length === 0) {
       this.openMissingCategoriesDialog();
       return;
@@ -478,6 +495,29 @@ export class MovementsPageComponent {
     return payment.collectedByEmployeeNombre || payment.collectedByEmployeeEmail || 'Sin dato';
   }
 
+  hasPaymentDiscount(payment: Payment): boolean {
+    return payment.tieneDescuento === true || Number(payment.descuentoMonto ?? 0) > 0;
+  }
+
+  getPaymentOriginalAmountLabel(payment: Payment): string {
+    return payment.montoOriginal !== null && payment.montoOriginal !== undefined
+      ? this.formatCurrency(payment.montoOriginal)
+      : 'Sin dato';
+  }
+
+  getPaymentDiscountLabel(payment: Payment): string {
+    const discountAmount = Number(payment.descuentoMonto ?? 0);
+    const percentage = payment.descuentoPorcentaje !== null && payment.descuentoPorcentaje !== undefined
+      ? ` (${payment.descuentoPorcentaje}%)`
+      : '';
+
+    return discountAmount > 0 ? `${this.formatCurrency(discountAmount)}${percentage}` : 'Sin descuento';
+  }
+
+  getPaymentDiscountReason(payment: Payment): string {
+    return payment.descuentoMotivo?.trim() || 'Sin motivo';
+  }
+
   getMovementRegisteredByLabel(movement: CashMovement): string {
     return movement.registeredByEmployeeNombre || movement.registeredByEmployeeEmail || 'Sin dato';
   }
@@ -572,6 +612,7 @@ export class MovementsPageComponent {
 
     this.paymentsService.getPaged(this.paymentPageNumber(), this.paymentPageSize(), {
       clientId: filtersRaw.clientId ? Number(filtersRaw.clientId) : undefined,
+      hasDiscount: filtersRaw.hasDiscount === '' ? undefined : filtersRaw.hasDiscount === 'true',
       periodYear: Number(filtersRaw.periodYear),
       periodMonth: Number(filtersRaw.periodMonth)
     }).subscribe({
@@ -592,17 +633,18 @@ export class MovementsPageComponent {
   }
 
   private toPaymentUpdatePayload(id: number, payload: PaymentCreatePayload): PaymentUpdatePayload {
-    const method = this.paymentMethods().find(item => item.id === payload.paymentMethodId);
-
     return {
       id,
       clientId: payload.clientId,
       clientMembershipId: payload.clientMembershipId,
       fechaPago: payload.fechaPago,
       monto: payload.monto,
-      medioPago: method ? this.getPaymentMethodLabel(method) : `Metodo #${payload.paymentMethodId}`,
-      estado: this.payments().find(payment => payment.id === id)?.estado ?? 'Pendiente',
+      montoOriginal: payload.montoOriginal,
+      descuentoMonto: payload.descuentoMonto,
+      descuentoPorcentaje: payload.descuentoPorcentaje,
+      descuentoMotivo: payload.descuentoMotivo,
       paymentMethodId: payload.paymentMethodId,
+      cashMovementCategoryId: payload.cashMovementCategoryId,
       periodYear: payload.periodYear,
       periodMonth: payload.periodMonth,
       collectedByEmployeeEmail: payload.collectedByEmployeeEmail
@@ -696,11 +738,11 @@ export class MovementsPageComponent {
   }
 
   private getInitialFiltersExpanded(): boolean {
-    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 768px)').matches;
+    return typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 1024px)').matches;
   }
 
   private collapseSectionOnMobile(section: { set(value: boolean): void }): void {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches) {
       section.set(false);
     }
   }

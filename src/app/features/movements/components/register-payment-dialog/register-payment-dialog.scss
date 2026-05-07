@@ -56,6 +56,51 @@
   border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.discount-box {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: #fff7ed;
+  border: 1px solid rgba(234, 88, 12, 0.18);
+}
+
+.discount-box.has-discount {
+  background: #fef3c7;
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+.discount-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 40px;
+}
+
+.discount-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.discount-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.discount-badge {
+  flex-shrink: 0;
+  padding: 0.38rem 0.68rem;
+  border-radius: 999px;
+  background: #fde68a;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .context-label {
   display: block;
   margin-bottom: 0.25rem;
@@ -76,6 +121,11 @@
   color: #a16207;
 }
 
+.discount-box small {
+  color: #b45309;
+  font-weight: 700;
+}
+
 .dialog-actions {
   grid-auto-flow: column;
   justify-content: end;
@@ -90,12 +140,20 @@
   background: #ffffff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dialog-shell {
     padding: 1rem;
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .discount-heading {
+    display: grid;
+  }
+
+  .discount-grid {
     grid-template-columns: 1fr;
   }
 

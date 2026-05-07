@@ -108,6 +108,16 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'movements/payments/new',
+        loadComponent: () =>
+          import('./features/payments/pages/payment-register-page/payment-register-page')
+            .then(m => m.PaymentRegisterPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
         path: 'movements/categories',
         loadComponent: () =>
           import('./features/cash-movement-categories/pages/cash-movement-categories-page/cash-movement-categories-page')

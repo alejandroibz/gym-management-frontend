@@ -34,6 +34,7 @@
 .dialog-copy p {
   margin: 0.45rem 0 0;
   color: var(--app-text-muted);
+  white-space: pre-line;
 }
 
 .dialog-actions {
@@ -47,7 +48,7 @@
   color: #fff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dialog-shell {
     padding: 1rem;
   }

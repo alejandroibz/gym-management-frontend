@@ -4,6 +4,11 @@ export interface Payment {
   clientMembershipId: number;
   fechaPago: string;
   monto: number;
+  montoOriginal?: number | null;
+  descuentoMonto?: number | null;
+  descuentoPorcentaje?: number | null;
+  descuentoMotivo?: string | null;
+  tieneDescuento?: boolean;
   estado: string;
   paymentMethodId: number;
   paymentMethodNombre?: string | null;
@@ -21,6 +26,7 @@ export interface PaymentFilters {
   clientId?: number;
   periodYear?: number;
   periodMonth?: number;
+  hasDiscount?: boolean;
 }
 
 export interface PaymentCreatePayload {
@@ -28,6 +34,10 @@ export interface PaymentCreatePayload {
   clientMembershipId?: number | null;
   fechaPago: string;
   monto: number;
+  montoOriginal?: number | null;
+  descuentoMonto: number;
+  descuentoPorcentaje?: number | null;
+  descuentoMotivo?: string | null;
   paymentMethodId: number;
   cashMovementCategoryId: number;
   periodYear: number;
@@ -35,16 +45,6 @@ export interface PaymentCreatePayload {
   collectedByEmployeeEmail: string;
 }
 
-export interface PaymentUpdatePayload {
+export interface PaymentUpdatePayload extends PaymentCreatePayload {
   id: number;
-  clientId: number;
-  clientMembershipId?: number | null;
-  fechaPago: string;
-  monto: number;
-  medioPago: string;
-  estado: string;
-  paymentMethodId: number;
-  periodYear: number;
-  periodMonth: number;
-  collectedByEmployeeEmail: string;
 }

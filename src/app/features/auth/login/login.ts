@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
 import { filter } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -33,6 +34,9 @@ export class LoginComponent {
 
   login(): void {
     this.auth.loginWithRedirect({
+      authorizationParams: {
+        redirect_uri: environment.auth0.redirectUri || window.location.origin
+      },
       appState: {
         target: '/dashboard'
       }
@@ -40,7 +44,7 @@ export class LoginComponent {
   }
 
   logout(): void {
-    const returnTo = window.location.origin;
+    const returnTo = environment.auth0.logoutReturnTo || window.location.origin;
 
     this.auth.logout({
       logoutParams: {

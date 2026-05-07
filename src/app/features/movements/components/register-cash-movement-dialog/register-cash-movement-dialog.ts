@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthService } from '@auth0/auth0-angular';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -41,6 +43,8 @@ export interface RegisterCashMovementDialogData {
 export class RegisterCashMovementDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<RegisterCashMovementDialogComponent, CashMovementCreatePayload>);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly data = inject<RegisterCashMovementDialogData>(MAT_DIALOG_DATA);
   readonly isEditing = !!this.data.movement;
 
@@ -78,6 +82,14 @@ export class RegisterCashMovementDialogComponent {
     relatedEmployeeId: [this.data.movement?.relatedEmployeeId ?? null as number | null],
     registeredByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
   });
+
+  constructor() {
+    this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
+      if (!this.isEditing && typeof user?.email === 'string') {
+        this.applyDefaultEmployeeEmail(user.email);
+      }
+    });
+  }
 
   close(): void {
     this.dialogRef.close();
@@ -160,6 +172,30 @@ export class RegisterCashMovementDialogComponent {
       : null;
 
     return movementEmail || matchedDefault?.email || this.data.employees.find(employee => employee.email?.trim())?.email || '';
+  }
+
+  private applyDefaultEmployeeEmail(email: string): void {
+    const control = this.form.controls.registeredByEmployeeEmail;
+
+    if (control.dirty) {
+      return;
+    }
+
+    const matchedEmployee = this.findEmployeeByEmail(email);
+
+    if (matchedEmployee?.email) {
+      control.setValue(matchedEmployee.email);
+    }
+  }
+
+  private findEmployeeByEmail(email: string): Employee | null {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    return this.data.employees.find(employee => employee.email?.trim().toLowerCase() === normalizedEmail) ?? null;
   }
 
   private toDateInputValue(value: string): string {
