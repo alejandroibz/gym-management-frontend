@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "deploy:github": "ng build --configuration production --base-href / && ngh --dir=dist/gym-management-frontend/browser --cname=www.simbiosisgym.com.ar",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

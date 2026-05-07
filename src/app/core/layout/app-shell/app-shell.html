@@ -78,30 +78,35 @@
       </mat-nav-list>
 
       <div class="sidebar-footer">
-        <div class="sidebar-footer-card" *ngIf="!isCollapsed">
-          <div class="footer-dot"></div>
-          <div>
-            <strong>Gestion central</strong>
-            <p>Accesos rapidos del sistema</p>
-          </div>
-        </div>
-
         @if (!isCollapsed && (user$ | async); as user) {
-          <div class="sidebar-user-card">
-            <span>Bienvenido/a</span>
-            <strong>{{ getUserDisplayName(user) }}</strong>
-          </div>
-        }
+          <div class="sidebar-session-card">
+            <div class="session-heading">
+              <div class="footer-dot"></div>
+              <div>
+                <strong>Gestion central</strong>
+                <p>{{ getUserDisplayName(user) }}</p>
+              </div>
+            </div>
 
-        <button
-          mat-stroked-button
-          type="button"
-          class="logout-button"
-          (click)="logout()"
-          [attr.aria-label]="isCollapsed ? 'Cerrar sesion' : null">
-          <mat-icon>logout</mat-icon>
-          <span *ngIf="!isCollapsed">Cerrar sesion</span>
-        </button>
+            <button
+              mat-stroked-button
+              type="button"
+              class="logout-button"
+              (click)="logout()">
+              <mat-icon>logout</mat-icon>
+              <span>Cerrar sesion</span>
+            </button>
+          </div>
+        } @else {
+          <button
+            mat-stroked-button
+            type="button"
+            class="logout-button"
+            (click)="logout()"
+            [attr.aria-label]="isCollapsed ? 'Cerrar sesion' : null">
+            <mat-icon>logout</mat-icon>
+          </button>
+        }
       </div>
     </div>
   </mat-sidenav>
