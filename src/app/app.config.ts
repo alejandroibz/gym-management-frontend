@@ -8,25 +8,38 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { SpanishPaginatorIntl } from './core/services/spanish-paginator-intl';
 
-const redirectUri = environment.auth0.redirectUri || window.location.origin;
+const redirectUri = `${window.location.origin}/`;
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withInterceptors([authHttpInterceptorFn])),
+
+    provideHttpClient(
+      withInterceptors([authHttpInterceptorFn])
+    ),
+
     provideRouter(routes),
-    { provide: MatPaginatorIntl, useClass: SpanishPaginatorIntl },
+
+    {
+      provide: MatPaginatorIntl,
+      useClass: SpanishPaginatorIntl
+    },
+
     provideAuth0({
       domain: environment.auth0.domain,
+
       clientId: environment.auth0.clientId,
+
       authorizationParams: {
         redirect_uri: redirectUri,
         audience: environment.auth0.audience
       },
+
       httpInterceptor: {
         allowedList: [
           {
             uri: `${environment.apiUrl}/api/*`,
+
             tokenOptions: {
               authorizationParams: {
                 audience: environment.auth0.audience
