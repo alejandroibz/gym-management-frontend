@@ -195,8 +195,12 @@ export class HealthPageComponent {
     this.loadLookups();
     this.loadHealthData();
     this.route.queryParamMap.subscribe(params => {
-      if (params.get('tab') === 'patients') {
+      const tab = params.get('tab');
+      if (tab === 'patients') {
         this.selectedTabIndex.set(1);
+      }
+      if (tab === 'payments' || tab === 'plans') {
+        this.selectedTabIndex.set(2);
       }
       const employeeId = Number(params.get('employeeId'));
       if (employeeId > 0) {

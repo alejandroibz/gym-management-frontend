@@ -53,14 +53,16 @@
     </div>
   }
 
+
+
   <section class="content-grid">
     <div class="main-column">
       <mat-card class="panel-card" id="pagos">
         <div class="panel-heading">
           <div>
-            <p class="panel-kicker">Cobros de clientes</p>
-            <h2>Pagos registrados por alumnos/clientes</h2>
-            <p>Estos registros son cobros de membresias, clases u otros pagos de clientes. No son movimientos manuales de caja.</p>
+            <p class="panel-kicker">Cobros del gimnasio</p>
+            <h2>Pagos registrados por alumnos/clientes del gimnasio</h2>
+            <p>Estos registros son cobros de membresias, clases u otros pagos propios del gimnasio. No incluyen cobros, planes ni servicios del modulo de salud.</p>
           </div>
           <div class="heading-side">
             <div class="heading-metrics">
@@ -304,7 +306,20 @@
           (page)="handlePaymentPageChange($event)">
         </mat-paginator>
       </mat-card>
+  <mat-card class="health-payments-card">
+    <div class="health-payments-copy">
+      <mat-icon>medical_services</mat-icon>
+      <div>
+        <h2>Pagos de salud y kinesiologia</h2>
+        <p>Los cobros de pacientes, planes mensuales y servicios de salud se gestionan en el modulo de salud.</p>
+      </div>
+    </div>
 
+    <button mat-flat-button type="button" class="health-payments-action" routerLink="/health" [queryParams]="{ tab: 'payments' }">
+      <mat-icon>open_in_new</mat-icon>
+      Ir a pagos de salud
+    </button>
+  </mat-card>
       <mat-card class="panel-card" id="caja">
         <div class="panel-heading">
           <div>

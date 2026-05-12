@@ -9,12 +9,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { Router } from '@angular/router';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
+import { HealthProfessional } from '../../../health/models/health.model';
 import { Employee, EmployeeAppAccessPayload, EmployeeAppRole } from '../../models/employee.model';
 
 export interface EmployeeDialogData {
   employee?: Employee;
   categories: EmployeeCategory[];
+  healthProfessional?: HealthProfessional | null;
 }
 
 export interface EmployeeDialogResult {
@@ -53,6 +56,7 @@ export interface EmployeeDialogResult {
 export class EmployeeDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly dialogRef = inject(MatDialogRef<EmployeeDialogComponent, EmployeeDialogResult>);
   readonly data = inject<EmployeeDialogData>(MAT_DIALOG_DATA);
   readonly appRoleOptions: EmployeeAppRole[] = ['Admin', 'SuperAdmin'];
@@ -111,6 +115,24 @@ export class EmployeeDialogComponent {
 
   close(): void {
     this.dialogRef.close();
+  }
+
+  getHealthProfessionalLabel(): string {
+    const professional = this.data.healthProfessional;
+    return professional?.professionalTypeName || professional?.specialty || 'Profesional de salud';
+  }
+
+  openHealthManagement(): void {
+    const employee = this.data.employee;
+
+    if (!employee) {
+      return;
+    }
+
+    this.dialogRef.close();
+    this.router.navigate(['/health'], {
+      queryParams: { employeeId: employee.id }
+    });
   }
 
   onDniInput(): void {

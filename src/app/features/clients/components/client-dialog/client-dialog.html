@@ -59,7 +59,13 @@
 
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Observaciones</mat-label>
-        <textarea matInput formControlName="observaciones" rows="5" [maxlength]="observacionesMaxLength"></textarea>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="3"
+          cdkAutosizeMaxRows="12"
+          formControlName="observaciones"
+          [maxlength]="observacionesMaxLength"></textarea>
         <mat-hint align="end">Te quedan {{ observacionesRemaining() }} caracteres</mat-hint>
         <mat-error>Las observaciones no pueden superar {{ observacionesMaxLength }} caracteres.</mat-error>
       </mat-form-field>

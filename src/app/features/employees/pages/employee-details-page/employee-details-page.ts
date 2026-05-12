@@ -15,6 +15,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
+import { HealthProfessional } from '../../../health/models/health.model';
+import { HealthServiceApi } from '../../../health/services/health.service';
 import { Employee, EmployeeAppRole, EmployeeUpdatePayload } from '../../models/employee.model';
 import { EmployeesService } from '../../services/employees.service';
 
@@ -48,9 +50,11 @@ export class EmployeeDetailsPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly employeesService = inject(EmployeesService);
   private readonly employeeCategoriesService = inject(EmployeeCategoriesService);
+  private readonly healthService = inject(HealthServiceApi);
 
   readonly employee = signal<Employee | null>(null);
   readonly categories = signal<EmployeeCategory[]>([]);
+  readonly healthProfessionals = signal<HealthProfessional[]>([]);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
@@ -86,6 +90,16 @@ export class EmployeeDetailsPageComponent {
     return this.getCategoryName(employee.employeeCategoryId);
   });
   readonly hasAppAccess = computed(() => this.employee()?.hasAppAccess ?? false);
+  readonly currentHealthProfessional = computed(() => {
+    const employee = this.employee();
+    return employee
+      ? this.healthProfessionals().find(professional => professional.employeeId === employee.id) ?? null
+      : null;
+  });
+  readonly healthProfessionalLabel = computed(() => {
+    const professional = this.currentHealthProfessional();
+    return professional?.professionalTypeName || professional?.specialty || 'Profesional de salud';
+  });
 
   constructor() {
     this.form.disable({ emitEvent: false });
@@ -96,6 +110,7 @@ export class EmployeeDetailsPageComponent {
       });
 
     this.loadCategories();
+    this.loadHealthProfessionals();
     this.loadEmployee();
   }
 
@@ -208,6 +223,14 @@ export class EmployeeDetailsPageComponent {
     return this.categories().find(category => category.id === categoryId)?.nombre ?? `Categoria #${categoryId}`;
   }
 
+  openHealthCatalog(): void {
+    const employee = this.employee();
+
+    this.router.navigate(['/health'], {
+      queryParams: employee ? { employeeId: employee.id } : undefined
+    });
+  }
+
   private loadEmployee(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -243,6 +266,17 @@ export class EmployeeDetailsPageComponent {
       },
       error: () => {
         this.categories.set([]);
+      }
+    });
+  }
+
+  private loadHealthProfessionals(): void {
+    this.healthService.getProfessionals().subscribe({
+      next: response => {
+        this.healthProfessionals.set(response.items);
+      },
+      error: () => {
+        this.healthProfessionals.set([]);
       }
     });
   }

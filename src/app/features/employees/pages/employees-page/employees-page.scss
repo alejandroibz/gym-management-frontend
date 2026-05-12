@@ -184,7 +184,8 @@
 .dni-pill,
 .category-chip,
 .health-chip,
-.access-chip {
+.access-chip,
+.empty-table-value {
   width: fit-content;
   display: inline-flex;
   align-items: center;
@@ -360,6 +361,15 @@
   justify-items: start;
 }
 
+.empty-table-value {
+  width: 100%;
+  justify-content: center;
+  color: #8a8f99;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
 .health-chip {
   color: #667085;
   background: #f3f4f6;
@@ -376,13 +386,6 @@
   color: #0f766e;
   background: #ecfdf5;
   border-color: #b7eadf;
-}
-
-.health-link {
-  min-height: 34px;
-  padding-inline: 0.7rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
 }
 
 .access-chip-enabled {
@@ -548,7 +551,7 @@ mat-paginator {
 
   .employee-card-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
   }
 

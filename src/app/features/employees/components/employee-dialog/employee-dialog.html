@@ -93,6 +93,27 @@
           <mat-error>Selecciona un rol.</mat-error>
         </mat-form-field>
       }
+
+      @if (isEditing) {
+        <div class="health-section span-2">
+          <div>
+            <p class="health-eyebrow">Gestion de salud</p>
+            @if (data.healthProfessional) {
+              <span class="health-chip">
+                <mat-icon>medical_services</mat-icon>
+                {{ getHealthProfessionalLabel() }}
+              </span>
+            } @else {
+              <span class="health-empty-value">-</span>
+            }
+          </div>
+
+          <button mat-stroked-button type="button" (click)="openHealthManagement()">
+            <mat-icon>medical_services</mat-icon>
+            {{ data.healthProfessional ? 'Gestionar en salud' : 'Asignar especialidad' }}
+          </button>
+        </div>
+      }
     </div>
 
     <div class="dialog-actions">

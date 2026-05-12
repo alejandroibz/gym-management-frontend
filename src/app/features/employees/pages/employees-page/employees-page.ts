@@ -177,7 +177,8 @@ export class EmployeesPageComponent {
       backdropClass: 'employee-dialog-backdrop',
       data: {
         employee,
-        categories: this.categories()
+        categories: this.categories(),
+        healthProfessional: employee ? this.getHealthProfessional(employee) : null
       }
     });
 

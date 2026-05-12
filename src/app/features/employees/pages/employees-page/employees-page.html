@@ -129,15 +129,14 @@
                   <span class="category-chip">{{ getCategoryName(employee.employeeCategoryId) }}</span>
                 </td>
                 <td>
-                  <div class="health-cell">
-                    <span class="health-chip" [class.health-chip-enabled]="getHealthProfessional(employee)">
-                      <mat-icon>{{ getHealthProfessional(employee) ? 'medical_services' : 'add_circle' }}</mat-icon>
+                  @if (getHealthProfessional(employee)) {
+                    <span class="health-chip health-chip-enabled">
+                      <mat-icon>medical_services</mat-icon>
                       {{ getHealthProfessionalLabel(employee) }}
                     </span>
-                    <button mat-stroked-button type="button" class="health-link" (click)="openHealthCatalog(employee)">
-                      {{ getHealthProfessional(employee) ? 'Gestionar' : 'Asignar' }}
-                    </button>
-                  </div>
+                  } @else {
+                    <span class="empty-table-value">-</span>
+                  }
                 </td>
                 <td>
                   <span class="access-chip" [class.access-chip-enabled]="employee.hasAppAccess" [class.access-chip-disabled]="!employee.hasAppAccess">
@@ -199,7 +198,7 @@
               </div>
               <div>
                 <mat-icon>medical_services</mat-icon>
-                <span>{{ getHealthProfessionalLabel(employee) }}</span>
+                <span>{{ getHealthProfessional(employee) ? getHealthProfessionalLabel(employee) : '-' }}</span>
               </div>
               <div>
                 <mat-icon>event</mat-icon>
@@ -223,10 +222,6 @@
               <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="editEmployee(employee)">
                 <mat-icon>edit</mat-icon>
                 Editar
-              </button>
-              <button mat-stroked-button type="button" class="row-action" (click)="openHealthCatalog(employee)">
-                <mat-icon>medical_services</mat-icon>
-                Salud
               </button>
             </div>
           </article>

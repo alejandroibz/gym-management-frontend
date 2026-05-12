@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -54,6 +55,7 @@ export interface ClientDialogResult {
   standalone: true,
   imports: [
     CommonModule,
+    TextFieldModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,

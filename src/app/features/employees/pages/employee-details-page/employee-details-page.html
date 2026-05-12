@@ -207,6 +207,33 @@
           </article>
         </div>
       </mat-card>
+
+      <mat-card class="content-card span-full health-management-card">
+        <div class="card-heading">
+          <div>
+            <h2>Gestion de salud</h2>
+            <p>Asignacion del empleado como profesional de salud o kinesiologia.</p>
+          </div>
+
+          <button mat-stroked-button type="button" (click)="openHealthCatalog()">
+            <mat-icon>medical_services</mat-icon>
+            {{ currentHealthProfessional() ? 'Gestionar en salud' : 'Asignar especialidad' }}
+          </button>
+        </div>
+
+        <div class="health-management-body">
+          @if (currentHealthProfessional(); as professional) {
+            <span class="health-specialty-chip">
+              <mat-icon>medical_services</mat-icon>
+              {{ healthProfessionalLabel() }}
+            </span>
+            <p>{{ professional.specialty || 'Especialidad vinculada al modulo de salud.' }}</p>
+          } @else {
+            <span class="health-empty-value">-</span>
+            <p>Este empleado todavia no esta asignado como profesional de salud.</p>
+          }
+        </div>
+      </mat-card>
     </div>
   }
 </section>

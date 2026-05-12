@@ -156,6 +156,7 @@
 
 .feedback-banner,
 .panel-card,
+.health-payments-card,
 .record-card,
 .summary-row {
   border-radius: 18px;
@@ -175,6 +176,52 @@
 
 .panel-card {
   box-shadow: var(--mov-shadow);
+}
+
+.health-payments-card {
+  display: flex;
+  align-items: self-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  box-shadow: var(--mov-shadow);
+}
+
+.health-payments-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.health-payments-copy > mat-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  border-radius: 14px;
+  color: #0f766e;
+  background: #ccfbf1;
+  font-size: 24px;
+}
+
+.health-payments-copy h2 {
+  margin: 0;
+  color: var(--mov-ink);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.health-payments-copy p {
+  margin: 0.25rem 0 0;
+  color: var(--mov-muted);
+}
+
+.health-payments-action {
+  min-height: 44px;
+  border-radius: 14px;
+  white-space: nowrap;
 }
 
 .content-grid {
@@ -513,9 +560,15 @@ mat-paginator {
 
   .section-action-button,
   .header-action-primary,
-  .header-action-secondary {
+  .header-action-secondary,
+  .health-payments-action {
     width: 100%;
     justify-content: center;
+  }
+
+  .health-payments-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

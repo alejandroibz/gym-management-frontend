@@ -166,6 +166,10 @@
   align-items: start;
 }
 
+.span-full {
+  grid-column: 1 / -1;
+}
+
 .content-card {
   padding: 1.5rem;
 }
@@ -236,6 +240,57 @@
   color: var(--app-text-muted);
 }
 
+.health-management-card {
+  gap: 0;
+}
+
+.health-management-body {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--employee-detail-border);
+  background: var(--employee-detail-soft);
+}
+
+.health-specialty-chip,
+.health-empty-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.health-specialty-chip {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #b7eadf;
+}
+
+.health-specialty-chip mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.health-empty-value {
+  min-width: 44px;
+  color: var(--app-text-muted);
+  background: #ffffff;
+  border: 1px solid var(--employee-detail-border);
+}
+
+.health-management-body p {
+  margin: 0;
+  color: var(--app-text-muted);
+}
+
 :host ::ng-deep .employee-details-page .mat-mdc-form-field {
   width: 100%;
 }
@@ -285,6 +340,11 @@
   .form-grid,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .health-management-body {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .hero-actions {

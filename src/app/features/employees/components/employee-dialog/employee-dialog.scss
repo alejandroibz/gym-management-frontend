@@ -42,6 +42,10 @@
   gap: 1rem;
 }
 
+.span-2 {
+  grid-column: span 2;
+}
+
 .access-section {
   display: grid;
   gap: 0.45rem;
@@ -55,6 +59,58 @@
   margin: 0;
   color: var(--app-text-muted);
   font-size: 0.92rem;
+}
+
+.health-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.health-eyebrow {
+  margin: 0 0 0.45rem;
+  color: var(--app-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.health-chip,
+.health-empty-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.health-chip {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #b7eadf;
+}
+
+.health-chip mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.health-empty-value {
+  min-width: 44px;
+  color: var(--app-text-muted);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .dialog-actions {
@@ -80,6 +136,15 @@
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
+
+  .health-section {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .dialog-actions button {

@@ -1,4 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -33,6 +34,7 @@ import { ClientsService } from '../../services/clients.service';
   standalone: true,
   imports: [
     CommonModule,
+    TextFieldModule,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -100,6 +102,7 @@ export class ClientDetailsPageComponent {
   readonly currentMembership = computed(() => this.getEffectiveMembership(this.client()));
   readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
+  readonly latestPaymentDate = computed(() => this.client()?.ultimoPagoFecha ?? this.getLatestPaymentDateFromHistory());
   readonly trainerNote = computed(() => this.client()?.healthProfile?.trainerNotes?.[0] ?? null);
   readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing());
   readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
@@ -593,6 +596,13 @@ export class ClientDetailsPageComponent {
   private getPaymentDate(payment: ClientRelationRecord): string | null {
     const rawDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
     return typeof rawDate === 'string' && rawDate.trim() ? rawDate : null;
+  }
+
+  private getLatestPaymentDateFromHistory(): string | null {
+    return this.payments()
+      .map(payment => this.getPaymentDate(payment))
+      .filter((date): date is string => !!date && !Number.isNaN(new Date(date).getTime()))
+      .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ?? null;
   }
 
   private isPaymentIdField(key: string): boolean {
