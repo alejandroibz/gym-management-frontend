@@ -106,6 +106,7 @@
               <th>Empleado</th>
               <th>DNI</th>
               <th>Categoria</th>
+              <th>Salud</th>
               <th>Acceso app</th>
               <th>Fechas</th>
               <th>Contacto</th>
@@ -126,6 +127,17 @@
                 </td>
                 <td>
                   <span class="category-chip">{{ getCategoryName(employee.employeeCategoryId) }}</span>
+                </td>
+                <td>
+                  <div class="health-cell">
+                    <span class="health-chip" [class.health-chip-enabled]="getHealthProfessional(employee)">
+                      <mat-icon>{{ getHealthProfessional(employee) ? 'medical_services' : 'add_circle' }}</mat-icon>
+                      {{ getHealthProfessionalLabel(employee) }}
+                    </span>
+                    <button mat-stroked-button type="button" class="health-link" (click)="openHealthCatalog(employee)">
+                      {{ getHealthProfessional(employee) ? 'Gestionar' : 'Asignar' }}
+                    </button>
+                  </div>
                 </td>
                 <td>
                   <span class="access-chip" [class.access-chip-enabled]="employee.hasAppAccess" [class.access-chip-disabled]="!employee.hasAppAccess">
@@ -186,6 +198,10 @@
                 <span>{{ getAppAccessLabel(employee) }}</span>
               </div>
               <div>
+                <mat-icon>medical_services</mat-icon>
+                <span>{{ getHealthProfessionalLabel(employee) }}</span>
+              </div>
+              <div>
                 <mat-icon>event</mat-icon>
                 <span>Ingreso {{ employee.fechaIngreso | date: 'dd/MM/yyyy' }}</span>
               </div>
@@ -207,6 +223,10 @@
               <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="editEmployee(employee)">
                 <mat-icon>edit</mat-icon>
                 Editar
+              </button>
+              <button mat-stroked-button type="button" class="row-action" (click)="openHealthCatalog(employee)">
+                <mat-icon>medical_services</mat-icon>
+                Salud
               </button>
             </div>
           </article>

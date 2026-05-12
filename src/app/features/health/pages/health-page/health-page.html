@@ -1,0 +1,639 @@
+<section class="health-page">
+  <header class="page-header">
+    <div>
+      <h1>Salud</h1>
+      <p>Agenda, pacientes, planes, profesionales y cobros.</p>
+    </div>
+    <div class="header-stats">
+      <span><strong>{{ appointments().length }}</strong> turnos</span>
+      <span><strong>{{ pendingAppointments() }}</strong> pendientes</span>
+      <span><strong>{{ patients().length }}</strong> pacientes</span>
+      <span><strong>{{ activeSubscriptions().length }}</strong> planes activos</span>
+    </div>
+  </header>
+
+  @if (feedback()) {
+    <div class="feedback-banner">
+      <mat-icon>info</mat-icon>
+      <span>{{ feedback() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="34"></mat-spinner>
+      <span>Cargando modulo de salud...</span>
+    </div>
+  }
+
+  <mat-tab-group animationDuration="180ms" class="health-tabs" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectedTabIndex.set($event)">
+    <mat-tab label="Agenda">
+      <div class="tab-grid agenda-grid">
+        <mat-card class="tool-panel">
+          <div class="panel-heading">
+            <h2>Nuevo turno</h2>
+            <span>Con bloqueo de solapados</span>
+          </div>
+          <form [formGroup]="appointmentForm" (ngSubmit)="createAppointment()" class="stack-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Paciente</mat-label>
+              <mat-select formControlName="healthPatientProfileId">
+                @for (patient of patients(); track patient.id) {
+                  <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Profesional</mat-label>
+              <mat-select formControlName="healthProfessionalId">
+                @for (professional of professionals(); track professional.id) {
+                  <mat-option [value]="professional.id">{{ professional.employeeName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Servicio</mat-label>
+              <mat-select formControlName="healthServiceId">
+                <mat-option [value]="null">Sin servicio</mat-option>
+                @for (service of services(); track service.id) {
+                  <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha y hora</mat-label>
+              <input matInput type="datetime-local" formControlName="startsAt">
+            </mat-form-field>
+            <mat-checkbox formControlName="isWalkIn">Paciente espontaneo</mat-checkbox>
+            <mat-form-field appearance="outline">
+              <mat-label>Notas</mat-label>
+              <textarea matInput formControlName="notes" rows="3"></textarea>
+            </mat-form-field>
+            <button mat-flat-button type="submit" [disabled]="isSaving() || appointmentForm.invalid">
+              <mat-icon>event_available</mat-icon>
+              Agendar
+            </button>
+          </form>
+        </mat-card>
+
+        <mat-card class="list-panel">
+          <div class="calendar-toolbar">
+            <div>
+              <h2>{{ calendarTitle() }}</h2>
+              <span>{{ appointmentRangeLabel() }}</span>
+            </div>
+            <div class="toolbar-actions">
+              <button mat-icon-button type="button" (click)="changeDate(-1)" aria-label="Periodo anterior">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <input type="date" [value]="selectedDate()" (change)="selectedDate.set($any($event.target).value); loadAppointments()">
+              <button mat-icon-button type="button" (click)="changeDate(1)" aria-label="Periodo siguiente">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="segmented">
+            <button mat-stroked-button type="button" [class.active]="calendarView() === 'day'" (click)="setCalendarView('day')">Dia</button>
+            <button mat-stroked-button type="button" [class.active]="calendarView() === 'week'" (click)="setCalendarView('week')">Semana</button>
+            <button mat-stroked-button type="button" [class.active]="calendarView() === 'month'" (click)="setCalendarView('month')">Mes</button>
+          </div>
+
+          <div class="calendar-board" [class.week-view]="calendarView() === 'week'" [class.day-view]="calendarView() === 'day'">
+            @if (calendarView() !== 'day') {
+              <div class="calendar-weekdays">
+                @for (day of getCalendarHeaders(); track day) {
+                  <span>{{ day }}</span>
+                }
+              </div>
+            }
+            <div class="calendar-cells">
+              @for (cell of calendarDays(); track cell.date.toISOString()) {
+                <section class="calendar-cell" [class.other-month]="!cell.isCurrentMonth" [class.today]="cell.isToday" (click)="openCalendarDay(cell.date)">
+                  <div class="calendar-cell-head">
+                    <strong>{{ calendarView() === 'day' ? cell.label : cell.dayNumber }}</strong>
+                    @if (cell.appointments.length) {
+                      <span>{{ cell.appointments.length }}</span>
+                    }
+                  </div>
+                  <div class="calendar-events">
+                    @for (appointment of cell.appointments; track appointment.id) {
+                      <article class="calendar-event" [class.done]="appointment.status === 'Asistio'" [class.warning]="appointment.status === 'Ausente'" [class.cancelled]="appointment.status === 'Cancelado'" (click)="$event.stopPropagation(); openPatientFromAppointment(appointment)">
+                        <strong>{{ appointment.startsAt | date:'HH:mm' }} {{ appointment.patientName }}</strong>
+                        @if (calendarView() === 'day') {
+                          <span>{{ appointment.serviceName || 'Sin servicio' }} - {{ appointment.professionalName }}</span>
+                        }
+                      </article>
+                    } @empty {
+                      <span class="calendar-empty">Sin turnos</span>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          </div>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Pacientes">
+      <div class="patients-workspace">
+        <mat-card class="list-panel wide-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Pacientes de salud</h2>
+              <span>Ficha operativa conectada con el cliente base</span>
+            </div>
+            <div class="catalog-actions">
+              <button mat-stroked-button type="button" routerLink="/clients">
+                <mat-icon>person_add</mat-icon>
+                Alta cliente
+              </button>
+              <button mat-flat-button type="button" (click)="openPatientDialog()">
+                <mat-icon>medical_information</mat-icon>
+                Dar de alta paciente
+              </button>
+            </div>
+          </div>
+        </mat-card>
+
+        <div class="patients-layout">
+          <mat-card class="list-panel patients-list-panel wide-panel">
+            <div class="panel-heading">
+              <h2>Listado</h2>
+              <span>{{ patientsTotalCount() }} activos</span>
+            </div>
+
+            <mat-form-field appearance="outline" class="patient-search-field">
+              <mat-label>Buscar paciente</mat-label>
+              <input #patientSearchInput matInput type="search" placeholder="Nombre, DNI o telefono" (keyup.enter)="applyPatientsSearch(patientSearchInput.value)">
+              <button mat-icon-button matSuffix type="button" aria-label="Buscar paciente" (click)="applyPatientsSearch(patientSearchInput.value)">
+                <mat-icon>search</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <div class="table-wrapper">
+              <table class="health-table patients-table">
+                <thead>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>DNI</th>
+                    <th>Telefono</th>
+                    <th>Profesional</th>
+                    <th>Obra social</th>
+                    <th>Turnos</th>
+                    <th>Cobrado</th>
+                    <th>Estado</th>
+                    <th>Accion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (patient of patients(); track patient.id) {
+                    <tr>
+                      <td><strong>{{ patient.clientName }}</strong></td>
+                      <td>{{ patient.dni || '-' }}</td>
+                      <td>{{ patient.phone || '-' }}</td>
+                      <td>{{ patient.primaryProfessionalName || 'Sin profesional' }}</td>
+                      <td>{{ patient.healthInsuranceName || '-' }}</td>
+                      <td>{{ getPatientAppointmentCount(patient.id) }}</td>
+                      <td>{{ getPatientPaymentTotal(patient.id) | currency:'ARS':'symbol':'1.0-0' }}</td>
+                      <td>
+                        @if (getPatientActiveSubscription(patient.id)) {
+                          <span class="status-chip done">Plan activo</span>
+                        } @else {
+                          <span class="status-chip">Sin plan</span>
+                        }
+                      </td>
+                      <td>
+                        <button mat-stroked-button type="button" (click)="openPatientDetail(patient)">
+                          <mat-icon>open_in_new</mat-icon>
+                          Ver detalle
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="9">No hay pacientes para mostrar.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <mat-paginator
+              [length]="patientsTotalCount()"
+              [pageIndex]="patientsPageNumber() - 1"
+              [pageSize]="patientsPageSize()"
+              [pageSizeOptions]="[10, 25, 50, 100]"
+              (page)="onPatientsPageChange($event)">
+            </mat-paginator>
+          </mat-card>
+
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Pagos y planes">
+      <div class="tab-grid">
+        <mat-card class="list-panel wide-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Pagos y planes</h2>
+              <span>Gestion de cobros y suscripciones de salud</span>
+            </div>
+            <div class="catalog-actions">
+              <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="openPaymentDialog()">
+                <mat-icon>payments</mat-icon>
+                Registrar pago
+              </button>
+              <button mat-flat-button type="button" [disabled]="isSaving()" (click)="openSubscriptionDialog()">
+                <mat-icon>event_repeat</mat-icon>
+                Crear plan mensual
+              </button>
+            </div>
+          </div>
+        </mat-card>
+
+        <mat-card class="list-panel wide-panel">
+          <div class="panel-heading">
+            <h2>Planes mensuales creados</h2>
+            <span>{{ subscriptions().length }} registros</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="health-table">
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>Servicio</th>
+                  <th>Profesional</th>
+                  <th>Desde</th>
+                  <th>Hasta</th>
+                  <th>Sesiones</th>
+                  <th>Monto mensual</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (subscription of subscriptions(); track subscription.id) {
+                  <tr>
+                    <td><strong>{{ getSubscriptionPatientName(subscription) }}</strong></td>
+                    <td>{{ getSubscriptionServiceName(subscription) }}</td>
+                    <td>{{ getSubscriptionProfessionalName(subscription) }}</td>
+                    <td>{{ subscription.startDate | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ subscription.endDate | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ subscription.sessionsPerWeek }} por semana</td>
+                    <td>{{ subscription.monthlyAmount | currency:'ARS':'symbol':'1.0-0' }}</td>
+                    <td><span class="status-chip" [class.done]="isActiveSubscription(subscription)">{{ getSubscriptionStatusLabel(subscription.status) }}</span></td>
+                    <td>
+                      <div class="row-actions">
+                        <button mat-icon-button type="button" aria-label="Ver paciente" [routerLink]="['/health', 'patients', subscription.healthPatientProfileId]">
+                          <mat-icon>open_in_new</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Editar plan" [disabled]="isSaving()" (click)="openSubscriptionDialog(subscription)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar plan" class="danger-icon-button" [disabled]="isSaving()" (click)="deleteSubscription(subscription)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9">Todavia no hay planes mensuales creados.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card>
+
+        <mat-card class="list-panel wide-panel">
+          <div class="panel-heading">
+            <h2>Movimientos de salud</h2>
+            <span>{{ payments().length }} registros</span>
+          </div>
+          <form class="filters-row" [formGroup]="paymentFiltersForm" (ngSubmit)="applyPaymentFilters()">
+            <mat-form-field appearance="outline">
+              <mat-label>Especialidad</mat-label>
+              <mat-select formControlName="professionalTypeId" (selectionChange)="onPaymentProfessionalTypeChange($event.value)">
+                <mat-option [value]="null">Todas</mat-option>
+                @for (type of professionalTypes(); track type.id) {
+                  <mat-option [value]="type.id">{{ type.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Profesional</mat-label>
+              <mat-select formControlName="professionalId">
+                <mat-option [value]="null">Todos</mat-option>
+                @for (professional of getPaymentFilterProfessionals(); track professional.id) {
+                  <mat-option [value]="professional.id">{{ professional.employeeName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Paciente</mat-label>
+              <mat-select formControlName="patientProfileId">
+                <mat-option [value]="null">Todos</mat-option>
+                @for (patient of patients(); track patient.id) {
+                  <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Desde</mat-label>
+              <input matInput type="date" formControlName="from">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Hasta</mat-label>
+              <input matInput type="date" formControlName="to">
+            </mat-form-field>
+            <button mat-flat-button type="submit">
+              <mat-icon>filter_alt</mat-icon>
+              Filtrar
+            </button>
+          </form>
+
+          @if (paymentSummary(); as summary) {
+            <div class="summary-grid">
+              <div><span>Total cobrado</span><strong>{{ summary.totalAmount | currency:'ARS':'symbol':'1.0-0' }}</strong></div>
+              <div><span>Pagos</span><strong>{{ summary.paymentCount }}</strong></div>
+              @for (group of summary.byProfessionalType; track group.name) {
+                <div><span>{{ group.name }}</span><strong>{{ group.totalAmount | currency:'ARS':'symbol':'1.0-0' }}</strong></div>
+              }
+              @for (group of summary.byProfessional; track group.name) {
+                <div><span>{{ group.name }}</span><strong>{{ group.totalAmount | currency:'ARS':'symbol':'1.0-0' }}</strong></div>
+              }
+            </div>
+          }
+
+          <div class="table-wrapper">
+            <table class="health-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Paciente</th>
+                  <th>Especialidad</th>
+                  <th>Profesional</th>
+                  <th>Concepto</th>
+                  <th>Cobrador</th>
+                  <th>Estado</th>
+                  <th>Monto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (payment of payments(); track payment.id) {
+                  <tr>
+                    <td>{{ payment.fechaPago | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ payment.patientName }}</td>
+                    <td>{{ payment.professionalTypeName || '-' }}</td>
+                    <td>{{ payment.professionalName || '-' }}</td>
+                    <td>{{ payment.concepto }}</td>
+                    <td>{{ payment.collectedByEmployeeEmail || '-' }}</td>
+                    <td>
+                      <span class="status-chip" [class.done]="isConfirmedPayment(payment)" [class.pending]="!isConfirmedPayment(payment)">
+                        {{ isConfirmedPayment(payment) ? 'Confirmado' : payment.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>{{ payment.monto | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                        @if (payment.tieneDescuento || (payment.descuentoMonto ?? 0) > 0) {
+                          <span class="status-chip pending">Desc. {{ payment.descuentoMonto | currency:'ARS':'symbol':'1.0-0' }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        @if (!isConfirmedPayment(payment)) {
+                          <button mat-icon-button type="button" aria-label="Confirmar cobro" [disabled]="isSaving()" (click)="confirmPayment(payment)">
+                            <mat-icon>check_circle</mat-icon>
+                          </button>
+                        }
+                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving()" (click)="openPaymentDialog(payment)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSaving()" (click)="deletePayment(payment)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Profesionales">
+      <div class="professionals-workspace">
+        <mat-card class="list-panel wide-panel professionals-toolbar">
+          <div class="panel-heading">
+            <div>
+              <h2>Profesionales de salud</h2>
+              <span>Especialidades, profesionales asociados y servicios disponibles</span>
+            </div>
+            <div class="catalog-actions">
+              <button mat-stroked-button type="button" (click)="openProfessionalTypeDialog()">
+                <mat-icon>category</mat-icon>
+                Crear especialidad
+              </button>
+              <button mat-stroked-button type="button" (click)="openProfessionalDialog()">
+                <mat-icon>badge</mat-icon>
+                Asignar profesional
+              </button>
+              <button mat-flat-button type="button" (click)="openServiceDialog()">
+                <mat-icon>add</mat-icon>
+                Crear servicio
+              </button>
+            </div>
+          </div>
+
+          <div class="catalog-filter">
+            <mat-form-field appearance="outline">
+              <mat-label>Ver especialidad</mat-label>
+              <mat-select [value]="selectedProfessionalTypeId()" (selectionChange)="selectProfessionalType($event.value)">
+                <mat-option [value]="null">Todas las especialidades</mat-option>
+                @for (type of professionalTypes(); track type.id) {
+                  <mat-option [value]="type.id">{{ type.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-card>
+
+        @if (!selectedProfessionalType()) {
+          <div class="specialty-grid">
+            @for (type of professionalTypes(); track type.id) {
+              <article class="specialty-card" (click)="selectProfessionalType(type.id)">
+                <div class="specialty-card-header">
+                  <div>
+                    <h3>{{ type.name }}</h3>
+                    <p>{{ type.description || 'Sin descripcion cargada' }}</p>
+                  </div>
+                  <button mat-icon-button type="button" aria-label="Editar especialidad" (click)="$event.stopPropagation(); editProfessionalType(type)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="specialty-metrics">
+                  <span><strong>{{ getProfessionalCount(type.id) }}</strong> profesionales</span>
+                  <span><strong>{{ getServiceCount(type.id) }}</strong> servicios</span>
+                  <span><strong>{{ getTypeTotal(type.id) | currency:'ARS':'symbol':'1.0-0' }}</strong> cobrado</span>
+                </div>
+                <button mat-stroked-button type="button">
+                  Ver detalle
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </article>
+            } @empty {
+              <mat-card class="list-panel empty-specialty">
+                <h3>Todavia no hay especialidades</h3>
+                <p>Crea Kinesiologia, Nutricion u otra especialidad para empezar a organizar servicios y profesionales.</p>
+                <button mat-flat-button type="button" (click)="openProfessionalTypeDialog()">
+                  <mat-icon>category</mat-icon>
+                  Crear especialidad
+                </button>
+              </mat-card>
+            }
+          </div>
+
+          <mat-card class="list-panel wide-panel">
+            <div class="panel-heading">
+              <h2>Servicios sin filtrar</h2>
+              <span>{{ services().length }} servicios activos en salud</span>
+            </div>
+            <div class="services-strip">
+              @for (service of services(); track service.id) {
+                <article class="service-row">
+                  <div>
+                    <h3>{{ service.name }}</h3>
+                    <p>{{ service.professionalTypeName || 'Sin especialidad' }} - {{ service.defaultDurationMinutes }} min</p>
+                  </div>
+                  <strong>{{ service.price | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                  <button mat-icon-button type="button" aria-label="Editar servicio" (click)="editService(service)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </article>
+              } @empty {
+                <div class="empty-state">No hay servicios cargados.</div>
+              }
+            </div>
+          </mat-card>
+        } @else {
+          @if (selectedProfessionalType(); as type) {
+            <mat-card class="list-panel wide-panel specialty-detail">
+              <div class="specialty-detail-header">
+                <div>
+                  <button mat-stroked-button type="button" (click)="selectProfessionalType(null)">
+                    <mat-icon>arrow_back</mat-icon>
+                    Todas las especialidades
+                  </button>
+                  <h2>{{ type.name }}</h2>
+                  <p>{{ type.description || 'Sin descripcion cargada' }}</p>
+                </div>
+                <div class="catalog-actions">
+                  <button mat-stroked-button type="button" (click)="editProfessionalType(type)">
+                    <mat-icon>edit</mat-icon>
+                    Editar especialidad
+                  </button>
+                  <button mat-stroked-button type="button" (click)="deleteProfessionalType(type)">
+                    <mat-icon>delete</mat-icon>
+                    Desactivar
+                  </button>
+                </div>
+              </div>
+
+              <div class="summary-grid">
+                <div><span>Profesionales</span><strong>{{ filteredProfessionals().length }}</strong></div>
+                <div><span>Servicios</span><strong>{{ filteredServices().length }}</strong></div>
+                <div><span>Cobrado</span><strong>{{ getTypeTotal(type.id) | currency:'ARS':'symbol':'1.0-0' }}</strong></div>
+              </div>
+            </mat-card>
+
+            <div class="detail-columns">
+              <mat-card class="list-panel">
+                <div class="panel-heading">
+                  <h2>Profesionales</h2>
+                  <button mat-stroked-button type="button" (click)="openProfessionalDialog()">
+                    <mat-icon>add</mat-icon>
+                    Asignar profesional
+                  </button>
+                </div>
+                <div class="card-list">
+                  @for (professional of filteredProfessionals(); track professional.id) {
+                    <article class="data-card professional-card">
+                      <div class="card-title-row">
+                        <h3>{{ professional.employeeName }}</h3>
+                        <span class="status-chip done">{{ professional.specialty }}</span>
+                      </div>
+                      <p>{{ professional.employeeEmail || 'Sin email' }}</p>
+                      @if (professional.licenseNumber) {
+                        <span>Matricula {{ professional.licenseNumber }}</span>
+                      }
+                      <strong>{{ getProfessionalTotal(professional.id) | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                      <div class="card-actions">
+                        <button mat-stroked-button type="button" (click)="filterPaymentsByProfessional(professional)">
+                          <mat-icon>payments</mat-icon>
+                          Ingresos
+                        </button>
+                        <button mat-stroked-button type="button" (click)="editProfessional(professional)">
+                          <mat-icon>edit</mat-icon>
+                          Editar
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar profesional" (click)="deleteProfessional(professional)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </article>
+                  } @empty {
+                    <div class="empty-state">No hay profesionales para esta especialidad.</div>
+                  }
+                </div>
+              </mat-card>
+
+              <mat-card class="list-panel">
+                <div class="panel-heading">
+                  <h2>Servicios</h2>
+                  <button mat-flat-button type="button" (click)="openServiceDialog()">
+                    <mat-icon>add</mat-icon>
+                    Crear servicio
+                  </button>
+                </div>
+                <div class="card-list">
+                  @for (service of filteredServices(); track service.id) {
+                    <article class="data-card service-card">
+                      <div class="card-title-row">
+                        <h3>{{ service.name }}</h3>
+                        <span class="status-chip" [class.done]="service.isMonthlyPlan">{{ service.isMonthlyPlan ? 'Mensual' : service.defaultDurationMinutes + ' min' }}</span>
+                      </div>
+                      <p>{{ service.description || 'Sin descripcion' }}</p>
+                      <strong>{{ service.price | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                      @if (service.sessionsPerWeek) {
+                        <span>{{ service.sessionsPerWeek }} sesiones por semana</span>
+                      }
+                      <div class="card-actions">
+                        <button mat-stroked-button type="button" (click)="editService(service)">
+                          <mat-icon>edit</mat-icon>
+                          Editar
+                        </button>
+                        <button mat-icon-button type="button" aria-label="Eliminar servicio" (click)="deleteService(service)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </article>
+                  } @empty {
+                    <div class="empty-state">No hay servicios para esta especialidad.</div>
+                  }
+                </div>
+              </mat-card>
+            </div>
+          }
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</section>

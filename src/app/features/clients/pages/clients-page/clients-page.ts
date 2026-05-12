@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -11,12 +12,18 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
+import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
+import { Employee } from '../../../employees/models/employee.model';
+import { EmployeesService } from '../../../employees/services/employees.service';
 import { ClientDialogComponent, ClientDialogResult } from '../../components/client-dialog/client-dialog';
-import { Client, ClientCreatePayload, ClientFilters, ClientUpdatePayload } from '../../models/client.model';
+import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
 import { ClientMembership } from '../../models/client.model';
+import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
+import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
 
 @Component({
   selector: 'app-clients-page',
@@ -42,14 +49,23 @@ export class ClientsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly clientsService = inject(ClientsService);
   private readonly membershipPlansService = inject(MembershipPlansService);
+  private readonly employeesService = inject(EmployeesService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
+  private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
 
   readonly clients = signal<Client[]>([]);
   readonly membershipPlans = signal<MembershipPlan[]>([]);
+  readonly employees = signal<Employee[]>([]);
+  readonly paymentMethods = signal<PaymentMethod[]>([]);
+  readonly cashMovementCategories = signal<CashMovementCategory[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly errorMessage = signal('');
+  readonly importResult = signal<ClientImportResult | null>(null);
+  readonly importFileName = signal('');
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(12);
@@ -61,6 +77,8 @@ export class ClientsPageComponent {
   readonly totalClients = computed(() => this.totalCount());
   readonly clientsWithMembership = computed(() => this.clients().filter(client => Boolean(client.membership)).length);
   readonly pendingPaymentsCount = computed(() => this.clients().filter(client => client.debePago).length);
+  readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
+  readonly currentUserEmail = signal<string | null>(null);
   readonly activeFiltersCount = computed(() => {
     const raw = this.filtersForm.getRawValue();
     return raw.search.trim().length > 0 ? 1 : 0;
@@ -77,7 +95,11 @@ export class ClientsPageComponent {
   });
 
   constructor() {
+    this.auth.user$.subscribe(user => {
+      this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
+    });
     this.loadMembershipPlans();
+    this.loadPaymentLookups();
     this.loadClients();
   }
 
@@ -102,6 +124,35 @@ export class ClientsPageComponent {
 
   openCreateModal(): void {
     this.openDialog();
+  }
+
+  importClientsFromFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.errorMessage.set('');
+    this.importResult.set(null);
+    this.importFileName.set(file.name);
+
+    this.clientsService.importClients(file).subscribe({
+      next: result => {
+        this.isSaving.set(false);
+        this.importResult.set(result);
+        this.pageNumber.set(1);
+        this.loadClients();
+      },
+      error: error => {
+        this.isSaving.set(false);
+        this.importFileName.set('');
+        this.errorMessage.set(typeof error?.error === 'string' ? error.error : 'No se pudo importar el archivo de clientes.');
+      }
+    });
   }
 
   openClientDetails(client: Client): void {
@@ -170,7 +221,11 @@ export class ClientsPageComponent {
       backdropClass: 'employee-dialog-backdrop',
       data: {
         client,
-        membershipPlans: this.membershipPlans()
+        membershipPlans: this.membershipPlans(),
+        paymentMethods: this.paymentMethods(),
+        incomeCategories: this.incomeCategories(),
+        employees: this.employees(),
+        defaultEmployeeEmail: this.currentUserEmail()
       }
     });
 
@@ -351,8 +406,26 @@ export class ClientsPageComponent {
             fechaFin: result.membership.fechaFin,
             precioFinal: result.membership.precioFinal
           }
-        : null
+        : null,
+      initialPayment: 'initialPayment' in result ? result.initialPayment ?? null : null
     };
+  }
+
+  private loadPaymentLookups(): void {
+    this.employeesService.getPaged(1, 1000).subscribe({
+      next: response => this.employees.set(response.items),
+      error: () => this.employees.set([])
+    });
+
+    this.paymentMethodsService.getPaged(1, 1000).subscribe({
+      next: response => this.paymentMethods.set(response.items),
+      error: () => this.paymentMethods.set([])
+    });
+
+    this.cashMovementCategoriesService.getPaged(1, 1000).subscribe({
+      next: response => this.cashMovementCategories.set(response.items),
+      error: () => this.cashMovementCategories.set([])
+    });
   }
 
   private getEffectiveMembership(client: Client): ClientMembership | null {

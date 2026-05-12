@@ -146,6 +146,19 @@
   margin: 0.35rem 0 0.75rem;
 }
 
+.import-errors {
+  display: grid;
+  gap: 0.35rem;
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #991b1b;
+  background: #fff7f7;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
 .filters-empty,
 .filter-chip,
 .dni-pill,

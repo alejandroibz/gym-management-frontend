@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResponse } from '../../../core/models/paged-response.model';
-import { Client, ClientCreatePayload, ClientFilters, ClientUpdatePayload } from '../models/client.model';
+import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientUpdatePayload } from '../models/client.model';
 
 interface RawPagedResponse<T> {
   items?: T[];
@@ -62,6 +62,12 @@ export class ClientsService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  importClients(file: File): Observable<ClientImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ClientImportResult>(`${this.apiUrl}/import`, formData);
   }
 
   private normalizePagedResponse(

@@ -67,6 +67,18 @@
         <a
           *ngIf="isAdminOrSuperAdmin$ | async"
           mat-list-item
+          routerLink="/health"
+          routerLinkActive="active-link"
+          (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content">
+            <mat-icon>health_and_safety</mat-icon>
+            <span class="nav-text">Salud</span>
+          </div>
+        </a>
+
+        <a
+          *ngIf="isAdminOrSuperAdmin$ | async"
+          mat-list-item
           routerLink="/movements"
           routerLinkActive="active-link"
           (click)="closeSidebarOnMobile()">

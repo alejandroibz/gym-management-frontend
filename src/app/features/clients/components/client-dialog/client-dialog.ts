@@ -9,12 +9,19 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
+import { Employee } from '../../../employees/models/employee.model';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
+import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { Client, ClientAppAccessPayload, ClientMembership } from '../../models/client.model';
 
 export interface ClientDialogData {
   client?: Client;
   membershipPlans: MembershipPlan[];
+  paymentMethods: PaymentMethod[];
+  incomeCategories: CashMovementCategory[];
+  employees: Employee[];
+  defaultEmployeeEmail?: string | null;
 }
 
 export interface ClientDialogResult {
@@ -31,6 +38,15 @@ export interface ClientDialogResult {
   observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
   membership?: ClientMembership | null;
+  initialPayment?: {
+    fechaPago: string;
+    monto: number;
+    paymentMethodId: number;
+    cashMovementCategoryId?: number | null;
+    collectedByEmployeeEmail: string;
+    periodYear: number;
+    periodMonth: number;
+  } | null;
 }
 
 @Component({
@@ -100,7 +116,15 @@ export class ClientDialogComponent {
       this.toDateInputValue(this.currentMembership?.fechaFin) || this.today,
       [Validators.required]
     ],
-    precioFinal: [this.currentMembership?.precioFinal ?? null, [Validators.required, Validators.min(0)]]
+    precioFinal: [this.currentMembership?.precioFinal ?? null, [Validators.required, Validators.min(0)]],
+    registerInitialPayment: [false],
+    initialPaymentDate: [this.today],
+    initialPaymentAmount: [this.currentMembership?.precioFinal ?? null as number | null],
+    initialPaymentMethodId: [null as number | null],
+    initialPaymentCategoryId: [this.data.incomeCategories[0]?.id ?? null as number | null],
+    initialPaymentEmployeeEmail: [this.getDefaultEmployeeEmail()],
+    initialPaymentPeriodYear: [new Date().getFullYear()],
+    initialPaymentPeriodMonth: [new Date().getMonth() + 1]
   });
   readonly observacionesLength = signal(this.form.controls.observaciones.value.length);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
@@ -116,6 +140,21 @@ export class ClientDialogComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.updateMembershipValidators();
+        this.updateInitialPaymentValidators();
+      });
+
+    this.form.controls.registerInitialPayment.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.updateInitialPaymentValidators();
+      });
+
+    this.form.controls.precioFinal.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(value => {
+        if (!this.form.controls.initialPaymentAmount.dirty) {
+          this.form.controls.initialPaymentAmount.setValue(value, { emitEvent: false });
+        }
       });
 
     this.form.controls.observaciones.valueChanges
@@ -126,6 +165,7 @@ export class ClientDialogComponent {
 
     this.updateEmailValidators();
     this.updateMembershipValidators();
+    this.updateInitialPaymentValidators();
   }
 
   get isEditing(): boolean {
@@ -157,7 +197,8 @@ export class ClientDialogComponent {
 
     this.form.patchValue({
       precioFinal: plan.precio,
-      fechaFin
+      fechaFin,
+      initialPaymentAmount: plan.precio
     });
   }
 
@@ -206,8 +247,31 @@ export class ClientDialogComponent {
             precioFinal: Number(value.precioFinal),
             plan: this.getSelectedPlan() ?? null
           }
+        : null,
+      initialPayment: !this.isEditing && value.hasMembership && value.registerInitialPayment
+        ? {
+            fechaPago: new Date(`${value.initialPaymentDate}T00:00:00`).toISOString(),
+            monto: Number(value.initialPaymentAmount),
+            paymentMethodId: Number(value.initialPaymentMethodId),
+            cashMovementCategoryId: value.initialPaymentCategoryId ? Number(value.initialPaymentCategoryId) : null,
+            collectedByEmployeeEmail: value.initialPaymentEmployeeEmail,
+            periodYear: Number(value.initialPaymentPeriodYear),
+            periodMonth: Number(value.initialPaymentPeriodMonth)
+          }
         : null
     });
+  }
+
+  getPaymentMethodLabel(method: PaymentMethod): string {
+    return method.nombre ?? method.descripcion ?? `Metodo #${method.id}`;
+  }
+
+  getEmployeeLabel(employee: Employee): string {
+    return `${employee.nombre} ${employee.apellido} - ${employee.email || 'Sin email'}`;
+  }
+
+  canSelectEmployee(employee: Employee): boolean {
+    return !!employee.email?.trim();
   }
 
   private toDateInputValue(value?: string): string {
@@ -257,7 +321,8 @@ export class ClientDialogComponent {
         membershipPlanId: null,
         fechaInicio: this.today,
         fechaFin: this.today,
-        precioFinal: null
+        precioFinal: null,
+        registerInitialPayment: false
       }, { emitEvent: false });
     }
 
@@ -265,5 +330,39 @@ export class ClientDialogComponent {
     fechaInicioControl.updateValueAndValidity({ emitEvent: false });
     fechaFinControl.updateValueAndValidity({ emitEvent: false });
     precioFinalControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateInitialPaymentValidators(): void {
+    const shouldRegisterPayment = !this.isEditing && this.form.controls.hasMembership.value && this.form.controls.registerInitialPayment.value;
+    const controls = [
+      this.form.controls.initialPaymentDate,
+      this.form.controls.initialPaymentAmount,
+      this.form.controls.initialPaymentMethodId,
+      this.form.controls.initialPaymentEmployeeEmail,
+      this.form.controls.initialPaymentPeriodYear,
+      this.form.controls.initialPaymentPeriodMonth
+    ];
+
+    if (shouldRegisterPayment) {
+      this.form.controls.initialPaymentDate.setValidators([Validators.required]);
+      this.form.controls.initialPaymentAmount.setValidators([Validators.required, Validators.min(1)]);
+      this.form.controls.initialPaymentMethodId.setValidators([Validators.required]);
+      this.form.controls.initialPaymentEmployeeEmail.setValidators([Validators.required, Validators.email]);
+      this.form.controls.initialPaymentPeriodYear.setValidators([Validators.required, Validators.min(2000)]);
+      this.form.controls.initialPaymentPeriodMonth.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
+    } else {
+      controls.forEach(control => control.clearValidators());
+    }
+
+    controls.forEach(control => control.updateValueAndValidity({ emitEvent: false }));
+  }
+
+  private getDefaultEmployeeEmail(): string {
+    const defaultEmail = this.data.defaultEmployeeEmail?.trim().toLowerCase();
+    const matchedDefault = defaultEmail
+      ? this.data.employees.find(employee => employee.email?.trim().toLowerCase() === defaultEmail)
+      : null;
+
+    return matchedDefault?.email || this.data.employees.find(employee => employee.email?.trim())?.email || '';
   }
 }

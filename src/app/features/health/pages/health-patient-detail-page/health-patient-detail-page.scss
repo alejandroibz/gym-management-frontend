@@ -1,0 +1,282 @@
+.patient-detail-page {
+  display: grid;
+  gap: 1rem;
+  color: #0f172a;
+}
+
+.page-topbar,
+.patient-hero,
+.section-heading,
+.actions,
+.form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.page-topbar,
+.patient-hero,
+.section-heading {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.breadcrumb a {
+  color: #0f766e;
+  text-decoration: none;
+}
+
+.detail-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 18px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+}
+
+h2 {
+  font-size: 1.05rem;
+}
+
+.patient-hero p,
+.section-heading span,
+.info-grid span {
+  color: #64748b;
+}
+
+.patient-tags,
+.actions,
+.form-actions {
+  flex-wrap: wrap;
+}
+
+.patient-tags {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.patient-tags span {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  color: #64748b;
+  background: #ecfdf5;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.patient-tags .danger {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.info-grid,
+.detail-grid,
+.trainer-note-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.info-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.detail-grid,
+.trainer-note-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.info-grid section,
+.note-box,
+.detail-grid section,
+.trainer-note-composer {
+  padding: 0.85rem;
+  border: 1px solid #d8e7e4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.info-grid span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.info-grid strong {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.note-box,
+.trainer-note-composer,
+.detail-grid section {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.trainer-note-composer {
+  background: #f8fffd;
+}
+
+.trainer-note-form mat-form-field:nth-child(n + 3),
+.trainer-note-form .form-actions {
+  grid-column: 1 / -1;
+}
+
+.appointment-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d8e7e4;
+}
+
+.appointment-row:last-child,
+.subscription-row:last-child {
+  border-bottom: 0;
+}
+
+.subscription-row {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d8e7e4;
+}
+
+.payment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d8e7e4;
+}
+
+.payment-row:last-child {
+  border-bottom: 0;
+}
+
+.payment-amount {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.payment-amount span {
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.subscription-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.subscription-meta span,
+.subscription-meta strong {
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.time-block {
+  display: grid;
+  place-items: center;
+  padding: 0.45rem;
+  border-radius: 12px;
+  background: #ecfdf5;
+}
+
+.appointment-content {
+  min-width: 0;
+}
+
+.appointment-content h3,
+.appointment-content p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appointment-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.appointment-payment-button {
+  min-width: max-content;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.feedback-banner,
+.loading-state,
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+
+.feedback-banner.error {
+  color: #991b1b;
+}
+
+.danger-action {
+  color: #991b1b;
+}
+
+@media (max-width: 900px) {
+  .patient-hero,
+  .section-heading,
+  .page-topbar {
+    flex-direction: column;
+  }
+
+  .info-grid,
+  .detail-grid,
+  .trainer-note-form {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-row {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .appointment-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .payment-row {
+    align-items: flex-start;
+  }
+}

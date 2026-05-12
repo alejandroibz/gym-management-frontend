@@ -3,6 +3,8 @@
   gap: 1.5rem;
   padding: 1.5rem;
   background: #ffffff;
+  max-height: min(92dvh, 960px);
+  overflow-y: auto;
 }
 
 .dialog-header {
@@ -110,6 +112,10 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.75rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 26%);
 }
 
 .feedback-banner,

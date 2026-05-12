@@ -1,0 +1,218 @@
+<section class="patient-detail-page">
+  <div class="page-topbar">
+    <nav class="breadcrumb">
+      <a routerLink="/health">Salud</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>{{ patientName() }}</span>
+    </nav>
+
+    <button mat-stroked-button type="button" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </div>
+
+  @if (feedback()) {
+    <div class="feedback-banner error">
+      <mat-icon>error</mat-icon>
+      <span>{{ feedback() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="42"></mat-spinner>
+      <span>Cargando paciente...</span>
+    </div>
+  } @else if (detail(); as detail) {
+    <mat-card class="detail-card">
+      <div class="patient-hero">
+        <div>
+          <h1>{{ detail.patient.clientName }}</h1>
+          <p>{{ detail.patient.primaryProfessionalName || 'Sin profesional asignado' }}</p>
+          <div class="patient-tags">
+            <span>DNI {{ detail.patient.dni || '-' }}</span>
+            <span>{{ detail.patient.healthInsuranceName || 'Sin obra social' }}</span>
+            @if (client()?.tieneLesion) {
+              <span class="danger">Con lesion</span>
+            }
+          </div>
+        </div>
+        <div class="actions">
+          <button mat-stroked-button type="button" (click)="openPatientDialog(detail.patient)">
+            <mat-icon>edit</mat-icon>
+            Editar salud
+          </button>
+          <button mat-flat-button type="button" [routerLink]="['/clients', detail.patient.clientId]">
+            <mat-icon>open_in_new</mat-icon>
+            Ficha cliente
+          </button>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <section><span>Telefono</span><strong>{{ detail.patient.phone || client()?.telefono || '-' }}</strong></section>
+        <section><span>Email</span><strong>{{ detail.patient.email || client()?.email || '-' }}</strong></section>
+        <section><span>Direccion</span><strong>{{ client()?.direccion || '-' }}</strong></section>
+        <section><span>Nacimiento</span><strong>{{ client()?.fechaNacimiento ? (client()?.fechaNacimiento | date:'dd/MM/yyyy') : '-' }}</strong></section>
+      </div>
+
+      @if (detail.patient.clinicalNotes || client()?.observaciones) {
+        <section class="note-box">
+          <h2>Observaciones</h2>
+          @if (detail.patient.clinicalNotes) {
+            <p><strong>Salud:</strong> {{ detail.patient.clinicalNotes }}</p>
+          }
+          @if (client()?.observaciones) {
+            <p><strong>Gimnasio:</strong> {{ client()?.observaciones }}</p>
+          }
+        </section>
+      }
+
+      <section class="trainer-note-composer">
+        <div class="section-heading">
+          <div>
+            <h2>Indicacion para profes</h2>
+            <span>Nota operativa visible para el equipo del gimnasio.</span>
+          </div>
+          <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="detail.trainerNotes[0] ? editTrainerNote(detail.trainerNotes[0]) : isTrainerNoteEditorOpen.set(true)">
+            <mat-icon>{{ detail.trainerNotes[0] ? 'edit' : 'add' }}</mat-icon>
+            {{ detail.trainerNotes[0] ? 'Editar' : 'Crear' }}
+          </button>
+        </div>
+
+        @if (detail.trainerNotes[0] || isTrainerNoteEditorOpen()) {
+          <form [formGroup]="trainerNoteForm" (ngSubmit)="createTrainerNote()" class="trainer-note-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Profesional</mat-label>
+              <mat-select formControlName="healthProfessionalId" [disabled]="!isTrainerNoteEditorOpen()">
+                @for (professional of professionals(); track professional.id) {
+                  <mat-option [value]="professional.id">{{ professional.employeeName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Titulo</mat-label>
+              <input matInput formControlName="title" [readonly]="!isTrainerNoteEditorOpen()">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Restricciones</mat-label>
+              <textarea matInput formControlName="restrictions" rows="2" [readonly]="!isTrainerNoteEditorOpen()"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Indicaciones de entrenamiento</mat-label>
+              <textarea matInput formControlName="trainingIndications" rows="3" [readonly]="!isTrainerNoteEditorOpen()"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Alertas</mat-label>
+              <textarea matInput formControlName="alertNotes" rows="2" [readonly]="!isTrainerNoteEditorOpen()"></textarea>
+            </mat-form-field>
+
+            @if (isTrainerNoteEditorOpen()) {
+              <div class="form-actions">
+                <button mat-flat-button type="submit" [disabled]="isSaving() || trainerNoteForm.invalid">
+                  <mat-icon>save</mat-icon>
+                  Guardar cambios
+                </button>
+                <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="cancelTrainerNoteEdit()">
+                  Cancelar
+                </button>
+                @if (detail.trainerNotes[0]; as note) {
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteTrainerNote(note)">
+                    <mat-icon>delete</mat-icon>
+                    Eliminar
+                  </button>
+                }
+              </div>
+            }
+          </form>
+        } @else {
+          <div class="empty-state compact">Sin indicacion cargada.</div>
+        }
+      </section>
+
+      <div class="detail-grid">
+        <section>
+          <h2>Turnos</h2>
+          @for (appointment of detail.appointments; track appointment.id) {
+            <article class="appointment-row">
+              <div class="time-block">
+                <strong>{{ appointment.startsAt | date:'dd/MM' }}</strong>
+                <span>{{ appointment.startsAt | date:'HH:mm' }}</span>
+              </div>
+              <div class="appointment-content">
+                <h3>{{ appointment.serviceName || 'Sin servicio' }}</h3>
+                <p>{{ appointment.professionalName }} - {{ appointment.status }}</p>
+              </div>
+              <div class="appointment-actions">
+                <button class="appointment-payment-button" mat-stroked-button type="button" [disabled]="isSaving()" (click)="openPaymentForAppointment(appointment)">
+                  <mat-icon>payments</mat-icon>
+                  Registrar cobro
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p>Sin turnos.</p>
+          }
+        </section>
+
+        <section>
+          <h2>Pagos</h2>
+          @for (payment of detail.payments; track payment.id) {
+            <article class="payment-row">
+              <div>
+                <h3>{{ payment.concepto }}</h3>
+                <p>{{ payment.fechaPago | date:'dd/MM/yyyy' }} - {{ payment.estado }}</p>
+              </div>
+              <div class="payment-amount">
+                <strong>{{ payment.monto | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                @if (payment.tieneDescuento || (payment.descuentoMonto ?? 0) > 0) {
+                  <span>Desc. {{ payment.descuentoMonto | currency:'ARS':'symbol':'1.0-0' }}</span>
+                }
+              </div>
+            </article>
+          } @empty {
+            <p>Sin pagos.</p>
+          }
+        </section>
+
+        <section>
+          <h2>Suscripciones</h2>
+          @for (subscription of detail.subscriptions; track subscription.id) {
+            <article class="subscription-row">
+              <div>
+                <h3>{{ subscription.serviceName || 'Plan mensual' }}</h3>
+                <p>{{ subscription.professionalName || 'Sin profesional' }}</p>
+              </div>
+              <div class="subscription-meta">
+                <span>{{ subscription.startDate | date:'dd/MM/yyyy' }} - {{ subscription.endDate | date:'dd/MM/yyyy' }}</span>
+                <span>{{ subscription.sessionsPerWeek }} sesiones por semana</span>
+                <strong>{{ subscription.monthlyAmount | currency:'ARS':'symbol':'1.0-0' }}</strong>
+                <span>{{ getSubscriptionStatusLabel(subscription.status) }}</span>
+              </div>
+              @if (subscription.notes) {
+                <p>{{ subscription.notes }}</p>
+              }
+              <div class="form-actions">
+                <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="editSubscription(subscription)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+                <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteSubscription(subscription)">
+                  <mat-icon>delete</mat-icon>
+                  Eliminar
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p>Sin suscripciones.</p>
+          }
+        </section>
+      </div>
+    </mat-card>
+  }
+</section>

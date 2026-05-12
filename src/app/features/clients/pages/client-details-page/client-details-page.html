@@ -35,8 +35,6 @@
 
         <div class="hero-pills">
           <span class="hero-pill">{{ getMembershipLabel() }}</span>
-          <span class="hero-pill">{{ currentClient.debePago ? 'Debe pago' : 'Pago al dia' }}</span>
-          <span class="hero-pill">{{ getMembershipStateLabel(currentMembership()?.estado) }}</span>
           @if (currentClient.tieneLesion) {
             <span class="hero-pill hero-pill-warning">Con lesion</span>
           }
@@ -232,6 +230,47 @@
         </div>
       </mat-card>
 
+      <mat-card class="content-card span-full trainer-note-card">
+        <div class="card-heading">
+          <div>
+            <h2>Indicacion para profesores</h2>
+            <p>Nota operativa de salud visible para la gestion del entrenamiento.</p>
+          </div>
+          @if (currentClient.healthProfile?.patient) {
+            <a mat-stroked-button routerLink="/health" [queryParams]="{ patientId: currentClient.healthProfile?.patient?.id }">
+              <mat-icon>edit</mat-icon>
+              Editar en salud
+            </a>
+          }
+        </div>
+
+        @if (trainerNote(); as note) {
+          <div class="trainer-note-grid">
+            <article class="trainer-note-block span-full">
+              <span>Titulo</span>
+              <strong>{{ note.title }}</strong>
+            </article>
+            <article class="trainer-note-block">
+              <span>Restricciones</span>
+              <strong>{{ note.restrictions || 'Sin restricciones cargadas' }}</strong>
+            </article>
+            <article class="trainer-note-block">
+              <span>Indicaciones</span>
+              <strong>{{ note.trainingIndications || 'Sin indicaciones cargadas' }}</strong>
+            </article>
+            <article class="trainer-note-block span-full">
+              <span>Alertas</span>
+              <strong>{{ note.alertNotes || 'Sin alertas cargadas' }}</strong>
+            </article>
+          </div>
+        } @else {
+          <div class="empty-state compact">
+            <mat-icon>medical_information</mat-icon>
+            <p>No hay indicaciones para profesores cargadas para este cliente.</p>
+          </div>
+        }
+      </mat-card>
+
       <mat-card class="content-card span-full">
         <div class="card-heading">
           <div>
@@ -309,6 +348,12 @@
                         Confirmar cobro
                       </button>
                     }
+                    <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving()" (click)="editPayment(payment)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar pago" [disabled]="isSaving()" (click)="deletePayment(payment)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
                   </div>
                 </div>
 

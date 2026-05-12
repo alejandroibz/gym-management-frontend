@@ -76,6 +76,10 @@ export class AppShell {
     return this.router.url.startsWith('/clients') || this.router.url.startsWith('/membership-plans');
   }
 
+  get isHealthSectionActive(): boolean {
+    return this.router.url.startsWith('/health');
+  }
+
   get isMovementsSectionActive(): boolean {
     return this.router.url.startsWith('/movements');
   }

@@ -174,7 +174,8 @@
 }
 
 .summary-item,
-.payment-card {
+.payment-card,
+.trainer-note-block {
   display: grid;
   gap: 0.35rem;
   padding: 1rem;
@@ -184,9 +185,21 @@
 }
 
 .summary-item span,
-.payment-field span {
+.payment-field span,
+.trainer-note-block span {
   color: var(--app-text-muted);
   font-size: 0.85rem;
+}
+
+.trainer-note-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.trainer-note-block strong {
+  white-space: pre-wrap;
+  line-height: 1.45;
 }
 
 .payment-card {

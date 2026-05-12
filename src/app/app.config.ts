@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { authHttpInterceptorFn, provideAuth0 } from '@auth0/auth0-angular';
 
@@ -23,6 +24,11 @@ export const appConfig: ApplicationConfig = {
     {
       provide: MatPaginatorIntl,
       useClass: SpanishPaginatorIntl
+    },
+
+    {
+      provide: MAT_DIALOG_DEFAULT_OPTIONS,
+      useValue: { disableClose: true }
     },
 
     provideAuth0({

@@ -1,4 +1,5 @@
 import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
+import { HealthPatientDetail } from '../../health/models/health.model';
 
 export interface ClientRelationRecord {
   [key: string]: unknown;
@@ -18,6 +19,16 @@ export interface ClientAppAccessPayload {
   createAccess: boolean;
 }
 
+export interface ClientInitialPaymentPayload {
+  fechaPago: string;
+  monto: number;
+  paymentMethodId: number;
+  cashMovementCategoryId?: number | null;
+  collectedByEmployeeEmail: string;
+  periodYear: number;
+  periodMonth: number;
+}
+
 export interface Client {
   id: number;
   branchId: number;
@@ -34,6 +45,7 @@ export interface Client {
   membership?: ClientMembership | null;
   membershipsHistory?: ClientMembership[];
   payments: ClientRelationRecord[];
+  healthProfile?: HealthPatientDetail | null;
   debePago: boolean;
   ultimoPagoFecha?: string | null;
   membresiaProximaAVencer?: boolean;
@@ -53,6 +65,7 @@ export interface ClientCreatePayload {
   observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
   membership?: ClientMembership | null;
+  initialPayment?: ClientInitialPaymentPayload | null;
 }
 
 export interface ClientUpdatePayload extends ClientCreatePayload {
@@ -63,4 +76,16 @@ export interface ClientFilters {
   nombre?: string;
   apellido?: string;
   dni?: string;
+}
+
+export interface ClientImportError {
+  rowNumber: number;
+  message: string;
+}
+
+export interface ClientImportResult {
+  totalRows: number;
+  importedCount: number;
+  skippedCount: number;
+  errors: ClientImportError[];
 }

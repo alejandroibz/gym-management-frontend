@@ -2,6 +2,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -13,8 +14,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
+import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
+import { Employee } from '../../../employees/models/employee.model';
+import { EmployeesService } from '../../../employees/services/employees.service';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
+import { RegisterPaymentDialogComponent } from '../../../movements/components/register-payment-dialog/register-payment-dialog';
+import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
+import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
+import { Payment, PaymentCreatePayload, PaymentUpdatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
@@ -47,12 +56,19 @@ export class ClientDetailsPageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
+  private readonly auth = inject(AuthService);
   private readonly clientsService = inject(ClientsService);
+  private readonly employeesService = inject(EmployeesService);
   private readonly membershipPlansService = inject(MembershipPlansService);
   private readonly paymentsService = inject(PaymentsService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
+  private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
 
   readonly client = signal<Client | null>(null);
   readonly membershipPlans = signal<MembershipPlan[]>([]);
+  readonly employees = signal<Employee[]>([]);
+  readonly paymentMethods = signal<PaymentMethod[]>([]);
+  readonly cashMovementCategories = signal<CashMovementCategory[]>([]);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
@@ -84,9 +100,12 @@ export class ClientDetailsPageComponent {
   readonly currentMembership = computed(() => this.getEffectiveMembership(this.client()));
   readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
+  readonly trainerNote = computed(() => this.client()?.healthProfile?.trainerNotes?.[0] ?? null);
   readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing());
+  readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
   readonly observacionesLength = signal(0);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
+  readonly currentUserEmail = signal<string | null>(null);
 
   constructor() {
     this.form.disable({ emitEvent: false });
@@ -100,8 +119,14 @@ export class ClientDetailsPageComponent {
       .subscribe(() => {
         this.updateMembershipValidators();
       });
+    this.auth.user$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(user => {
+        this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
+      });
     this.updateMembershipValidators();
     this.loadMembershipPlans();
+    this.loadPaymentLookups();
     this.loadClient();
   }
 
@@ -291,6 +316,107 @@ export class ClientDetailsPageComponent {
     });
   }
 
+  editPayment(paymentRecord: ClientRelationRecord): void {
+    const payment = this.toPayment(paymentRecord);
+    const client = this.client();
+
+    if (!payment || !client) {
+      this.errorMessage.set('No se pudo identificar el pago para editarlo.');
+      return;
+    }
+
+    if (this.paymentMethods().length === 0 || this.incomeCategories().length === 0) {
+      this.errorMessage.set('No se pudieron cargar metodos de pago o categorias para editar el cobro.');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(RegisterPaymentDialogComponent, {
+      width: '760px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      panelClass: 'employee-dialog-panel',
+      backdropClass: 'employee-dialog-backdrop',
+      data: {
+        clients: [client],
+        employees: this.employees(),
+        paymentMethods: this.paymentMethods(),
+        incomeCategories: this.incomeCategories(),
+        defaultDate: this.toDateInputValue(payment.fechaPago),
+        defaultMonth: payment.periodMonth ?? this.getDateMonth(payment.fechaPago),
+        defaultYear: payment.periodYear ?? this.getDateYear(payment.fechaPago),
+        defaultEmployeeEmail: this.currentUserEmail(),
+        payment
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((payload?: PaymentCreatePayload) => {
+      if (!payload) {
+        return;
+      }
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+
+      this.paymentsService.update(payment.id, this.toPaymentUpdatePayload(payment.id, payload)).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClient();
+        },
+        error: error => {
+          this.isSaving.set(false);
+          this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo editar el pago.'));
+        }
+      });
+    });
+  }
+
+  deletePayment(payment: ClientRelationRecord): void {
+    const paymentId = this.getPaymentId(payment);
+    const amount = this.getPaymentAmount(payment);
+
+    if (!paymentId) {
+      this.errorMessage.set('No se pudo identificar el pago para eliminarlo.');
+      return;
+    }
+
+    const amountLabel = amount !== null
+      ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
+      : 'el cobro seleccionado';
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Eliminar pago',
+        message: `Se eliminara ${amountLabel}. Esta accion no se puede deshacer.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+
+      this.paymentsService.delete(paymentId).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClient();
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.errorMessage.set('No se pudo eliminar el pago.');
+        }
+      });
+    });
+  }
+
   formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return 'Sin dato';
@@ -443,6 +569,32 @@ export class ClientDetailsPageComponent {
     return this.getNumericPaymentField(payment, ['cashmovementcategoryid', 'movementcategoryid', 'categoryid']);
   }
 
+  private getPaymentMethodId(payment: ClientRelationRecord): number | null {
+    return this.getNumericPaymentField(payment, ['paymentmethodid', 'paymentmethod']);
+  }
+
+  private getPaymentClientMembershipId(payment: ClientRelationRecord): number | null {
+    return this.getNumericPaymentField(payment, ['clientmembershipid']);
+  }
+
+  private getPaymentPeriodYear(payment: ClientRelationRecord): number | null {
+    return this.getNumericPaymentField(payment, ['periodyear']);
+  }
+
+  private getPaymentPeriodMonth(payment: ClientRelationRecord): number | null {
+    return this.getNumericPaymentField(payment, ['periodmonth']);
+  }
+
+  private getPaymentEmployeeEmail(payment: ClientRelationRecord): string | null {
+    const email = this.getPaymentField(payment, ['collectedbyemployeeemail']);
+    return typeof email === 'string' && email.trim() ? email : null;
+  }
+
+  private getPaymentDate(payment: ClientRelationRecord): string | null {
+    const rawDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
+    return typeof rawDate === 'string' && rawDate.trim() ? rawDate : null;
+  }
+
   private isPaymentIdField(key: string): boolean {
     const normalizedKey = key.trim().toLowerCase();
     return normalizedKey === 'id' || normalizedKey.endsWith('id');
@@ -584,6 +736,11 @@ export class ClientDetailsPageComponent {
     return null;
   }
 
+  private getStringPaymentField(payment: ClientRelationRecord, candidateKeys: string[]): string | null {
+    const rawValue = this.getPaymentField(payment, candidateKeys);
+    return typeof rawValue === 'string' && rawValue.trim() ? rawValue : null;
+  }
+
   private loadClient(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -620,6 +777,23 @@ export class ClientDetailsPageComponent {
       error: () => {
         this.membershipPlans.set([]);
       }
+    });
+  }
+
+  private loadPaymentLookups(): void {
+    this.employeesService.getPaged(1, 1000).subscribe({
+      next: response => this.employees.set(response.items),
+      error: () => this.employees.set([])
+    });
+
+    this.paymentMethodsService.getPaged(1, 1000).subscribe({
+      next: response => this.paymentMethods.set(response.items),
+      error: () => this.paymentMethods.set([])
+    });
+
+    this.cashMovementCategoriesService.getPaged(1, 1000).subscribe({
+      next: response => this.cashMovementCategories.set(response.items),
+      error: () => this.cashMovementCategories.set([])
     });
   }
 
@@ -692,8 +866,72 @@ export class ClientDetailsPageComponent {
     };
   }
 
+  private toPayment(payment: ClientRelationRecord): Payment | null {
+    const currentClient = this.client();
+    const id = this.getPaymentId(payment);
+    const fechaPago = this.getPaymentDate(payment);
+    const monto = this.getPaymentAmount(payment);
+    const paymentMethodId = this.getPaymentMethodId(payment);
+    const cashMovementCategoryId = this.getPaymentCashMovementCategoryId(payment);
+    const collectedByEmployeeEmail = this.getPaymentEmployeeEmail(payment) ?? this.currentUserEmail();
+
+    if (!currentClient || !id || !fechaPago || monto === null || !paymentMethodId || !cashMovementCategoryId || !collectedByEmployeeEmail) {
+      return null;
+    }
+
+    return {
+      id,
+      clientId: currentClient.id,
+      clientMembershipId: this.getPaymentClientMembershipId(payment),
+      fechaPago,
+      monto,
+      montoOriginal: this.getNumericPaymentField(payment, ['montooriginal', 'originalamount']),
+      descuentoMonto: this.getNumericPaymentField(payment, ['descuentomonto', 'discountamount']) ?? 0,
+      descuentoPorcentaje: this.getNumericPaymentField(payment, ['descuentoporcentaje', 'discountpercentage']),
+      descuentoMotivo: this.getStringPaymentField(payment, ['descuentomotivo', 'discountreason']),
+      tieneDescuento: this.hasPaymentDiscount(payment),
+      estado: this.getPaymentRawState(payment) ?? 'Pendiente',
+      paymentMethodId,
+      paymentMethodNombre: this.getStringPaymentField(payment, ['paymentmethodnombre', 'paymentmethodname']),
+      cashMovementCategoryId,
+      cashMovementCategoryNombre: this.getStringPaymentField(payment, ['cashmovementcategorynombre', 'cashmovementcategoryname']),
+      membershipPlanNombre: this.getStringPaymentField(payment, ['membershipplannombre', 'membershipplanname']),
+      periodYear: this.getPaymentPeriodYear(payment) ?? this.getDateYear(fechaPago),
+      periodMonth: this.getPaymentPeriodMonth(payment) ?? this.getDateMonth(fechaPago),
+      collectedByEmployeeEmail,
+      collectedByEmployeeNombre: this.getStringPaymentField(payment, ['collectedbyemployeenombre', 'collectedbyemployeename'])
+    };
+  }
+
+  private toPaymentUpdatePayload(id: number, payload: PaymentCreatePayload): PaymentUpdatePayload {
+    return {
+      id,
+      clientId: payload.clientId,
+      clientMembershipId: payload.clientMembershipId,
+      fechaPago: payload.fechaPago,
+      monto: payload.monto,
+      montoOriginal: payload.montoOriginal,
+      descuentoMonto: payload.descuentoMonto,
+      descuentoPorcentaje: payload.descuentoPorcentaje,
+      descuentoMotivo: payload.descuentoMotivo,
+      paymentMethodId: payload.paymentMethodId,
+      cashMovementCategoryId: payload.cashMovementCategoryId,
+      periodYear: payload.periodYear,
+      periodMonth: payload.periodMonth,
+      collectedByEmployeeEmail: payload.collectedByEmployeeEmail
+    };
+  }
+
   private toDateInputValue(value?: string | null): string {
     return value ? value.slice(0, 10) : '';
+  }
+
+  private getDateYear(value: string): number {
+    return new Date(value).getFullYear();
+  }
+
+  private getDateMonth(value: string): number {
+    return new Date(value).getMonth() + 1;
   }
 
   private addDays(dateInput: string, days: number): string {

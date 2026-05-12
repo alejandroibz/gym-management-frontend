@@ -88,6 +88,26 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'health/patients/:id',
+        loadComponent: () =>
+          import('./features/health/pages/health-patient-detail-page/health-patient-detail-page')
+            .then(m => m.HealthPatientDetailPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'health',
+        loadComponent: () =>
+          import('./features/health/pages/health-page/health-page')
+            .then(m => m.HealthPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
         path: 'membership-plans',
         loadComponent: () =>
           import('./features/membership-plans/pages/membership-plans-page/membership-plans-page')

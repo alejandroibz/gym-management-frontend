@@ -183,6 +183,7 @@
 .filter-chip,
 .dni-pill,
 .category-chip,
+.health-chip,
 .access-chip {
   width: fit-content;
   display: inline-flex;
@@ -279,7 +280,7 @@
 
 .employees-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 1040px;
   border-collapse: collapse;
 }
 
@@ -351,6 +352,37 @@
   color: #2f3035;
   background: #f0f0f1;
   border: 1px solid rgba(21, 21, 23, 0.08);
+}
+
+.health-cell {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: start;
+}
+
+.health-chip {
+  color: #667085;
+  background: #f3f4f6;
+  border: 1px solid rgba(21, 21, 23, 0.08);
+}
+
+.health-chip mat-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+}
+
+.health-chip-enabled {
+  color: #0f766e;
+  background: #ecfdf5;
+  border-color: #b7eadf;
+}
+
+.health-link {
+  min-height: 34px;
+  padding-inline: 0.7rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
 }
 
 .access-chip-enabled {
@@ -516,7 +548,7 @@ mat-paginator {
 
   .employee-card-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.55rem;
   }
 

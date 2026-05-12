@@ -13,6 +13,8 @@ import { Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
+import { HealthProfessional } from '../../../health/models/health.model';
+import { HealthServiceApi } from '../../../health/services/health.service';
 import {
   EmployeeDialogComponent,
   EmployeeDialogResult
@@ -47,9 +49,11 @@ export class EmployeesPageComponent {
   private readonly router = inject(Router);
   private readonly employeesService = inject(EmployeesService);
   private readonly employeeCategoriesService = inject(EmployeeCategoriesService);
+  private readonly healthService = inject(HealthServiceApi);
 
   readonly employees = signal<Employee[]>([]);
   readonly categories = signal<EmployeeCategory[]>([]);
+  readonly healthProfessionals = signal<HealthProfessional[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isLoadingCategories = signal(false);
@@ -79,6 +83,7 @@ export class EmployeesPageComponent {
   constructor() {
     this.loadCategories();
     this.loadEmployees();
+    this.loadHealthProfessionals();
   }
 
   handlePageChange(event: PageEvent): void {
@@ -137,6 +142,26 @@ export class EmployeesPageComponent {
     }
 
     return employee.appRole ? employee.appRole : 'Con acceso';
+  }
+
+  getHealthProfessional(employee: Employee): HealthProfessional | null {
+    return this.healthProfessionals().find(professional => professional.employeeId === employee.id) ?? null;
+  }
+
+  getHealthProfessionalLabel(employee: Employee): string {
+    const professional = this.getHealthProfessional(employee);
+
+    if (!professional) {
+      return 'No asignado';
+    }
+
+    return professional.professionalTypeName || professional.specialty || 'Profesional de salud';
+  }
+
+  openHealthCatalog(employee?: Employee): void {
+    this.router.navigate(['/health'], {
+      queryParams: employee ? { employeeId: employee.id } : undefined
+    });
   }
 
   hasActiveFilters(): boolean {
@@ -260,6 +285,18 @@ export class EmployeesPageComponent {
         this.categories.set([]);
         this.isLoadingCategories.set(false);
         this.syncLayoutAfterDataLoad();
+      }
+    });
+  }
+
+  private loadHealthProfessionals(): void {
+    this.healthService.getProfessionals().subscribe({
+      next: response => {
+        this.healthProfessionals.set(response.items);
+        this.syncLayoutAfterDataLoad();
+      },
+      error: () => {
+        this.healthProfessionals.set([]);
       }
     });
   }

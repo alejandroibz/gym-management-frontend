@@ -1,7 +1,7 @@
 export interface Payment {
   id: number;
   clientId: number;
-  clientMembershipId: number;
+  clientMembershipId: number | null;
   fechaPago: string;
   monto: number;
   montoOriginal?: number | null;
