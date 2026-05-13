@@ -77,7 +77,7 @@ export class EmployeesPageComponent {
     const raw = this.filtersForm.getRawValue();
     const search = raw.search.trim();
 
-    return search ? [{ label: 'Busqueda', value: search }] : [];
+    return search ? [{ label: 'Búsqueda', value: search }] : [];
   });
 
   constructor() {
@@ -231,9 +231,9 @@ export class EmployeesPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Primero crea una categoria',
+        title: 'Primero crea una categoría',
         message:
-          'Para registrar un empleado necesitas al menos una categoria disponible. Crea una categoria y luego vuelve para continuar con el alta.',
+          'Para registrar un empleado necesitas al menos una categoría disponible. Crea una categoría y luego vuelve para continuar con el alta.',
         confirmLabel: 'Ir a categorias',
         cancelLabel: 'Ahora no',
         tone: 'primary'

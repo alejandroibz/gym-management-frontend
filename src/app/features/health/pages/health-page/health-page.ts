@@ -98,6 +98,7 @@ export class HealthPageComponent {
   readonly selectedProfessionalTypeId = signal<number | null>(null);
   readonly pendingProfessionalEmployeeId = signal<number | null>(null);
   readonly pendingPatientId = signal<number | null>(null);
+  readonly pendingAppointmentId = signal<number | null>(null);
 
   readonly services = signal<HealthService[]>([]);
   readonly professionalTypes = signal<HealthProfessionalType[]>([]);
@@ -108,6 +109,7 @@ export class HealthPageComponent {
   readonly patientsPageSize = signal(10);
   readonly patientsSearch = signal('');
   readonly appointments = signal<HealthAppointment[]>([]);
+  readonly editingAppointment = signal<HealthAppointment | null>(null);
   readonly payments = signal<HealthPayment[]>([]);
   readonly subscriptions = signal<HealthPlanSubscription[]>([]);
   readonly paymentSummary = signal<HealthPaymentSummary | null>(null);
@@ -132,7 +134,7 @@ export class HealthPageComponent {
   readonly professionalForm = this.formBuilder.nonNullable.group({
     employeeId: [0, [Validators.required, Validators.min(1)]],
     healthProfessionalTypeId: [null as number | null],
-    specialty: ['Kinesiologia', Validators.required],
+    specialty: ['Kinesiología', Validators.required],
     licenseNumber: [''],
     notes: ['']
   });
@@ -199,8 +201,22 @@ export class HealthPageComponent {
       if (tab === 'patients') {
         this.selectedTabIndex.set(1);
       }
+      if (tab === 'agenda') {
+        this.selectedTabIndex.set(0);
+      }
       if (tab === 'payments' || tab === 'plans') {
         this.selectedTabIndex.set(2);
+      }
+      const appointmentId = Number(params.get('appointmentId'));
+      const appointmentDate = params.get('date');
+      if (appointmentId > 0) {
+        this.pendingAppointmentId.set(appointmentId);
+        this.selectedTabIndex.set(0);
+        this.calendarView.set('day');
+        if (appointmentDate) {
+          this.selectedDate.set(appointmentDate);
+        }
+        this.loadAppointments();
       }
       const employeeId = Number(params.get('employeeId'));
       if (employeeId > 0) {
@@ -421,7 +437,17 @@ export class HealthPageComponent {
   loadAppointments(): void {
     const range = this.getRange();
     this.healthService.getAppointments(range.from.toISOString(), range.to.toISOString()).subscribe({
-      next: response => this.appointments.set(response.items),
+      next: response => {
+        this.appointments.set(response.items);
+        const pendingAppointmentId = this.pendingAppointmentId();
+        if (pendingAppointmentId) {
+          const appointment = response.items.find(item => item.id === pendingAppointmentId);
+          if (appointment) {
+            this.pendingAppointmentId.set(null);
+            this.editAppointment(appointment);
+          }
+        }
+      },
       error: () => this.feedback.set('No se pudo cargar la agenda de salud.')
     });
   }
@@ -470,7 +496,7 @@ export class HealthPageComponent {
 
   cancelProfessionalEdit(): void {
     this.editingProfessional.set(null);
-    this.professionalForm.reset({ employeeId: 0, healthProfessionalTypeId: null, specialty: 'Kinesiologia', licenseNumber: '', notes: '' });
+    this.professionalForm.reset({ employeeId: 0, healthProfessionalTypeId: null, specialty: 'Kinesiología', licenseNumber: '', notes: '' });
   }
 
   deleteProfessional(professional: HealthProfessional): void {
@@ -510,13 +536,18 @@ export class HealthPageComponent {
     });
   }
 
-  createAppointment(): void {
+  saveAppointment(): void {
     if (this.appointmentForm.invalid) return;
     const raw = this.appointmentForm.getRawValue();
-    this.save(() => this.healthService.createAppointment({ ...raw, startsAt: new Date(raw.startsAt).toISOString() }), () => {
-      this.appointmentForm.reset({ healthPatientProfileId: 0, healthProfessionalId: 0, healthServiceId: null, startsAt: '', status: 'Pendiente', isWalkIn: false, notes: '' });
-      this.loadAppointments();
-    });
+    const editing = this.editingAppointment();
+    const payload = { ...raw, startsAt: new Date(raw.startsAt).toISOString(), endsAt: null };
+    this.save(
+      () => editing ? this.healthService.updateAppointment(editing.id, payload) : this.healthService.createAppointment(payload),
+      () => {
+        this.cancelAppointmentEdit();
+        this.loadAppointments();
+      }
+    );
   }
 
   updateAppointmentStatus(appointment: HealthAppointment, status: string): void {
@@ -537,6 +568,57 @@ export class HealthPageComponent {
   openPatientFromAppointment(appointment: HealthAppointment): void {
     if (this.calendarView() !== 'day') return;
     this.router.navigate(['/health', 'patients', appointment.healthPatientProfileId]);
+  }
+
+  editAppointment(appointment: HealthAppointment): void {
+    this.editingAppointment.set(appointment);
+    this.appointmentForm.patchValue({
+      healthPatientProfileId: appointment.healthPatientProfileId,
+      healthProfessionalId: appointment.healthProfessionalId,
+      healthServiceId: appointment.healthServiceId ?? null,
+      startsAt: this.toDateTimeLocalInput(appointment.startsAt),
+      status: appointment.status || 'Pendiente',
+      isWalkIn: appointment.isWalkIn,
+      notes: appointment.notes ?? ''
+    });
+  }
+
+  cancelAppointmentEdit(): void {
+    this.editingAppointment.set(null);
+    this.appointmentForm.reset({
+      healthPatientProfileId: 0,
+      healthProfessionalId: 0,
+      healthServiceId: null,
+      startsAt: '',
+      status: 'Pendiente',
+      isWalkIn: false,
+      notes: ''
+    });
+  }
+
+  deleteAppointment(appointment: HealthAppointment): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Eliminar turno',
+        message: `Se va a eliminar el turno de ${appointment.patientName}.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.save(() => this.healthService.deleteAppointment(appointment.id), () => {
+        if (this.editingAppointment()?.id === appointment.id) {
+          this.cancelAppointmentEdit();
+        }
+        this.loadAppointments();
+      });
+    });
   }
 
   openPaymentDialog(payment?: HealthPayment): void {
@@ -573,7 +655,7 @@ export class HealthPageComponent {
     const employeeEmail = payment.collectedByEmployeeEmail;
 
     if (!categoryId) {
-      this.feedback.set('No hay una categoria de ingreso disponible para confirmar el cobro.');
+      this.feedback.set('No hay una categoría de ingreso disponible para confirmar el cobro.');
       return;
     }
 
@@ -588,7 +670,7 @@ export class HealthPageComponent {
       autoFocus: false,
       data: {
         title: 'Confirmar cobro',
-        message: `Se marcara como confirmado el cobro de ${payment.patientName} por ${this.formatCurrency(payment.monto)}.`,
+        message: `Se marcará como confirmado el cobro de ${payment.patientName} por ${this.formatCurrency(payment.monto)}.`,
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -676,7 +758,7 @@ export class HealthPageComponent {
         this.isLoading.set(false);
       },
       error: () => {
-        this.feedback.set('No se pudo cargar el modulo de salud.');
+        this.feedback.set('No se pudo cargar el módulo de salud.');
         this.isLoading.set(false);
       }
     });
@@ -730,7 +812,7 @@ export class HealthPageComponent {
       },
       error: () => {
         this.isSaving.set(false);
-        this.feedback.set('No se pudo guardar la operacion.');
+        this.feedback.set('No se pudo guardar la operación.');
       }
     });
   }
@@ -801,6 +883,16 @@ export class HealthPageComponent {
 
   private toDateInput(date: Date): string {
     return date.toISOString().slice(0, 10);
+  }
+
+  private toDateTimeLocalInput(value: string): string {
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   private formatDate(date: Date): string {

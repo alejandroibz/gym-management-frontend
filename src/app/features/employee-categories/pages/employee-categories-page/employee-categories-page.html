@@ -23,7 +23,7 @@
         <p class="eyebrow">Estructura del equipo</p>
         <h1>Categorias de empleados</h1>
         <p class="subtitle">
-          Organiza roles y perfiles del personal con una vista mas limpia, profesional y comoda para gestionar desde desktop o mobile.
+          Organiza roles y perfiles del personal con una vista más limpia, profesional y cómoda para gestionar desde desktop o mobile.
         </p>
       </div>
 
@@ -40,7 +40,7 @@
 
         <div class="highlight-chip">
           <mat-icon>tune</mat-icon>
-          <span>Gestion simple</span>
+          <span>Gestión simple</span>
         </div>
       </div>
     </div>
@@ -48,7 +48,7 @@
     <div class="page-header-side">
       <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
         <mat-icon>add</mat-icon>
-        Nueva categoria
+        Nueva categoría
       </button>
 
       <div class="header-note">
@@ -86,7 +86,7 @@
         <mat-icon>dashboard_customize</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Pagina actual</span>
+        <span class="stat-label">Página actual</span>
         <strong>{{ pageNumber() }}</strong>
         <small>Con tamano {{ pageSize() }}</small>
       </div>
@@ -98,7 +98,7 @@
       <div class="card-heading">
         <div class="card-heading-copy">
           <h2>Listado</h2>
-          <p>Busca y gestiona las categorias del personal desde una vista mas clara y enfocada.</p>
+          <p>Busca y gestiona las categorias del personal desde una vista más clara y enfocada.</p>
         </div>
 
         <div class="heading-badge">
@@ -128,9 +128,9 @@
       @if (filtersExpanded()) {
         <div class="filters">
           <div class="filter-block search-block">
-            <span class="filter-label">Busqueda</span>
+            <span class="filter-label">Búsqueda</span>
             <mat-form-field appearance="outline">
-              <mat-label>Buscar categoria</mat-label>
+              <mat-label>Buscar categoría</mat-label>
               <mat-icon matPrefix>search</mat-icon>
               <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
             </mat-form-field>
@@ -148,7 +148,7 @@
           <div class="empty-state">
             <mat-icon>inventory_2</mat-icon>
             <h3>Sin categorias para mostrar</h3>
-            <p>Crea una categoria nueva o ajusta la busqueda para encontrar coincidencias.</p>
+            <p>Crea una categoría nueva o ajusta la búsqueda para encontrar coincidencias.</p>
           </div>
         } @else {
           @for (category of filteredCategories(); track category.id) {
@@ -164,7 +164,7 @@
                       </div>
 
                       <div>
-                        <p class="category-overline">Categoria operativa</p>
+                        <p class="category-overline">Categoría operativa</p>
                         <h3>{{ category.nombre }}</h3>
                       </div>
                     </div>
@@ -173,7 +173,7 @@
                   </div>
 
                   <div class="category-topline-side">
-                    <span class="status-badge">Categoria activa</span>
+                    <span class="status-badge">Categoría activa</span>
                   </div>
                 </div>
 

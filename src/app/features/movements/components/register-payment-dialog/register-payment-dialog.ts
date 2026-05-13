@@ -88,7 +88,7 @@ export class RegisterPaymentDialogComponent {
 
   readonly membershipLabel = computed(() => {
     const membership = this.getEffectiveMembership(this.selectedClient());
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia activa');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía activa');
   });
 
   constructor() {
@@ -161,7 +161,7 @@ export class RegisterPaymentDialogComponent {
   }
 
   getPaymentMethodLabel(method: PaymentMethod): string {
-    return method.nombre ?? method.descripcion ?? `Metodo #${method.id}`;
+    return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
 
   getEmployeeLabel(employee: Employee): string {

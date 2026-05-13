@@ -2,8 +2,8 @@
   <header class="page-header">
     <div class="page-title">
       <h1>Empleados</h1>
-      <p>Gestion de empleados</p>
-      <div class="header-stats" aria-label="Metricas de empleados">
+      <p>Gestión de empleados</p>
+      <div class="header-stats" aria-label="Métricas de empleados">
         <div class="metric-item">
           <span class="metric-label">Total</span>
           <strong class="metric-value">{{ totalEmployees() }}</strong>
@@ -81,14 +81,14 @@
         <div class="empty-icon">
           <mat-icon>groups</mat-icon>
         </div>
-        <h2>{{ hasActiveFilters() ? 'Sin empleados para mostrar' : 'No hay empleados todavia' }}</h2>
-        <p>Crea tu primer empleado o ajusta la busqueda para encontrar resultados.</p>
+        <h2>{{ hasActiveFilters() ? 'Sin empleados para mostrar' : 'No hay empleados todavía' }}</h2>
+        <p>Crea tu primer empleado o ajusta la búsqueda para encontrar resultados.</p>
 
         <div class="empty-actions">
           @if (hasActiveFilters()) {
             <button mat-stroked-button type="button" class="action-reset" (click)="resetFilters()">
               <mat-icon>restart_alt</mat-icon>
-              Limpiar busqueda
+              Limpiar búsqueda
             </button>
           } @else {
             <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
@@ -105,7 +105,7 @@
             <tr>
               <th>Empleado</th>
               <th>DNI</th>
-              <th>Categoria</th>
+              <th>Categoría</th>
               <th>Salud</th>
               <th>Acceso app</th>
               <th>Fechas</th>

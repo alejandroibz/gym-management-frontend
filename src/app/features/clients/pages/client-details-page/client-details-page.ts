@@ -206,7 +206,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Guardar cambios',
-        message: `Se actualizaran los datos de ${client.nombre} ${client.apellido}.`,
+        message: `Se actualizarán los datos de ${client.nombre} ${client.apellido}.`,
         confirmLabel: 'Guardar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -235,7 +235,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar cliente',
-        message: `Se eliminara a ${client.nombre} ${client.apellido}. Esta accion no se puede deshacer.`,
+        message: `Se eliminará a ${client.nombre} ${client.apellido}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -281,7 +281,7 @@ export class ClientDetailsPageComponent {
     const cashMovementCategoryId = this.getPaymentCashMovementCategoryId(payment);
 
     if (!paymentId || !cashMovementCategoryId) {
-      this.errorMessage.set('No se pudo identificar la categoria del movimiento para confirmar el cobro.');
+      this.errorMessage.set('No se pudo identificar la categoría del movimiento para confirmar el cobro.');
       return;
     }
 
@@ -291,7 +291,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Confirmar cobro',
-        message: 'Se marcara este cobro como confirmado.',
+        message: 'Se marcará este cobro como confirmado.',
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -392,7 +392,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar pago',
-        message: `Se eliminara ${amountLabel}. Esta accion no se puede deshacer.`,
+        message: `Se eliminará ${amountLabel}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -472,7 +472,7 @@ export class ClientDetailsPageComponent {
     const periodYear = this.getNumericPaymentField(payment, ['periodyear']);
 
     if (periodMonth !== null && periodYear !== null) {
-      return `Periodo ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
+      return `Período ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
     }
 
     const paymentDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
@@ -497,7 +497,7 @@ export class ClientDetailsPageComponent {
 
   getMembershipLabel(): string {
     const membership = this.currentMembership();
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía');
   }
 
   getMembershipStateLabel(state?: string | null): string {
@@ -530,7 +530,7 @@ export class ClientDetailsPageComponent {
     const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
 
     if (client.membresiaProximaAVencer) {
-      chips.push({ label: 'Proxima a vencer', tone: 'warning' });
+      chips.push({ label: 'Próxima a vencer', tone: 'warning' });
 
       if (!client.membresiaVencimientoNotificado) {
         chips.push({ label: 'Sin notificar', tone: 'info' });
@@ -659,24 +659,24 @@ export class ClientDetailsPageComponent {
       case 'estado':
         return 'Estado';
       case 'periodyear':
-        return 'Ano';
+        return 'Año';
       case 'periodmonth':
         return 'Mes';
       case 'paymentmethod':
-        return 'Metodo de cobro';
+        return 'Método de cobro';
       case 'paymentmethodname':
-        return 'Metodo de cobro';
+        return 'Método de cobro';
       case 'paymentmethodnombre':
-        return 'Metodo de cobro';
+        return 'Método de cobro';
       case 'cashmovementcategorynombre':
       case 'cashmovementcategoryname':
-        return 'Categoria movimiento';
+        return 'Categoría movimiento';
       case 'clientmembership':
-        return 'Membresia';
+        return 'Membresía';
       case 'membershipplan':
       case 'membershipplannombre':
       case 'membershipplanname':
-        return 'Membresia';
+        return 'Membresía';
       default:
         return key
           .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -774,7 +774,7 @@ export class ClientDetailsPageComponent {
       error: () => {
         this.client.set(null);
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo cargar la informacion del cliente.');
+        this.errorMessage.set('No se pudo cargar la información del cliente.');
       }
     });
   }

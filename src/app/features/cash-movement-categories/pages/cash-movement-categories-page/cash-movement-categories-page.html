@@ -23,7 +23,7 @@
         <p class="eyebrow">Tesoreria interna</p>
         <h1>Categorias de movimientos</h1>
         <p class="subtitle">
-          Organiza ingresos y egresos con una vista mas clara, profesional y lista para operar desde cualquier pantalla.
+          Organiza ingresos y egresos con una vista más clara, profesional y lista para operar desde cualquier pantalla.
         </p>
       </div>
 
@@ -48,7 +48,7 @@
     <div class="page-header-side">
       <button mat-flat-button type="button" class="primary-action" [disabled]="isSaving()" (click)="openCreateModal()">
         <mat-icon>add</mat-icon>
-        Nueva categoria
+        Nueva categoría
       </button>
 
       <div class="header-note">
@@ -75,7 +75,7 @@
         <mat-icon>dashboard_customize</mat-icon>
       </div>
       <div class="stat-copy">
-        <span class="stat-label">Pagina actual</span>
+        <span class="stat-label">Página actual</span>
         <strong>{{ pageNumber() }}</strong>
         <small>Resultado paginado</small>
       </div>
@@ -88,7 +88,7 @@
       <div class="stat-copy">
         <span class="stat-label">En pantalla</span>
         <strong>{{ categoriesOnPage() }}</strong>
-        <small>Registros cargados en esta pagina</small>
+        <small>Registros cargados en esta página</small>
       </div>
     </mat-card>
   </section>
@@ -135,9 +135,9 @@
       @if (filtersExpanded()) {
         <div class="filters">
           <div class="filter-block search-block">
-            <span class="filter-label">Busqueda</span>
+            <span class="filter-label">Búsqueda</span>
             <mat-form-field appearance="outline">
-              <mat-label>Buscar categoria</mat-label>
+              <mat-label>Buscar categoría</mat-label>
               <mat-icon matPrefix>search</mat-icon>
               <input matInput [value]="filterTerm()" (input)="updateSearchTerm(searchInput.value)" #searchInput />
             </mat-form-field>
@@ -162,7 +162,7 @@
           <div class="empty-state">
             <mat-icon>inventory_2</mat-icon>
             <h3>Sin resultados</h3>
-            <p>No hay categorias para esta pagina o la busqueda no encontro coincidencias.</p>
+            <p>No hay categorias para esta página o la búsqueda no encontro coincidencias.</p>
           </div>
         } @else {
           @for (category of filteredCategories(); track category.id) {
@@ -178,7 +178,7 @@
                       </div>
 
                       <div>
-                        <p class="category-overline">Categoria operativa</p>
+                        <p class="category-overline">Categoría operativa</p>
                         <h3>{{ category.nombre }}</h3>
                       </div>
                     </div>

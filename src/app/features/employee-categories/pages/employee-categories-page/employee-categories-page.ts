@@ -113,7 +113,7 @@ export class EmployeeCategoriesPageComponent {
       },
       error: () => {
         this.isSaving.set(false);
-        this.errorMessage.set('No se pudo cargar el detalle de la categoria.');
+        this.errorMessage.set('No se pudo cargar el detalle de la categoría.');
       }
     });
   }
@@ -126,8 +126,8 @@ export class EmployeeCategoriesPageComponent {
       panelClass: 'employee-category-dialog-panel',
       backdropClass: 'employee-category-dialog-backdrop',
       data: {
-        title: 'Eliminar categoria',
-        message: 'Se eliminara la categoria seleccionada. Esta accion no se puede deshacer.',
+        title: 'Eliminar categoría',
+        message: 'Se eliminará la categoría seleccionada. Esta acción no se puede deshacer.',
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -149,7 +149,7 @@ export class EmployeeCategoriesPageComponent {
         },
         error: () => {
           this.isSaving.set(false);
-          this.errorMessage.set('No se pudo eliminar la categoria.');
+          this.errorMessage.set('No se pudo eliminar la categoría.');
         }
       });
     });
@@ -188,7 +188,7 @@ export class EmployeeCategoriesPageComponent {
             },
             error: () => {
               this.isSaving.set(false);
-              this.errorMessage.set('No se pudo actualizar la categoria.');
+              this.errorMessage.set('No se pudo actualizar la categoría.');
             }
           });
         return;
@@ -208,7 +208,7 @@ export class EmployeeCategoriesPageComponent {
           },
           error: () => {
             this.isSaving.set(false);
-            this.errorMessage.set('No se pudo crear la categoria.');
+            this.errorMessage.set('No se pudo crear la categoría.');
           }
         });
     });

@@ -2,8 +2,8 @@
   <div class="dialog-header">
     <div>
       <p class="dialog-eyebrow">ABM de categorias</p>
-      <h2>{{ isEditing ? 'Editar categoria' : 'Nueva categoria' }}</h2>
-      <p class="dialog-subtitle">Completa los datos principales para guardar la categoria.</p>
+      <h2>{{ isEditing ? 'Editar categoría' : 'Nueva categoría' }}</h2>
+      <p class="dialog-subtitle">Completa los datos principales para guardar la categoría.</p>
     </div>
 
     <button mat-icon-button type="button" (click)="close()">
@@ -24,12 +24,12 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline">
-      <mat-label>Descripcion</mat-label>
+      <mat-label>Descripción</mat-label>
       <textarea
         matInput
         rows="4"
         formControlName="descripcion"
-        placeholder="Describe la categoria"></textarea>
+        placeholder="Describe la categoría"></textarea>
       @if (form.controls.descripcion.hasError('required')) {
         <mat-error>La descripcion es obligatoria.</mat-error>
       }
@@ -41,7 +41,7 @@
     <div class="dialog-actions">
       <button mat-flat-button type="submit">
         <mat-icon>{{ isEditing ? 'save' : 'add_circle' }}</mat-icon>
-        {{ isEditing ? 'Guardar cambios' : 'Crear categoria' }}
+        {{ isEditing ? 'Guardar cambios' : 'Crear categoría' }}
       </button>
 
       <button mat-stroked-button type="button" (click)="close()">

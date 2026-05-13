@@ -88,7 +88,7 @@ export class ClientsPageComponent {
     const chips: Array<{ label: string; value: string }> = [];
 
     if (raw.search.trim()) {
-      chips.push({ label: 'Busqueda', value: raw.search.trim() });
+      chips.push({ label: 'Búsqueda', value: raw.search.trim() });
     }
 
     return chips;
@@ -172,7 +172,7 @@ export class ClientsPageComponent {
       backdropClass: 'employee-category-dialog-backdrop',
       data: {
         title: 'Eliminar cliente',
-        message: `Se eliminara a ${client.nombre} ${client.apellido}. Esta accion no se puede deshacer.`,
+        message: `Se eliminará a ${client.nombre} ${client.apellido}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -278,9 +278,9 @@ export class ClientsPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Primero crea una membresia',
+        title: 'Primero crea una membresía',
         message:
-          'Para registrar un cliente necesitas tener al menos una membresia disponible. Crea un plan y luego vuelve para completar el alta.',
+          'Para registrar un cliente necesitas tener al menos una membresía disponible. Crea un plan y luego vuelve para completar el alta.',
         confirmLabel: 'Ir a membresias',
         cancelLabel: 'Ahora no',
         tone: 'primary'
@@ -321,7 +321,7 @@ export class ClientsPageComponent {
 
   getMembershipLabel(client: Client): string {
     const membership = this.getEffectiveMembership(client);
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía');
   }
 
   getMembershipEndDate(client: Client): string | null {
@@ -329,7 +329,7 @@ export class ClientsPageComponent {
   }
 
   getPaymentStatusLabel(client: Client): string {
-    return client.debePago ? 'Pendiente' : 'Al dia';
+    return client.debePago ? 'Pendiente' : 'Al día';
   }
 
   isPaymentPending(client: Client): boolean {
@@ -340,7 +340,7 @@ export class ClientsPageComponent {
     const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
 
     if (client.membresiaProximaAVencer) {
-      chips.push({ label: 'Proxima a vencer', tone: 'warning' });
+      chips.push({ label: 'Próxima a vencer', tone: 'warning' });
 
       if (!client.membresiaVencimientoNotificado) {
         chips.push({ label: 'Sin notificar', tone: 'info' });

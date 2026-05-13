@@ -265,7 +265,7 @@ export class ClientDialogComponent {
   }
 
   getPaymentMethodLabel(method: PaymentMethod): string {
-    return method.nombre ?? method.descripcion ?? `Metodo #${method.id}`;
+    return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
 
   getEmployeeLabel(employee: Employee): string {

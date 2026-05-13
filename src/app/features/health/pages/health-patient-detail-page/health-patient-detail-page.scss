@@ -228,12 +228,19 @@ h2 {
 .appointment-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .appointment-payment-button {
   min-width: max-content;
   border-radius: 10px;
   white-space: nowrap;
+}
+
+.danger-icon-button {
+  color: #991b1b;
 }
 
 .feedback-banner,

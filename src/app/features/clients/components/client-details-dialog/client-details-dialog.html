@@ -3,7 +3,7 @@
     <div>
       <p class="dialog-eyebrow">Detalle de cliente</p>
       <h2>{{ data.client.nombre }} {{ data.client.apellido }}</h2>
-      <p class="dialog-subtitle">Informacion completa y relaciones del cliente seleccionado.</p>
+      <p class="dialog-subtitle">Información completa y relaciones del cliente seleccionado.</p>
     </div>
 
     <button mat-icon-button type="button" aria-label="Cerrar modal" (click)="close()">
@@ -23,7 +23,7 @@
     </article>
 
     <article class="detail-card span-2">
-      <span class="detail-label">Direccion</span>
+      <span class="detail-label">Dirección</span>
       <strong>{{ data.client.direccion }}</strong>
     </article>
 
@@ -48,8 +48,8 @@
     </article>
 
     <article class="detail-card span-2">
-      <span class="detail-label">Membresia actual</span>
-      <strong>{{ currentMembership?.plan?.nombre || (currentMembership ? 'Plan #' + currentMembership.membershipPlanId : 'Sin membresia asignada') }}</strong>
+      <span class="detail-label">Membresía actual</span>
+      <strong>{{ currentMembership?.plan?.nombre || (currentMembership ? 'Plan #' + currentMembership.membershipPlanId : 'Sin membresía asignada') }}</strong>
       @if (currentMembership) {
         <span>
           {{ currentMembership.fechaInicio | date: 'dd/MM/yyyy' }} - {{ currentMembership.fechaFin | date: 'dd/MM/yyyy' }}
@@ -65,8 +65,8 @@
 
     <div class="contact-links">
       <div class="contact-card">
-        <span class="contact-label">Telefono</span>
-        <strong class="contact-value">{{ data.client.telefono || 'Sin telefono' }}</strong>
+        <span class="contact-label">Teléfono</span>
+        <strong class="contact-value">{{ data.client.telefono || 'Sin teléfono' }}</strong>
         <a class="contact-action" [href]="whatsappLink" target="_blank" rel="noopener noreferrer">
           Abrir en WhatsApp
         </a>
@@ -83,12 +83,12 @@
   <div class="relations-grid">
     <section class="relation-card">
       <div class="relation-heading">
-        <h3>Membresia</h3>
+        <h3>Membresía</h3>
         <span>{{ hasMembership ? 1 : 0 }}</span>
       </div>
 
       @if (!currentMembership) {
-        <p class="empty-copy">No hay membresia asociada.</p>
+        <p class="empty-copy">No hay membresía asociada.</p>
       } @else {
         <div class="relation-list">
           <article class="relation-item">

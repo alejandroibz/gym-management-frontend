@@ -34,7 +34,7 @@
             <span>DNI {{ detail.patient.dni || '-' }}</span>
             <span>{{ detail.patient.healthInsuranceName || 'Sin obra social' }}</span>
             @if (client()?.tieneLesion) {
-              <span class="danger">Con lesion</span>
+              <span class="danger">Con lesión</span>
             }
           </div>
         </div>
@@ -51,9 +51,9 @@
       </div>
 
       <div class="info-grid">
-        <section><span>Telefono</span><strong>{{ detail.patient.phone || client()?.telefono || '-' }}</strong></section>
+        <section><span>Teléfono</span><strong>{{ detail.patient.phone || client()?.telefono || '-' }}</strong></section>
         <section><span>Email</span><strong>{{ detail.patient.email || client()?.email || '-' }}</strong></section>
-        <section><span>Direccion</span><strong>{{ client()?.direccion || '-' }}</strong></section>
+        <section><span>Dirección</span><strong>{{ client()?.direccion || '-' }}</strong></section>
         <section><span>Nacimiento</span><strong>{{ client()?.fechaNacimiento ? (client()?.fechaNacimiento | date:'dd/MM/yyyy') : '-' }}</strong></section>
       </div>
 
@@ -152,6 +152,12 @@
                 <button class="appointment-payment-button" mat-stroked-button type="button" [disabled]="isSaving()" (click)="openPaymentForAppointment(appointment)">
                   <mat-icon>payments</mat-icon>
                   Registrar cobro
+                </button>
+                <button mat-icon-button type="button" aria-label="Editar turno" [disabled]="isSaving()" (click)="editAppointment(appointment)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" [disabled]="isSaving()" (click)="deleteAppointment(appointment)">
+                  <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </article>

@@ -35,7 +35,7 @@ export interface HealthProfessionalTypeDialogData {
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Descripcion</mat-label>
+          <mat-label>Descripción</mat-label>
           <textarea matInput formControlName="description" rows="3"></textarea>
         </mat-form-field>
 

@@ -16,19 +16,19 @@
   <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
     <div class="form-grid">
       <mat-form-field appearance="outline">
-        <mat-label>Categoria</mat-label>
+        <mat-label>Categoría</mat-label>
         <mat-select formControlName="employeeCategoryId">
           @for (category of data.categories; track category.id) {
             <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
           }
         </mat-select>
-        <mat-error>Selecciona una categoria.</mat-error>
+        <mat-error>Selecciona una categoría.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>DNI</mat-label>
         <input matInput formControlName="dni" inputmode="numeric" maxlength="8" (input)="onDniInput()" />
-        <mat-error>Ingresa un DNI valido.</mat-error>
+        <mat-error>Ingresa un DNI válido.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -44,9 +44,9 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Telefono</mat-label>
+        <mat-label>Teléfono</mat-label>
         <input matInput formControlName="telefono" />
-        <mat-error>Ingresa el telefono.</mat-error>
+        <mat-error>Ingresa el teléfono.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -55,7 +55,7 @@
         @if (form.controls.email.hasError('required')) {
           <mat-error>El email es obligatorio para crear acceso.</mat-error>
         } @else if (form.controls.email.hasError('email')) {
-          <mat-error>Ingresa un email valido.</mat-error>
+          <mat-error>Ingresa un email válido.</mat-error>
         }
       </mat-form-field>
 
@@ -74,7 +74,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Sueldo</mat-label>
         <input matInput type="number" min="0" step="0.01" formControlName="sueldo" />
-        <mat-error>Ingresa un sueldo valido.</mat-error>
+        <mat-error>Ingresa un sueldo válido.</mat-error>
       </mat-form-field>
 
       <div class="access-section">
@@ -97,7 +97,7 @@
       @if (isEditing) {
         <div class="health-section span-2">
           <div>
-            <p class="health-eyebrow">Gestion de salud</p>
+            <p class="health-eyebrow">Gestión de salud</p>
             @if (data.healthProfessional) {
               <span class="health-chip">
                 <mat-icon>medical_services</mat-icon>

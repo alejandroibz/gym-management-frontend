@@ -50,7 +50,7 @@ export interface HealthPaymentDialogData {
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Metodo de pago</mat-label>
+          <mat-label>Método de pago</mat-label>
           <mat-select formControlName="paymentMethodId">
             @for (method of data.paymentMethods; track method.id) {
               <mat-option [value]="method.id">{{ method.nombre }}</mat-option>

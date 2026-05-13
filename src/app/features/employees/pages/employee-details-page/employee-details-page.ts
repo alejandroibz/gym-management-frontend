@@ -84,7 +84,7 @@ export class EmployeeDetailsPageComponent {
     const employee = this.employee();
 
     if (!employee) {
-      return 'Sin categoria';
+      return 'Sin categoría';
     }
 
     return this.getCategoryName(employee.employeeCategoryId);
@@ -162,7 +162,7 @@ export class EmployeeDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Guardar cambios',
-        message: `Se actualizaran los datos de ${employee.nombre} ${employee.apellido}.`,
+        message: `Se actualizarán los datos de ${employee.nombre} ${employee.apellido}.`,
         confirmLabel: 'Guardar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -191,7 +191,7 @@ export class EmployeeDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar empleado',
-        message: `Se eliminara a ${employee.nombre} ${employee.apellido}. Esta accion no se puede deshacer.`,
+        message: `Se eliminará a ${employee.nombre} ${employee.apellido}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -220,7 +220,7 @@ export class EmployeeDetailsPageComponent {
   }
 
   getCategoryName(categoryId: number): string {
-    return this.categories().find(category => category.id === categoryId)?.nombre ?? `Categoria #${categoryId}`;
+    return this.categories().find(category => category.id === categoryId)?.nombre ?? `Categoría #${categoryId}`;
   }
 
   openHealthCatalog(): void {
@@ -254,7 +254,7 @@ export class EmployeeDetailsPageComponent {
       error: () => {
         this.employee.set(null);
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo cargar la informacion del empleado.');
+        this.errorMessage.set('No se pudo cargar la información del empleado.');
       }
     });
   }

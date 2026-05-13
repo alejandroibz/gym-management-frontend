@@ -23,17 +23,17 @@
       </mat-form-field>
 
       <div class="context-box span-2">
-        <span class="context-label">Membresia activa</span>
+        <span class="context-label">Membresía activa</span>
         <strong>{{ membershipLabel() }}</strong>
         @if (isLoadingSelectedClient()) {
-          <small>Buscando la membresia del cliente...</small>
+          <small>Buscando la membresía del cliente...</small>
         } @else if (!hasSelectedClientMembership() && form.controls.clientId.value) {
-          <small>El cliente seleccionado no tiene una membresia activa para asociar el cobro.</small>
+          <small>El cliente seleccionado no tiene una membresía activa para asociar el cobro.</small>
         }
       </div>
 
       <mat-form-field appearance="outline">
-        <mat-label>Metodo de pago</mat-label>
+        <mat-label>Método de pago</mat-label>
         <mat-select formControlName="paymentMethodId">
           @for (method of data.paymentMethods; track method.id) {
             <mat-option [value]="method.id">{{ getPaymentMethodLabel(method) }}</mat-option>
@@ -122,7 +122,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Ano</mat-label>
+        <mat-label>Año</mat-label>
         <input matInput type="number" min="2000" formControlName="periodYear" />
       </mat-form-field>
     </div>

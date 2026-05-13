@@ -22,7 +22,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Categoria</mat-label>
+        <mat-label>Categoría</mat-label>
         <mat-select formControlName="cashMovementCategoryId" (selectionChange)="onCategoryChange()">
           @for (category of filteredCategories(); track category.id) {
             <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
@@ -53,14 +53,14 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="span-2">
-        <mat-label>Descripcion</mat-label>
+        <mat-label>Descripción</mat-label>
         <input matInput formControlName="descripcion" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Metodo de pago</mat-label>
+        <mat-label>Método de pago</mat-label>
         <mat-select formControlName="metodoPago">
-          <mat-option [value]="null">Sin metodo</mat-option>
+          <mat-option [value]="null">Sin método</mat-option>
           @for (method of data.paymentMethods; track method.id) {
             <mat-option [value]="getPaymentMethodLabel(method)">{{ getPaymentMethodLabel(method) }}</mat-option>
           }

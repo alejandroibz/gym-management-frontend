@@ -132,6 +132,10 @@ export class HealthServiceApi {
     return this.http.put<void>(`${this.apiUrl}/appointments/${id}`, payload);
   }
 
+  deleteAppointment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/appointments/${id}`);
+  }
+
   updateAppointmentStatus(id: number, status: string, isBillable?: boolean | null, cancellationReason?: string | null): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/appointments/${id}/status`, { status, isBillable, cancellationReason });
   }

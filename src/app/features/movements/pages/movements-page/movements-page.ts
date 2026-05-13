@@ -261,7 +261,7 @@ export class MovementsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar pago',
-        message: `Se eliminara el pago de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
+        message: `Se eliminará el pago de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -301,7 +301,7 @@ export class MovementsPageComponent {
       autoFocus: false,
       data: {
         title: 'Confirmar cobro',
-        message: `Se marcara como confirmado el cobro de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
+        message: `Se marcará como confirmado el cobro de ${this.getClientName(payment.clientId)} por ${this.formatCurrency(payment.monto)}.`,
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -384,7 +384,7 @@ export class MovementsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar movimiento externo',
-        message: `Se eliminara el movimiento ${this.getCategoryName(movement.cashMovementCategoryId)} por ${this.formatCurrency(movement.monto)}.`,
+        message: `Se eliminará el movimiento ${this.getCategoryName(movement.cashMovementCategoryId)} por ${this.formatCurrency(movement.monto)}.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -450,7 +450,7 @@ export class MovementsPageComponent {
   }
 
   getPaymentMethodLabel(method: PaymentMethod): string {
-    return method.nombre ?? method.descripcion ?? `Metodo #${method.id}`;
+    return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
 
   getClientName(clientId: number): string {
@@ -459,7 +459,7 @@ export class MovementsPageComponent {
   }
 
   getCategoryName(categoryId: number): string {
-    return this.categories().find(category => category.id === categoryId)?.nombre ?? `Categoria #${categoryId}`;
+    return this.categories().find(category => category.id === categoryId)?.nombre ?? `Categoría #${categoryId}`;
   }
 
   getMovementTypeLabel(type: CashMovementType): string {
@@ -536,9 +536,9 @@ export class MovementsPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Primero crea una categoria',
+        title: 'Primero crea una categoría',
         message:
-          'Para registrar un pago o un movimiento necesitas al menos una categoria disponible. Crea una categoria y luego vuelve para continuar.',
+          'Para registrar un pago o un movimiento necesitas al menos una categoría disponible. Crea una categoría y luego vuelve para continuar.',
         confirmLabel: 'Ir a categorias',
         cancelLabel: 'Ahora no',
         tone: 'primary'

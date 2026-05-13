@@ -129,7 +129,7 @@ export class DashboardPageComponent implements AfterViewInit {
     return {
       stats: [
         {
-          label: 'Total de clientes historico',
+          label: 'Total de clientes histórico',
           value: summary.totalClients,
           displayValue: this.formatNumber(summary.totalClients),
           hint: 'Base acumulada del gimnasio',
@@ -186,7 +186,7 @@ export class DashboardPageComponent implements AfterViewInit {
           label: 'Pagos con descuento',
           value: financialSummary?.discountedPaymentsCount ?? 0,
           displayValue: this.formatNumber(financialSummary?.discountedPaymentsCount ?? 0),
-          hint: 'Cobros con bonificacion en el periodo',
+          hint: 'Cobros con bonificación en el período',
           icon: 'confirmation_number',
           kind: 'number',
           tone: 'info'
@@ -250,7 +250,7 @@ export class DashboardPageComponent implements AfterViewInit {
   private mapPendingPayments(items: DashboardPendingPayment[]): DashboardTableRow[] {
     return items.map(item => ({
       title: item.clientFullName,
-      line1: `${item.planName} · Periodo ${item.periodMonth}/${item.periodYear}`,
+      line1: `${item.planName} · Período ${item.periodMonth}/${item.periodYear}`,
       line2: `Vence ${this.formatDate(item.membershipEndDate)}`,
       route: `/clients/${item.clientId}`
     }));

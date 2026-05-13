@@ -147,7 +147,7 @@ export class MembershipPlansPageComponent {
       backdropClass: 'employee-category-dialog-backdrop',
       data: {
         title: 'Eliminar plan',
-        message: `Se eliminara el plan ${plan.nombre}. Esta accion no se puede deshacer.`,
+        message: `Se eliminará el plan ${plan.nombre}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'

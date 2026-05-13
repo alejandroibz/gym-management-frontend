@@ -3,7 +3,7 @@
     <div class="page-title">
       <h1>Movimientos</h1>
       <p>Cobros de clientes y movimientos externos de caja</p>
-      <div class="header-stats" aria-label="Metricas de movimientos">
+      <div class="header-stats" aria-label="Métricas de movimientos">
         <div class="metric-item">
           <span class="metric-label">Balance</span>
           <strong class="metric-value">{{ formatCurrency(balance()) }}</strong>
@@ -62,7 +62,7 @@
           <div>
             <p class="panel-kicker">Cobros del gimnasio</p>
             <h2>Pagos registrados por alumnos/clientes del gimnasio</h2>
-            <p>Estos registros son cobros de membresias, clases u otros pagos propios del gimnasio. No incluyen cobros, planes ni servicios del modulo de salud.</p>
+            <p>Estos registros son cobros de membresias, clases u otros pagos propios del gimnasio. No incluyen cobros, planes ni servicios del módulo de salud.</p>
           </div>
           <div class="heading-side">
             <div class="heading-metrics">
@@ -101,7 +101,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Ano</mat-label>
+              <mat-label>Año</mat-label>
               <input matInput type="number" min="2000" formControlName="periodYear" />
             </mat-form-field>
 
@@ -151,11 +151,11 @@
                   <th>Monto final</th>
                   <th>Descuento</th>
                   <th>Estado</th>
-                  <th>Metodo</th>
+                  <th>Método</th>
                   <th>Cobrado por</th>
-                  <th>Periodo</th>
+                  <th>Período</th>
                   <th>Fecha</th>
-                  <th>Categoria</th>
+                  <th>Categoría</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -165,7 +165,7 @@
                     <td>
                       <div class="record-cell">
                         <strong>{{ getClientName(payment.clientId) }}</strong>
-                        <span>{{ payment.membershipPlanNombre || 'Membresia sin nombre' }}</span>
+                        <span>{{ payment.membershipPlanNombre || 'Membresía sin nombre' }}</span>
                       </div>
                     </td>
                     <td>
@@ -224,7 +224,7 @@
                       <span class="amount-subline">Original {{ getPaymentOriginalAmountLabel(payment) }}</span>
                     }
                     <p class="record-title">{{ getClientName(payment.clientId) }}</p>
-                    <span class="record-subtitle">{{ payment.membershipPlanNombre || 'Membresia sin nombre' }}</span>
+                    <span class="record-subtitle">{{ payment.membershipPlanNombre || 'Membresía sin nombre' }}</span>
                   </div>
 
                   <div class="record-badges">
@@ -256,11 +256,11 @@
                     <strong>{{ hasPaymentDiscount(payment) ? getPaymentDiscountReason(payment) : 'Sin motivo' }}</strong>
                   </div>
                   <div>
-                    <span>Metodo</span>
+                    <span>Método</span>
                     <strong>{{ payment.paymentMethodNombre || 'Sin dato' }}</strong>
                   </div>
                   <div>
-                    <span>Categoria movimiento</span>
+                    <span>Categoría movimiento</span>
                     <strong>{{ payment.cashMovementCategoryNombre || 'Sin dato' }}</strong>
                   </div>
                   <div>
@@ -268,11 +268,11 @@
                     <strong>{{ getPaymentCollectorLabel(payment) }}</strong>
                   </div>
                   <div>
-                    <span>Periodo</span>
+                    <span>Período</span>
                     <strong>{{ getPaymentPeriodLabel(payment) }}</strong>
                   </div>
                   <div>
-                    <span>Membresia</span>
+                    <span>Membresía</span>
                     <strong>{{ payment.membershipPlanNombre || 'Sin dato' }}</strong>
                   </div>
                 </div>
@@ -310,8 +310,8 @@
     <div class="health-payments-copy">
       <mat-icon>medical_services</mat-icon>
       <div>
-        <h2>Pagos de salud y kinesiologia</h2>
-        <p>Los cobros de pacientes, planes mensuales y servicios de salud se gestionan en el modulo de salud.</p>
+        <h2>Pagos de salud y kinesiología</h2>
+        <p>Los cobros de pacientes, planes mensuales y servicios de salud se gestionan en el módulo de salud.</p>
       </div>
     </div>
 
@@ -325,7 +325,7 @@
           <div>
             <p class="panel-kicker">Caja externa</p>
             <h2>Ingresos y egresos que no son cobros de clientes</h2>
-            <p>Usa esta seccion para pagos de sueldos, gastos operativos, ajustes, compras u otros movimientos manuales.</p>
+            <p>Usa esta sección para pagos de sueldos, gastos operativos, ajustes, compras u otros movimientos manuales.</p>
           </div>
           <div class="heading-side">
             <div class="heading-metrics">
@@ -363,7 +363,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Categoria</mat-label>
+              <mat-label>Categoría</mat-label>
               <mat-select formControlName="categoryId">
                 <mat-option value="">Todas</mat-option>
                 @for (category of categories(); track category.id) {
@@ -413,11 +413,11 @@
                   <th>Movimiento</th>
                   <th>Monto</th>
                   <th>Tipo</th>
-                  <th>Metodo</th>
+                  <th>Método</th>
                   <th>Fecha</th>
                   <th>Registrado por</th>
                   <th>Empleado relacionado</th>
-                  <th>Descripcion</th>
+                  <th>Descripción</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -483,11 +483,11 @@
 
                 <div class="record-grid">
                   <div>
-                    <span>Metodo</span>
+                    <span>Método</span>
                     <strong>{{ movement.metodoPago || 'No informado' }}</strong>
                   </div>
                   <div>
-                    <span>Categoria</span>
+                    <span>Categoría</span>
                     <strong>{{ getCategoryName(movement.cashMovementCategoryId) }}</strong>
                   </div>
                   <div>
@@ -499,7 +499,7 @@
                     <strong>{{ getMovementRelatedEmployeeLabel(movement) }}</strong>
                   </div>
                   <div>
-                    <span>Descripcion</span>
+                    <span>Descripción</span>
                     <strong>{{ movement.descripcion }}</strong>
                   </div>
                 </div>

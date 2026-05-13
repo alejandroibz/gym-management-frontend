@@ -238,6 +238,36 @@ export class HealthPatientDetailPageComponent {
     });
   }
 
+  editAppointment(appointment: HealthAppointment): void {
+    this.router.navigate(['/health'], {
+      queryParams: {
+        tab: 'agenda',
+        appointmentId: appointment.id,
+        date: appointment.startsAt.slice(0, 10)
+      }
+    });
+  }
+
+  deleteAppointment(appointment: HealthAppointment): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Eliminar turno',
+        message: `Se va a eliminar el turno de ${appointment.patientName}.`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.save(() => this.healthService.deleteAppointment(appointment.id), () => this.loadDetail(appointment.healthPatientProfileId));
+    });
+  }
+
   getSubscriptionStatusLabel(status: string): string {
     const normalized = status.trim().toLowerCase();
     if (normalized === 'active' || normalized === 'activo') return 'Activo';

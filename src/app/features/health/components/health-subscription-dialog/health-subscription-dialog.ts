@@ -26,7 +26,7 @@ export interface HealthSubscriptionDialogData {
       <header class="dialog-header">
         <div>
           <h2>{{ data.subscription ? 'Editar plan mensual' : 'Crear plan mensual' }}</h2>
-          <p>{{ data.subscription ? 'Actualiza la suscripcion de salud.' : 'Registra una suscripcion de salud para un paciente.' }}</p>
+          <p>{{ data.subscription ? 'Actualiza la suscripción de salud.' : 'Registra una suscripción de salud para un paciente.' }}</p>
         </div>
         <button mat-icon-button type="button" aria-label="Cerrar" (click)="close()">
           <mat-icon>close</mat-icon>

@@ -22,7 +22,7 @@
   @if (isLoading()) {
     <div class="loading-state">
       <mat-spinner diameter="34"></mat-spinner>
-      <span>Cargando modulo de salud...</span>
+      <span>Cargando módulo de salud...</span>
     </div>
   }
 
@@ -31,10 +31,10 @@
       <div class="tab-grid agenda-grid">
         <mat-card class="tool-panel">
           <div class="panel-heading">
-            <h2>Nuevo turno</h2>
-            <span>Con bloqueo de solapados</span>
+            <h2>{{ editingAppointment() ? 'Editar turno' : 'Nuevo turno' }}</h2>
+            <span>Se permiten turnos solapados cuando la operación lo necesita.</span>
           </div>
-          <form [formGroup]="appointmentForm" (ngSubmit)="createAppointment()" class="stack-form">
+          <form [formGroup]="appointmentForm" (ngSubmit)="saveAppointment()" class="stack-form">
             <mat-form-field appearance="outline">
               <mat-label>Paciente</mat-label>
               <mat-select formControlName="healthPatientProfileId">
@@ -64,15 +64,31 @@
               <mat-label>Fecha y hora</mat-label>
               <input matInput type="datetime-local" formControlName="startsAt">
             </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Estado</mat-label>
+              <mat-select formControlName="status">
+                <mat-option value="Pendiente">Pendiente</mat-option>
+                <mat-option value="Asistio">Asistio</mat-option>
+                <mat-option value="Ausente">Ausente</mat-option>
+                <mat-option value="Cancelado">Cancelado</mat-option>
+              </mat-select>
+            </mat-form-field>
             <mat-checkbox formControlName="isWalkIn">Paciente espontaneo</mat-checkbox>
             <mat-form-field appearance="outline">
               <mat-label>Notas</mat-label>
               <textarea matInput formControlName="notes" rows="3"></textarea>
             </mat-form-field>
-            <button mat-flat-button type="submit" [disabled]="isSaving() || appointmentForm.invalid">
-              <mat-icon>event_available</mat-icon>
-              Agendar
-            </button>
+            <div class="form-actions">
+              <button mat-flat-button type="submit" [disabled]="isSaving() || appointmentForm.invalid">
+                <mat-icon>{{ editingAppointment() ? 'save' : 'event_available' }}</mat-icon>
+                {{ editingAppointment() ? 'Guardar turno' : 'Agendar' }}
+              </button>
+              @if (editingAppointment()) {
+                <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="cancelAppointmentEdit()">
+                  Cancelar
+                </button>
+              }
+            </div>
           </form>
         </mat-card>
 
@@ -83,17 +99,17 @@
               <span>{{ appointmentRangeLabel() }}</span>
             </div>
             <div class="toolbar-actions">
-              <button mat-icon-button type="button" (click)="changeDate(-1)" aria-label="Periodo anterior">
+              <button mat-icon-button type="button" (click)="changeDate(-1)" aria-label="Período anterior">
                 <mat-icon>chevron_left</mat-icon>
               </button>
               <input type="date" [value]="selectedDate()" (change)="selectedDate.set($any($event.target).value); loadAppointments()">
-              <button mat-icon-button type="button" (click)="changeDate(1)" aria-label="Periodo siguiente">
+              <button mat-icon-button type="button" (click)="changeDate(1)" aria-label="Período siguiente">
                 <mat-icon>chevron_right</mat-icon>
               </button>
             </div>
           </div>
           <div class="segmented">
-            <button mat-stroked-button type="button" [class.active]="calendarView() === 'day'" (click)="setCalendarView('day')">Dia</button>
+            <button mat-stroked-button type="button" [class.active]="calendarView() === 'day'" (click)="setCalendarView('day')">Día</button>
             <button mat-stroked-button type="button" [class.active]="calendarView() === 'week'" (click)="setCalendarView('week')">Semana</button>
             <button mat-stroked-button type="button" [class.active]="calendarView() === 'month'" (click)="setCalendarView('month')">Mes</button>
           </div>
@@ -121,6 +137,14 @@
                         <strong>{{ appointment.startsAt | date:'HH:mm' }} {{ appointment.patientName }}</strong>
                         @if (calendarView() === 'day') {
                           <span>{{ appointment.serviceName || 'Sin servicio' }} - {{ appointment.professionalName }}</span>
+                          <div class="calendar-event-actions">
+                            <button mat-icon-button type="button" aria-label="Editar turno" (click)="$event.stopPropagation(); editAppointment(appointment)">
+                              <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" (click)="$event.stopPropagation(); deleteAppointment(appointment)">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
                         }
                       </article>
                     } @empty {
@@ -165,7 +189,7 @@
 
             <mat-form-field appearance="outline" class="patient-search-field">
               <mat-label>Buscar paciente</mat-label>
-              <input #patientSearchInput matInput type="search" placeholder="Nombre, DNI o telefono" (keyup.enter)="applyPatientsSearch(patientSearchInput.value)">
+              <input #patientSearchInput matInput type="search" placeholder="Nombre, DNI o teléfono" (keyup.enter)="applyPatientsSearch(patientSearchInput.value)">
               <button mat-icon-button matSuffix type="button" aria-label="Buscar paciente" (click)="applyPatientsSearch(patientSearchInput.value)">
                 <mat-icon>search</mat-icon>
               </button>
@@ -177,13 +201,13 @@
                   <tr>
                     <th>Paciente</th>
                     <th>DNI</th>
-                    <th>Telefono</th>
+                    <th>Teléfono</th>
                     <th>Profesional</th>
                     <th>Obra social</th>
                     <th>Turnos</th>
                     <th>Cobrado</th>
                     <th>Estado</th>
-                    <th>Accion</th>
+                    <th>Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,7 +262,7 @@
           <div class="panel-heading">
             <div>
               <h2>Pagos y planes</h2>
-              <span>Gestion de cobros y suscripciones de salud</span>
+              <span>Gestión de cobros y suscripciones de salud</span>
             </div>
             <div class="catalog-actions">
               <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="openPaymentDialog()">
@@ -300,7 +324,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="9">Todavia no hay planes mensuales creados.</td>
+                    <td colspan="9">Todavía no hay planes mensuales creados.</td>
                   </tr>
                 }
               </tbody>
@@ -491,8 +515,8 @@
               </article>
             } @empty {
               <mat-card class="list-panel empty-specialty">
-                <h3>Todavia no hay especialidades</h3>
-                <p>Crea Kinesiologia, Nutricion u otra especialidad para empezar a organizar servicios y profesionales.</p>
+                <h3>Todavía no hay especialidades</h3>
+                <p>Crea Kinesiología, Nutrición u otra especialidad para empezar a organizar servicios y profesionales.</p>
                 <button mat-flat-button type="button" (click)="openProfessionalTypeDialog()">
                   <mat-icon>category</mat-icon>
                   Crear especialidad

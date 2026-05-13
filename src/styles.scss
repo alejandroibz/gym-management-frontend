@@ -83,6 +83,12 @@ body {
   overflow: hidden !important;
 }
 
+.mat-mdc-dialog-surface .dialog-shell {
+  box-sizing: border-box;
+  max-height: min(92dvh, 960px);
+  overflow-y: auto;
+}
+
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-unelevated-button.mat-primary,
 .mat-mdc-fab.mat-primary,

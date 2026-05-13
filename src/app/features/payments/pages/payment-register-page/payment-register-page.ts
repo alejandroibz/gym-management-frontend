@@ -83,7 +83,7 @@ export class PaymentRegisterPageComponent {
   readonly breadcrumbClientLabel = computed(() => this.selectedClient() ? this.getClientLabel(this.selectedClient()!) : 'Seleccionar cliente');
   readonly membershipLabel = computed(() => {
     const membership = this.currentMembership();
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresia activa');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía activa');
   });
 
   readonly form = this.formBuilder.group(
@@ -183,7 +183,7 @@ export class PaymentRegisterPageComponent {
 
   confirmPayment(): void {
     if (this.isMembershipPayment() && !this.currentMembership()?.id) {
-      this.errorMessage.set('Para cobrar una membresia, selecciona un cliente con membresia activa.');
+      this.errorMessage.set('Para cobrar una membresía, selecciona un cliente con membresía activa.');
       return;
     }
 
@@ -225,7 +225,7 @@ export class PaymentRegisterPageComponent {
   }
 
   getPaymentMethodLabel(method: PaymentMethod): string {
-    return method.nombre ?? method.descripcion ?? `Metodo #${method.id}`;
+    return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
 
   getEmployeeLabel(employee: Employee): string {
@@ -391,10 +391,10 @@ export class PaymentRegisterPageComponent {
     const lines = [
       `Cliente: ${client ? this.getClientLabel(client) : `#${payload.clientId}`}`,
       this.isMembershipPayment()
-        ? `Membresia: ${this.membershipLabel()}`
+        ? `Membresía: ${this.membershipLabel()}`
         : `Tipo de cobro: ${this.paymentTypeLabel()}`,
       `Monto final: ${this.formatCurrency(payload.monto)}`,
-      `Metodo: ${this.paymentMethods().find(method => method.id === payload.paymentMethodId)?.nombre ?? 'Sin dato'}`,
+      `Método: ${this.paymentMethods().find(method => method.id === payload.paymentMethodId)?.nombre ?? 'Sin dato'}`,
       `Fecha: ${new Intl.DateTimeFormat('es-AR').format(new Date(payload.fechaPago))}`
     ];
 

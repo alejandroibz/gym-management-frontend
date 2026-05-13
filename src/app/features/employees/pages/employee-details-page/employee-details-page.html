@@ -73,7 +73,7 @@
       <mat-card class="content-card">
         <div class="card-heading">
           <div>
-            <h2>Informacion del empleado</h2>
+            <h2>Información del empleado</h2>
             <p>Datos personales y laborales del perfil seleccionado.</p>
           </div>
         </div>
@@ -96,7 +96,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Categoria</mat-label>
+              <mat-label>Categoría</mat-label>
               <mat-select formControlName="employeeCategoryId">
                 @for (category of categories(); track category.id) {
                   <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
@@ -105,7 +105,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Telefono</mat-label>
+              <mat-label>Teléfono</mat-label>
               <input matInput formControlName="telefono" />
             </mat-form-field>
 
@@ -115,7 +115,7 @@
               @if (form.controls.email.hasError('required')) {
                 <mat-error>El email es obligatorio para acceso al sistema.</mat-error>
               } @else if (form.controls.email.hasError('email')) {
-                <mat-error>Ingresa un email valido.</mat-error>
+                <mat-error>Ingresa un email válido.</mat-error>
               }
             </mat-form-field>
 
@@ -141,7 +141,7 @@
                 <p class="access-copy">Este empleado ya tiene acceso creado. Puedes actualizar su rol.</p>
               } @else {
                 <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
-                <p class="access-copy">Si lo activas, el backend creara el usuario del empleado en Auth0.</p>
+                <p class="access-copy">Si lo activas, el backend creará el usuario del empleado en Auth0.</p>
               }
             </div>
 
@@ -164,13 +164,13 @@
         <div class="card-heading">
           <div>
             <h2>Resumen rapido</h2>
-            <p>Vista operativa con la informacion clave del empleado.</p>
+            <p>Vista operativa con la información clave del empleado.</p>
           </div>
         </div>
 
         <div class="summary-grid">
           <article class="summary-item">
-            <span>Categoria</span>
+            <span>Categoría</span>
             <strong>{{ currentCategoryName() }}</strong>
           </article>
           <article class="summary-item">
@@ -178,7 +178,7 @@
             <strong>{{ currentEmployee.dni }}</strong>
           </article>
           <article class="summary-item">
-            <span>Telefono</span>
+            <span>Teléfono</span>
             <strong>{{ currentEmployee.telefono }}</strong>
           </article>
           <article class="summary-item">
@@ -211,8 +211,8 @@
       <mat-card class="content-card span-full health-management-card">
         <div class="card-heading">
           <div>
-            <h2>Gestion de salud</h2>
-            <p>Asignacion del empleado como profesional de salud o kinesiologia.</p>
+            <h2>Gestión de salud</h2>
+            <p>Asignacion del empleado como profesional de salud o kinesiología.</p>
           </div>
 
           <button mat-stroked-button type="button" (click)="openHealthCatalog()">
@@ -227,10 +227,10 @@
               <mat-icon>medical_services</mat-icon>
               {{ healthProfessionalLabel() }}
             </span>
-            <p>{{ professional.specialty || 'Especialidad vinculada al modulo de salud.' }}</p>
+            <p>{{ professional.specialty || 'Especialidad vinculada al módulo de salud.' }}</p>
           } @else {
             <span class="health-empty-value">-</span>
-            <p>Este empleado todavia no esta asignado como profesional de salud.</p>
+            <p>Este empleado todavía no esta asignado como profesional de salud.</p>
           }
         </div>
       </mat-card>

@@ -30,13 +30,13 @@
         <p class="eyebrow">Ficha completa</p>
         <h1>{{ currentClient.nombre }} {{ currentClient.apellido }}</h1>
         <p class="subtitle">
-          Gestiona datos personales, membresia activa y pagos desde una sola pantalla.
+          Gestiona datos personales, membresía activa y pagos desde una sola pantalla.
         </p>
 
         <div class="hero-pills">
           <span class="hero-pill">{{ getMembershipLabel() }}</span>
           @if (currentClient.tieneLesion) {
-            <span class="hero-pill hero-pill-warning">Con lesion</span>
+            <span class="hero-pill hero-pill-warning">Con lesión</span>
           }
           @for (chip of getMembershipAlertChips(currentClient); track chip.label) {
             <span class="hero-pill" [class.hero-pill-warning]="chip.tone === 'warning'" [class.hero-pill-info]="chip.tone === 'info'" [class.hero-pill-success]="chip.tone === 'success'">
@@ -80,7 +80,7 @@
       <mat-card class="content-card">
         <div class="card-heading">
           <div>
-            <h2>Informacion del cliente</h2>
+            <h2>Información del cliente</h2>
             <p>Datos principales y comerciales del registro seleccionado.</p>
           </div>
         </div>
@@ -108,7 +108,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Telefono</mat-label>
+              <mat-label>Teléfono</mat-label>
               <input matInput formControlName="telefono" />
             </mat-form-field>
 
@@ -118,12 +118,12 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="span-2">
-              <mat-label>Direccion</mat-label>
+              <mat-label>Dirección</mat-label>
               <input matInput formControlName="direccion" />
             </mat-form-field>
 
             <div class="membership-box span-2">
-              <mat-checkbox formControlName="tieneLesion">Tiene lesion</mat-checkbox>
+              <mat-checkbox formControlName="tieneLesion">Tiene lesión</mat-checkbox>
             </div>
 
             <mat-form-field appearance="outline" class="span-2">
@@ -140,20 +140,20 @@
             </mat-form-field>
 
             <div class="membership-box span-2">
-              <mat-checkbox formControlName="hasMembership">Asignar membresia</mat-checkbox>
+              <mat-checkbox formControlName="hasMembership">Asignar membresía</mat-checkbox>
             </div>
 
             @if (form.controls.hasMembership.value) {
             <div class="membership-box span-2">
               <div class="membership-copy">
-                <p class="membership-eyebrow">Membresia</p>
+                <p class="membership-eyebrow">Membresía</p>
                 <h3>Datos del plan vigente</h3>
                 <p>Cuando edites, puedes cambiar plan, fechas y precio final.</p>
               </div>
 
               <div class="membership-grid">
                 <mat-form-field appearance="outline" class="span-2">
-                  <mat-label>Plan de membresia</mat-label>
+                  <mat-label>Plan de membresía</mat-label>
                   <mat-select formControlName="membershipPlanId" (selectionChange)="onMembershipPlanChange()">
                     @for (plan of membershipPlans(); track plan.id) {
                       <mat-option [value]="plan.id">
@@ -188,7 +188,7 @@
         <div class="card-heading">
           <div>
             <h2>Resumen rapido</h2>
-            <p>Indicadores utiles del cliente y su membresia actual.</p>
+            <p>Indicadores útiles del cliente y su membresía actual.</p>
           </div>
         </div>
 
@@ -198,7 +198,7 @@
             <strong>{{ getMembershipLabel() }}</strong>
           </article>
           <article class="summary-item">
-            <span>Estado membresia</span>
+            <span>Estado membresía</span>
             <strong>{{ getMembershipStateLabel(currentMembership()?.estado) }}</strong>
           </article>
           <article class="summary-item">
@@ -218,7 +218,7 @@
             <strong>${{ currentMembership()?.precioFinal ?? 0 }}</strong>
           </article>
           <article class="summary-item">
-            <span>Proxima a vencer</span>
+            <span>Próxima a vencer</span>
             <strong>{{ currentClient.membresiaProximaAVencer ? 'Si' : 'No' }}</strong>
           </article>
           <article class="summary-item">
@@ -226,7 +226,7 @@
             <strong>{{ currentClient.membresiaVencimientoNotificado ? 'Si' : 'No' }}</strong>
           </article>
           <article class="summary-item">
-            <span>Tiene lesion</span>
+            <span>Tiene lesión</span>
             <strong>{{ currentClient.tieneLesion ? 'Si' : 'No' }}</strong>
           </article>
         </div>
@@ -236,7 +236,7 @@
         <div class="card-heading">
           <div>
             <h2>Indicacion para profesores</h2>
-            <p>Nota operativa de salud visible para la gestion del entrenamiento.</p>
+            <p>Nota operativa de salud visible para la gestión del entrenamiento.</p>
           </div>
           @if (currentClient.healthProfile?.patient) {
             <a mat-stroked-button routerLink="/health" [queryParams]="{ patientId: currentClient.healthProfile?.patient?.id }">
@@ -277,7 +277,7 @@
         <div class="card-heading">
           <div>
             <h2>Historial de membresias</h2>
-            <p>Detalle de la membresia actual o de las ultimas membresias informadas por la API.</p>
+            <p>Detalle de la membresía actual o de las últimas membresias informadas por la API.</p>
           </div>
         </div>
 

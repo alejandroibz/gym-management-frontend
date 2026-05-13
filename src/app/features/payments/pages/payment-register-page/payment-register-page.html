@@ -66,7 +66,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Metodo de cobro</mat-label>
+            <mat-label>Método de cobro</mat-label>
             <mat-select formControlName="paymentMethodId">
               @for (method of paymentMethods(); track method.id) {
                 <mat-option [value]="method.id">{{ getPaymentMethodLabel(method) }}</mat-option>
@@ -76,10 +76,10 @@
 
           @if (isMembershipPayment()) {
             <div class="context-box span-2" [class.warning]="!currentMembership()?.id">
-              <span>{{ currentMembership()?.id ? 'Membresia asociada' : 'Sin membresia activa' }}</span>
+              <span>{{ currentMembership()?.id ? 'Membresía asociada' : 'Sin membresía activa' }}</span>
               <strong>{{ membershipLabel() }}</strong>
               @if (!currentMembership()?.id) {
-                <small>Para cobrar membresia, el cliente debe tener una membresia activa.</small>
+                <small>Para cobrar membresía, el cliente debe tener una membresía activa.</small>
               }
             </div>
           } @else {

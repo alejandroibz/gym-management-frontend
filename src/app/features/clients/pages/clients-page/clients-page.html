@@ -1,15 +1,15 @@
 <section class="clients-page">
   <header class="page-header">
     <div class="page-title">
-      <h1>Gestion de clientes</h1>
-      <p>Base principal del gimnasio: alumnos, clientes y datos iniciales de pacientes de salud o kinesiologia.</p>
-      <div class="header-stats" aria-label="Metricas de clientes">
+      <h1>Gestión de clientes</h1>
+      <p>Base principal del gimnasio: alumnos, clientes y datos iniciales de pacientes de salud o kinesiología.</p>
+      <div class="header-stats" aria-label="Métricas de clientes">
         <div class="metric-item">
           <span class="metric-label">Total</span>
           <strong class="metric-value">{{ totalClients() }}</strong>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Con membresia</span>
+          <span class="metric-label">Con membresía</span>
           <strong class="metric-value">{{ clientsWithMembership() }}</strong>
         </div>
         <div class="metric-item">
@@ -97,7 +97,7 @@
             <span>Fila {{ error.rowNumber }}: {{ error.message }}</span>
           }
           @if (result.errors.length > 8) {
-            <span>Hay {{ result.errors.length - 8 }} errores mas.</span>
+            <span>Hay {{ result.errors.length - 8 }} errores más.</span>
           }
         </div>
       }
@@ -113,7 +113,7 @@
         <div class="empty-icon">
           <mat-icon>person_search</mat-icon>
         </div>
-        <h2>{{ hasActiveFilters() ? 'Sin clientes para mostrar' : 'No hay clientes todavia' }}</h2>
+        <h2>{{ hasActiveFilters() ? 'Sin clientes para mostrar' : 'No hay clientes todavía' }}</h2>
         <p>Crea tu primer cliente o ajusta los filtros para encontrar resultados.</p>
 
         <div class="empty-actions">
@@ -137,7 +137,7 @@
             <tr>
               <th>Cliente</th>
               <th>DNI</th>
-              <th>Membresia</th>
+              <th>Membresía</th>
               <th>Contacto</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -187,7 +187,7 @@
                     {{ getPaymentStatusLabel(client) }}
                   </span>
                   @if (client.tieneLesion) {
-                    <span class="relation-pill relation-pill-warning">Con lesion</span>
+                    <span class="relation-pill relation-pill-warning">Con lesión</span>
                   }
                 </td>
                 <td>
@@ -219,7 +219,7 @@
                 {{ getPaymentStatusLabel(client) }}
               </span>
               @if (client.tieneLesion) {
-                <span class="relation-pill relation-pill-warning">Con lesion</span>
+                <span class="relation-pill relation-pill-warning">Con lesión</span>
               }
             </div>
 
