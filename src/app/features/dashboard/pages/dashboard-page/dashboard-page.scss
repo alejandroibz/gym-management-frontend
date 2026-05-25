@@ -241,6 +241,109 @@
   gap: 1rem;
 }
 
+.income-panel {
+  overflow: hidden;
+}
+
+.income-visual-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1fr);
+  gap: 1.4rem;
+  align-items: center;
+}
+
+.income-donut-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+}
+
+.income-donut {
+  width: min(260px, 100%);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.income-donut-center {
+  width: 58%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 999px;
+  background: var(--dashboard-surface);
+  border: 1px solid var(--dashboard-border);
+  text-align: center;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.1);
+}
+
+.income-donut-center span {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.income-donut-center strong {
+  color: var(--dashboard-ink);
+  font-size: clamp(1.05rem, 2vw, 1.55rem);
+  line-height: 1.05;
+}
+
+.income-breakdown-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.income-breakdown-item {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: #fbfdff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.income-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.income-row strong {
+  color: var(--dashboard-ink);
+}
+
+.income-row span:last-child,
+.income-breakdown-item small {
+  color: var(--app-text-muted);
+}
+
+.income-dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+}
+
+.income-bar {
+  height: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.income-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
 .card-heading {
   margin-bottom: 1.2rem;
   display: flex;
@@ -351,7 +454,8 @@
 @media (max-width: 1024px) {
   .page-header,
   .stats-grid,
-  .panels-row {
+  .panels-row,
+  .income-visual-grid {
     grid-template-columns: 1fr;
   }
 }

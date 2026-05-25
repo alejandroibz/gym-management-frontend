@@ -39,8 +39,19 @@ interface DashboardTableRow {
   route: string;
 }
 
+interface DashboardIncomeBreakdownItem {
+  label: string;
+  value: number;
+  displayValue: string;
+  percent: number;
+  color: string;
+}
+
 interface DashboardViewModel {
   stats: DashboardStatItem[];
+  incomeBreakdown: DashboardIncomeBreakdownItem[];
+  incomeChartStyle: Record<string, string>;
+  maxMonthlyIncome: number;
   recentPayments: DashboardTableRow[];
   pendingPayments: DashboardTableRow[];
   upcomingExpirations: DashboardTableRow[];
@@ -91,6 +102,18 @@ export class DashboardPageComponent implements AfterViewInit {
     return `${item.title}-${item.line1}`;
   }
 
+  trackByIncome(_: number, item: DashboardIncomeBreakdownItem): string {
+    return item.label;
+  }
+
+  incomeBarWidth(item: DashboardIncomeBreakdownItem, maxMonthlyIncome: number): string {
+    if (maxMonthlyIncome <= 0) {
+      return '0%';
+    }
+
+    return `${Math.max((item.value / maxMonthlyIncome) * 100, item.value > 0 ? 3 : 0)}%`;
+  }
+
   private loadDashboard(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -126,13 +149,15 @@ export class DashboardPageComponent implements AfterViewInit {
     summary: DashboardSummaryResponse,
     financialSummary: DashboardFinancialSummaryResponse | null
   ): DashboardViewModel {
+    const incomeBreakdown = this.buildIncomeBreakdown(summary);
+
     return {
       stats: [
         {
-          label: 'Total de clientes histórico',
+          label: 'Total clientes historico',
           value: summary.totalClients,
           displayValue: this.formatNumber(summary.totalClients),
-          hint: 'Base acumulada del gimnasio',
+          hint: 'Activos y archivados',
           icon: 'groups',
           kind: 'number',
           tone: 'neutral'
@@ -141,34 +166,61 @@ export class DashboardPageComponent implements AfterViewInit {
           label: 'Clientes activos',
           value: summary.activeClients,
           displayValue: this.formatNumber(summary.activeClients),
-          hint: 'Clientes con actividad vigente',
+          hint: 'Disponibles para operar',
           icon: 'person',
           kind: 'number',
           tone: 'info'
         },
         {
-          label: 'Ingreso de hoy',
+          label: 'Ingreso total hoy',
           value: summary.todayIncome,
           displayValue: this.formatCurrency(summary.todayIncome),
-          hint: 'Cobrado durante la jornada',
+          hint: 'Gym + salud + caja externa',
           icon: 'payments',
           kind: 'currency',
           tone: 'success'
         },
         {
-          label: 'Ingreso del mes',
+          label: 'Ingreso total mes',
           value: summary.monthIncome,
           displayValue: this.formatCurrency(summary.monthIncome),
-          hint: 'Acumulado mensual',
+          hint: 'Total mensual operativo',
           icon: 'trending_up',
           kind: 'currency',
           tone: 'accent'
         },
         {
+          label: 'Gym del mes',
+          value: summary.monthGymIncome ?? 0,
+          displayValue: this.formatCurrency(summary.monthGymIncome ?? 0),
+          hint: 'Cobros de membresias',
+          icon: 'fitness_center',
+          kind: 'currency',
+          tone: 'info'
+        },
+        {
+          label: 'Salud del mes',
+          value: summary.monthHealthIncome ?? 0,
+          displayValue: this.formatCurrency(summary.monthHealthIncome ?? 0),
+          hint: 'Pagos de salud confirmados',
+          icon: 'health_and_safety',
+          kind: 'currency',
+          tone: 'success'
+        },
+        {
+          label: 'Caja externa mes',
+          value: summary.monthExternalIncome ?? 0,
+          displayValue: this.formatCurrency(summary.monthExternalIncome ?? 0),
+          hint: 'Ingresos manuales',
+          icon: 'account_balance_wallet',
+          kind: 'currency',
+          tone: 'neutral'
+        },
+        {
           label: 'Descuentos hoy',
           value: summary.todayDiscountAmount ?? 0,
           displayValue: this.formatCurrency(summary.todayDiscountAmount ?? 0),
-          hint: 'Bonificado durante la jornada',
+          hint: 'Gym + salud confirmados',
           icon: 'sell',
           kind: 'currency',
           tone: 'neutral'
@@ -186,7 +238,7 @@ export class DashboardPageComponent implements AfterViewInit {
           label: 'Pagos con descuento',
           value: financialSummary?.discountedPaymentsCount ?? 0,
           displayValue: this.formatNumber(financialSummary?.discountedPaymentsCount ?? 0),
-          hint: 'Cobros con bonificación en el período',
+          hint: 'Cobros con bonificacion en el periodo',
           icon: 'confirmation_number',
           kind: 'number',
           tone: 'info'
@@ -213,7 +265,7 @@ export class DashboardPageComponent implements AfterViewInit {
           label: 'Pagos pendientes',
           value: summary.pendingPayments,
           displayValue: this.formatNumber(summary.pendingPayments),
-          hint: 'Cobros que requieren seguimiento',
+          hint: 'Membresias sin pago confirmado',
           icon: 'receipt_long',
           kind: 'number',
           tone: 'accent'
@@ -222,12 +274,15 @@ export class DashboardPageComponent implements AfterViewInit {
           label: 'Membresias vencidas',
           value: summary.expiredMemberships,
           displayValue: this.formatNumber(summary.expiredMemberships),
-          hint: 'Casos para recuperar',
+          hint: 'Clientes activos a recuperar',
           icon: 'event_busy',
           kind: 'number',
           tone: 'neutral'
         }
       ],
+      incomeBreakdown,
+      incomeChartStyle: this.buildIncomeChartStyle(incomeBreakdown),
+      maxMonthlyIncome: Math.max(...incomeBreakdown.map(item => item.value), 1),
       recentPayments: this.mapRecentPayments(summary.recentPayments),
       pendingPayments: this.mapPendingPayments(summary.pendingPaymentsPreview),
       upcomingExpirations: this.mapUpcomingExpirations(summary.upcomingExpirations)
@@ -238,11 +293,11 @@ export class DashboardPageComponent implements AfterViewInit {
     return items.map(item => ({
       title: item.clientFullName,
       line1: item.hasDiscount
-        ? `${item.membershipPlanName} · Con descuento`
-        : `${item.membershipPlanName} · ${item.paymentMethodName}`,
+        ? `${item.membershipPlanName ?? 'Cobro'} - Con descuento`
+        : `${item.membershipPlanName ?? 'Cobro'} - ${item.paymentMethodName ?? 'Sin metodo'}`,
       line2: item.hasDiscount
-        ? `${this.formatCurrency(item.amount)} final · descuento ${this.formatCurrency(item.discountAmount ?? 0)}`
-        : `${this.formatCurrency(item.amount)} · ${this.formatDateTime(item.paymentDate)}`,
+        ? `${this.formatCurrency(item.amount)} final - descuento ${this.formatCurrency(item.discountAmount ?? 0)}`
+        : `${this.formatCurrency(item.amount)} - ${this.formatDateTime(item.paymentDate)}`,
       route: `/clients/${item.clientId}`
     }));
   }
@@ -250,7 +305,7 @@ export class DashboardPageComponent implements AfterViewInit {
   private mapPendingPayments(items: DashboardPendingPayment[]): DashboardTableRow[] {
     return items.map(item => ({
       title: item.clientFullName,
-      line1: `${item.planName} · Período ${item.periodMonth}/${item.periodYear}`,
+      line1: `${item.planName} - Periodo ${item.periodMonth}/${item.periodYear}`,
       line2: `Vence ${this.formatDate(item.membershipEndDate)}`,
       route: `/clients/${item.clientId}`
     }));
@@ -259,10 +314,41 @@ export class DashboardPageComponent implements AfterViewInit {
   private mapUpcomingExpirations(items: DashboardUpcomingExpiration[]): DashboardTableRow[] {
     return items.map(item => ({
       title: item.clientFullName,
-      line1: `${item.planName} · ${item.daysRemaining} dias restantes`,
+      line1: `${item.planName} - ${item.daysRemaining} dias restantes`,
       line2: `Vence ${this.formatDate(item.endDate)}`,
       route: `/clients/${item.clientId}`
     }));
+  }
+
+  private buildIncomeBreakdown(summary: DashboardSummaryResponse): DashboardIncomeBreakdownItem[] {
+    const items = [
+      { label: 'Gimnasio', value: summary.monthGymIncome ?? 0, color: '#2563eb' },
+      { label: 'Salud', value: summary.monthHealthIncome ?? 0, color: '#0f766e' },
+      { label: 'Caja externa', value: summary.monthExternalIncome ?? 0, color: '#c1121f' }
+    ];
+    const total = items.reduce((sum, item) => sum + item.value, 0);
+
+    return items.map(item => ({
+      ...item,
+      displayValue: this.formatCurrency(item.value),
+      percent: total === 0 ? 0 : Math.round((item.value / total) * 100)
+    }));
+  }
+
+  private buildIncomeChartStyle(items: DashboardIncomeBreakdownItem[]): Record<string, string> {
+    const total = items.reduce((sum, item) => sum + item.value, 0);
+    if (total <= 0) {
+      return { background: '#e5e7eb' };
+    }
+
+    let cursor = 0;
+    const segments = items.map(item => {
+      const start = cursor;
+      cursor += (item.value / total) * 100;
+      return `${item.color} ${start}% ${cursor}%`;
+    });
+
+    return { background: `conic-gradient(${segments.join(', ')})` };
   }
 
   private formatCurrency(value: number): string {

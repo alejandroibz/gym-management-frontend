@@ -39,7 +39,7 @@
         <mat-icon>schedule</mat-icon>
         <span>
           @if (lastUpdated(); as updatedAt) {
-            Última actualizacion {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+            Ultima actualizacion {{ updatedAt | date: 'dd/MM/yyyy HH:mm' }}
           } @else {
             Resumen listo para consultar
           }
@@ -61,6 +61,52 @@
       <span>Cargando resumen del dashboard...</span>
     </div>
   } @else if (dashboard(); as snapshot) {
+<section class="content-grid">
+      <section class="panel-card income-panel">
+        <div class="card-heading">
+          <div class="card-heading-copy">
+            <h2>Composicion de ingresos del mes</h2>
+            <p>Total operativo separado por gimnasio, salud y caja externa.</p>
+          </div>
+
+          <div class="heading-badge">
+            <mat-icon>donut_large</mat-icon>
+            <span>Ingresos</span>
+          </div>
+        </div>
+
+        <div class="income-visual-grid">
+          <div class="income-donut-wrap">
+            <div class="income-donut" [ngStyle]="snapshot.incomeChartStyle">
+              <div class="income-donut-center">
+                <span>Total mes</span>
+                <strong>{{ snapshot.stats[3].displayValue }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="income-breakdown-list">
+            @for (item of snapshot.incomeBreakdown; track trackByIncome($index, item)) {
+              <div class="income-breakdown-item">
+                <div class="income-row">
+                  <span class="income-dot" [style.background]="item.color"></span>
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.displayValue }}</span>
+                </div>
+                <div class="income-bar">
+                  <span
+                    [style.background]="item.color"
+                    [style.width]="incomeBarWidth(item, snapshot.maxMonthlyIncome)">
+                  </span>
+                </div>
+                <small>{{ item.percent }}% del total mensual</small>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+
     <section class="stats-grid">
       @for (item of snapshot.stats; track trackByLabel($index, item)) {
         <article class="stat-card" [class.info]="item.tone === 'info'" [class.success]="item.tone === 'success'" [class.accent]="item.tone === 'accent'">
@@ -76,12 +122,13 @@
       }
     </section>
 
-    <section class="content-grid">
+    
+
       <section class="panel-card">
         <div class="card-heading">
           <div class="card-heading-copy">
             <h2>Pagos recientes</h2>
-            <p>Ultimos pagos informados por el resumen central.</p>
+            <p>Ultimos pagos confirmados de gimnasio y salud.</p>
           </div>
 
           <div class="heading-badge">
@@ -94,7 +141,7 @@
           <div class="empty-state">
             <mat-icon>payments</mat-icon>
             <h3>Sin pagos recientes</h3>
-            <p>No hay movimientos recientes informados por el backend.</p>
+            <p>No hay pagos confirmados recientes.</p>
           </div>
         } @else {
           <div class="table-wrapper">
@@ -127,7 +174,7 @@
           <div class="card-heading">
             <div class="card-heading-copy">
               <h2>Pagos pendientes</h2>
-              <p>Cobros a seguir segun la vista previa del resumen.</p>
+              <p>Membresias activas sin pago confirmado del periodo actual.</p>
             </div>
 
             <div class="heading-badge">
@@ -159,7 +206,7 @@
           <div class="card-heading">
             <div class="card-heading-copy">
               <h2>Proximos vencimientos</h2>
-              <p>Renovaciones cercanas informadas por el resumen.</p>
+              <p>Renovaciones cercanas de clientes activos.</p>
             </div>
 
             <div class="heading-badge">

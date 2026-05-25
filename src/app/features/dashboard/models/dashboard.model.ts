@@ -6,7 +6,13 @@ export interface DashboardSummaryResponse {
   membershipsExpiringSoon: number;
   pendingPayments: number;
   todayIncome: number;
+  todayGymIncome: number;
+  todayHealthIncome: number;
+  todayExternalIncome: number;
   monthIncome: number;
+  monthGymIncome: number;
+  monthHealthIncome: number;
+  monthExternalIncome: number;
   todayDiscountAmount?: number;
   monthDiscountAmount?: number;
   totalEmployees: number;
