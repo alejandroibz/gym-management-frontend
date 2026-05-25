@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResponse } from '../../../core/models/paged-response.model';
-import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientUpdatePayload } from '../models/client.model';
+import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientMembershipUpdatePayload, ClientUpdatePayload } from '../models/client.model';
 
 interface RawPagedResponse<T> {
   items?: T[];
@@ -43,6 +43,22 @@ export class ClientsService {
       params = params.set('Dni', filters.dni);
     }
 
+    if (filters.search) {
+      params = params.set('Search', filters.search);
+    }
+
+    if (filters.membershipPlanId) {
+      params = params.set('MembershipPlanId', filters.membershipPlanId);
+    }
+
+    if (filters.paymentStatus) {
+      params = params.set('PaymentStatus', filters.paymentStatus);
+    }
+
+    if (filters.clientStatus) {
+      params = params.set('ClientStatus', filters.clientStatus);
+    }
+
     return this.http
       .get<RawPagedResponse<Client> | Client[]>(this.apiUrl, { params })
       .pipe(map(response => this.normalizePagedResponse(response, pageNumber, pageSize)));
@@ -62,6 +78,18 @@ export class ClientsService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  reactivate(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/reactivate`, {});
+  }
+
+  updateMembership(clientId: number, membershipId: number, payload: ClientMembershipUpdatePayload): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${clientId}/memberships/${membershipId}`, payload);
+  }
+
+  deleteMembership(clientId: number, membershipId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${clientId}/memberships/${membershipId}`);
   }
 
   importClients(file: File): Observable<ClientImportResult> {

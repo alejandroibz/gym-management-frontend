@@ -22,7 +22,8 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
 import { HealthPaymentDialogComponent } from '../../components/health-payment-dialog/health-payment-dialog';
 import { HealthPatientDialogComponent } from '../../components/health-patient-dialog/health-patient-dialog';
 import { HealthSubscriptionDialogComponent } from '../../components/health-subscription-dialog/health-subscription-dialog';
-import { HealthAppointment, HealthPatientDetail, HealthPatientProfile, HealthPlanSubscription, HealthProfessional, HealthProfessionalType, HealthService, HealthTrainerNote } from '../../models/health.model';
+import { HealthArchivePatientDialogComponent } from '../../components/health-archive-patient-dialog/health-archive-patient-dialog';
+import { HealthAppointment, HealthPatientDetail, HealthPatientProfile, HealthPayment, HealthPlanSubscription, HealthProfessional, HealthProfessionalType, HealthService, HealthTrainerNote } from '../../models/health.model';
 import { HealthServiceApi } from '../../services/health.service';
 
 @Component({
@@ -71,6 +72,7 @@ export class HealthPatientDetailPageComponent {
   readonly editingTrainerNote = signal<HealthTrainerNote | null>(null);
 
   readonly patientName = computed(() => this.detail()?.patient.clientName ?? 'Paciente');
+  readonly isPatientArchived = computed(() => this.detail()?.patient.activo === false);
 
   readonly trainerNoteForm = this.formBuilder.nonNullable.group({
     healthPatientProfileId: [0, [Validators.required, Validators.min(1)]],
@@ -101,6 +103,7 @@ export class HealthPatientDetailPageComponent {
   }
 
   openPatientDialog(patient: HealthPatientProfile): void {
+    if (!patient.activo) return;
     const dialogRef = this.dialog.open(HealthPatientDialogComponent, {
       width: '720px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -115,6 +118,73 @@ export class HealthPatientDetailPageComponent {
     dialogRef.afterClosed().subscribe(payload => {
       if (!payload) return;
       this.save(() => this.healthService.updatePatient(patient.id, payload), () => this.loadDetail(patient.id));
+    });
+  }
+
+  archivePatient(): void {
+    const current = this.detail();
+    if (!current || !current.patient.activo) return;
+
+    const dialogRef = this.dialog.open(HealthArchivePatientDialogComponent, {
+      width: '520px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        patientName: current.patient.clientName,
+        pendingAppointmentsCount: this.getPendingAppointmentsCount(current),
+        activeSubscriptionsCount: this.getActiveSubscriptionsCount(current)
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(payload => {
+      if (!payload) return;
+      this.save(() => this.healthService.archivePatient(current.patient.id, payload), () => this.loadDetail(current.patient.id));
+    });
+  }
+
+  reactivatePatient(): void {
+    const current = this.detail();
+    if (!current || current.patient.activo) return;
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Reactivar ficha',
+        message: `Se reactivara la ficha de salud de ${current.patient.clientName}. Los turnos y planes cancelados quedaran como historial.`,
+        confirmLabel: 'Reactivar',
+        cancelLabel: 'Cancelar',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.save(() => this.healthService.reactivatePatient(current.patient.id), () => this.loadDetail(current.patient.id));
+    });
+  }
+
+  reactivateClient(): void {
+    const current = this.detail();
+    if (!current || this.client()) return;
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Reactivar cliente',
+        message: `Se reactivara la ficha base de ${current.patient.clientName}. Los cobros historicos se conservaran.`,
+        confirmLabel: 'Reactivar',
+        cancelLabel: 'Cancelar',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.save(() => this.clientsService.reactivate(current.patient.clientId), () => this.loadDetail(current.patient.id));
     });
   }
 
@@ -215,7 +285,7 @@ export class HealthPatientDetailPageComponent {
 
   openPaymentForAppointment(appointment: HealthAppointment): void {
     const patient = this.detail()?.patient;
-    if (!patient) return;
+    if (!patient || !patient.activo) return;
 
     const dialogRef = this.dialog.open(HealthPaymentDialogComponent, {
       width: '680px',
@@ -236,6 +306,14 @@ export class HealthPatientDetailPageComponent {
       if (!payload) return;
       this.save(() => this.healthService.createPayment(payload), () => this.loadDetail(patient.id));
     });
+  }
+
+  getPaymentForAppointment(appointmentId: number): HealthPayment | null {
+    return this.detail()?.payments.find(payment => payment.healthAppointmentId === appointmentId) ?? null;
+  }
+
+  canRegisterPaymentForAppointment(appointment: HealthAppointment): boolean {
+    return !this.isPatientArchived() && !this.getPaymentForAppointment(appointment.id);
   }
 
   editAppointment(appointment: HealthAppointment): void {
@@ -285,7 +363,10 @@ export class HealthPatientDetailPageComponent {
       next: detail => {
         this.detail.set(detail);
         this.prepareTrainerNote(detail);
-        this.clientsService.getById(detail.patient.clientId).subscribe(client => this.client.set(client));
+        this.clientsService.getById(detail.patient.clientId).subscribe({
+          next: client => this.client.set(client),
+          error: () => this.client.set(null)
+        });
         this.isLoading.set(false);
       },
       error: () => {
@@ -310,6 +391,19 @@ export class HealthPatientDetailPageComponent {
   private loadPaymentLookups(): void {
     this.employeesService.getPaged(1, 1000).subscribe(response => this.employees.set(response.items));
     this.paymentMethodsService.getPaged(1, 1000).subscribe(response => this.paymentMethods.set(response.items));
+  }
+
+  private getPendingAppointmentsCount(detail: HealthPatientDetail): number {
+    const now = new Date();
+    return detail.appointments.filter(appointment =>
+      new Date(appointment.startsAt) >= now &&
+      appointment.status.trim().toLowerCase() === 'pendiente').length;
+  }
+
+  private getActiveSubscriptionsCount(detail: HealthPatientDetail): number {
+    return detail.subscriptions.filter(subscription =>
+      subscription.status.trim().toLowerCase() === 'activo' ||
+      subscription.status.trim().toLowerCase() === 'active').length;
   }
 
   private prepareTrainerNote(detail: HealthPatientDetail): void {

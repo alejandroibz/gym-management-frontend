@@ -26,6 +26,7 @@ import { PaymentMethod } from '../../../payment-methods/models/payment-method.mo
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
 import { Payment, PaymentCreatePayload, PaymentUpdatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
+import { ClientMembershipDialogComponent } from '../../components/client-membership-dialog/client-membership-dialog';
 import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 
@@ -100,6 +101,7 @@ export class ClientDetailsPageComponent {
   });
 
   readonly currentMembership = computed(() => this.getEffectiveMembership(this.client()));
+  readonly hasHealthProfile = computed(() => !!this.client()?.healthProfile?.patient);
   readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
   readonly latestPaymentDate = computed(() => this.client()?.ultimoPagoFecha ?? this.getLatestPaymentDateFromHistory());
@@ -200,13 +202,16 @@ export class ClientDetailsPageComponent {
       return;
     }
 
+    const removesMembership = !!this.currentMembership() && !this.form.controls.hasMembership.value;
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
         title: 'Guardar cambios',
-        message: `Se actualizarán los datos de ${client.nombre} ${client.apellido}.`,
+        message: removesMembership
+          ? `Se actualizaran los datos de ${client.nombre} ${client.apellido} y se dara de baja la membresia activa. Los cobros anteriores se conservaran.`
+          : `Se actualizaran los datos de ${client.nombre} ${client.apellido}.`,
         confirmLabel: 'Guardar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -234,9 +239,9 @@ export class ClientDetailsPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Eliminar cliente',
-        message: `Se eliminará a ${client.nombre} ${client.apellido}. Esta acción no se puede deshacer.`,
-        confirmLabel: 'Eliminar',
+        title: 'Archivar cliente',
+        message: `Se archivará a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarán y la ficha de salud, si existe, seguirá disponible desde Salud.`,
+        confirmLabel: 'Archivar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
       }
@@ -255,7 +260,75 @@ export class ClientDetailsPageComponent {
         },
         error: () => {
           this.isSaving.set(false);
-          this.errorMessage.set('No se pudo eliminar el cliente.');
+          this.errorMessage.set('No se pudo archivar el cliente.');
+        }
+      });
+    });
+  }
+
+  editMembership(membership: ClientMembership): void {
+    const client = this.client();
+    if (!client || !membership.id) return;
+
+    const dialogRef = this.dialog.open(ClientMembershipDialogComponent, {
+      width: '620px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        clientId: client.id,
+        membership,
+        membershipPlans: this.membershipPlans()
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(payload => {
+      if (!payload) return;
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+      this.clientsService.updateMembership(client.id, membership.id!, payload).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClient();
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.errorMessage.set('No se pudo actualizar la membresia.');
+        }
+      });
+    });
+  }
+
+  deleteMembership(membership: ClientMembership): void {
+    const client = this.client();
+    if (!client || !membership.id) return;
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Quitar membresia',
+        message: 'Se quitara esta membresia del historial activo. Los cobros asociados se conservan.',
+        confirmLabel: 'Quitar',
+        cancelLabel: 'Cancelar',
+        tone: 'danger'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+      this.clientsService.deleteMembership(client.id, membership.id!).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClient();
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.errorMessage.set('No se pudo quitar la membresia.');
         }
       });
     });
@@ -274,6 +347,12 @@ export class ClientDetailsPageComponent {
         from: 'clients'
       }
     });
+  }
+
+  openHealthProfile(): void {
+    const patientId = this.client()?.healthProfile?.patient?.id;
+    if (!patientId) return;
+    this.router.navigate(['/health', 'patients', patientId]);
   }
 
   confirmPayment(payment: ClientRelationRecord): void {
@@ -955,11 +1034,7 @@ export class ClientDetailsPageComponent {
       return null;
     }
 
-    if (client.membership) {
-      return client.membership;
-    }
-
-    return this.getMembershipsHistory(client)[0] ?? null;
+    return client.membership ?? null;
   }
 
   private getMembershipsHistory(client: Client | null): ClientMembership[] {
@@ -967,7 +1042,9 @@ export class ClientDetailsPageComponent {
       return [];
     }
 
-    return [...client.membershipsHistory].sort((left, right) => {
+    return client.membershipsHistory
+      .filter(membership => membership.activo !== false)
+      .sort((left, right) => {
       const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
       const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
       return rightDate - leftDate;

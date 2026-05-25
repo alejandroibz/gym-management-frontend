@@ -43,6 +43,9 @@
               {{ chip.label }}
             </span>
           }
+          <span class="hero-pill" [class.hero-pill-success]="hasHealthProfile()">
+            {{ hasHealthProfile() ? 'Ficha de salud' : 'Sin ficha de salud' }}
+          </span>
         </div>
       </div>
 
@@ -58,9 +61,16 @@
             Registrar cobro
           </button>
 
+          @if (hasHealthProfile()) {
+            <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="openHealthProfile()">
+              <mat-icon>medical_information</mat-icon>
+              Abrir salud
+            </button>
+          }
+
           <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteClient()">
-            <mat-icon>delete</mat-icon>
-            Eliminar
+            <mat-icon>inventory_2</mat-icon>
+            Archivar
           </button>
         } @else {
           <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="cancelEditing()">
@@ -141,6 +151,9 @@
 
             <div class="membership-box span-2">
               <mat-checkbox formControlName="hasMembership">Asignar membresía</mat-checkbox>
+              @if (currentMembership() && !form.controls.hasMembership.value) {
+                <p class="membership-warning">Al guardar se dara de baja la membresia activa. Los cobros anteriores se conservan.</p>
+              }
             </div>
 
             @if (form.controls.hasMembership.value) {
@@ -277,7 +290,7 @@
         <div class="card-heading">
           <div>
             <h2>Historial de membresias</h2>
-            <p>Detalle de la membresía actual o de las últimas membresias informadas por la API.</p>
+            <p>Membresias registradas para este cliente. Podes corregir una asignacion o quitarla sin borrar cobros.</p>
           </div>
         </div>
 
@@ -294,6 +307,14 @@
                   <div class="payment-card-copy">
                     <strong>{{ membership.plan?.nombre || ('Plan #' + membership.membershipPlanId) }}</strong>
                     <span>{{ getMembershipStateLabel(membership.estado) }}</span>
+                  </div>
+                  <div class="membership-actions">
+                    <button mat-icon-button type="button" aria-label="Editar membresia" [disabled]="isSaving()" (click)="editMembership(membership)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Quitar membresia" [disabled]="isSaving()" (click)="deleteMembership(membership)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
                   </div>
                 </div>
 

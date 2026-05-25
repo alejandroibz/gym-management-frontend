@@ -47,6 +47,11 @@ export interface HealthPatientProfile {
   activo: boolean;
 }
 
+export interface ArchiveHealthPatientPayload {
+  cancelPendingAppointments: boolean;
+  finishActiveSubscriptions: boolean;
+}
+
 export interface HealthAppointment {
   id: number;
   healthPatientProfileId: number;

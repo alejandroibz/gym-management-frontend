@@ -173,6 +173,12 @@
   color: #9f1239;
 }
 
+.membership-warning {
+  margin: 0;
+  color: #92400e;
+  font-weight: 800;
+}
+
 .summary-item,
 .payment-card,
 .trainer-note-block {
@@ -211,6 +217,12 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
+}
+
+.membership-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .payment-card-summary,

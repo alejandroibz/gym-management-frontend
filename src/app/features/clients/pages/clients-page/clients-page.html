@@ -45,16 +45,50 @@
 
   <mat-card class="list-card">
     <div class="list-toolbar">
-      <form class="quick-search" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+      <form class="quick-search clients-filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
         <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Buscar por nombre o DNI</mat-label>
+          <mat-label>Nombre completo</mat-label>
           <mat-icon matPrefix>search</mat-icon>
           <input
             matInput
             formControlName="search"
             autocomplete="off"
-            placeholder="Buscar por nombre o DNI"
-            aria-label="Buscar por nombre o DNI" />
+            placeholder="Nombre o apellido"
+            aria-label="Buscar por nombre completo" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>DNI</mat-label>
+          <mat-icon matPrefix>badge</mat-icon>
+          <input matInput formControlName="dni" autocomplete="off" placeholder="Documento" aria-label="Buscar por DNI" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="paymentStatus">
+            <mat-option value="all">Todos</mat-option>
+            <mat-option value="upToDate">Al dia</mat-option>
+            <mat-option value="pending">Pendiente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Ficha</mat-label>
+          <mat-select formControlName="clientStatus">
+            <mat-option value="active">Activos</mat-option>
+            <mat-option value="archived">Archivados</mat-option>
+            <mat-option value="all">Todos</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de membresia</mat-label>
+          <mat-select formControlName="membershipPlanId">
+            <mat-option [value]="null">Todas</mat-option>
+            @for (plan of membershipPlans(); track plan.id) {
+              <mat-option [value]="plan.id">{{ plan.nombre }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
 
         <button mat-flat-button type="submit" class="search-button" [disabled]="isLoading()">
@@ -65,10 +99,10 @@
     </div>
 
     <div class="filters-feedback" aria-live="polite">
-      @if (activeFilterChips().length === 0) {
+      @if (visibleFilterChips().length === 0) {
         <span class="filters-empty">Sin filtros activos</span>
       } @else {
-        @for (chip of activeFilterChips(); track chip.label) {
+        @for (chip of visibleFilterChips(); track chip.label) {
           <span class="filter-chip">{{ chip.label }}: {{ chip.value }}</span>
         }
       }
@@ -183,8 +217,8 @@
                   </div>
                 </td>
                 <td>
-                  <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
-                    {{ getPaymentStatusLabel(client) }}
+                  <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
+                    {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
                   </span>
                   @if (client.tieneLesion) {
                     <span class="relation-pill relation-pill-warning">Con lesión</span>
@@ -192,13 +226,20 @@
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
-                      <mat-icon>visibility</mat-icon>
-                      Ver
-                    </button>
-                    <button mat-icon-button type="button" class="icon-action-button" [disabled]="isSaving()" aria-label="Editar cliente" (click)="editClient(client)">
-                      <mat-icon>edit</mat-icon>
-                    </button>
+                    @if (isArchived(client)) {
+                      <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="reactivateClient(client)">
+                        <mat-icon>restore</mat-icon>
+                        Reactivar
+                      </button>
+                    } @else {
+                      <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
+                        <mat-icon>visibility</mat-icon>
+                        Ver
+                      </button>
+                      <button mat-icon-button type="button" class="icon-action-button" [disabled]="isSaving()" aria-label="Editar cliente" (click)="editClient(client)">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>
@@ -215,8 +256,8 @@
                 <h2>{{ client.nombre }} {{ client.apellido }}</h2>
                 <span>DNI {{ client.dni }}</span>
               </div>
-              <span class="relation-pill" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client)">
-                {{ getPaymentStatusLabel(client) }}
+              <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
+                {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
               </span>
               @if (client.tieneLesion) {
                 <span class="relation-pill relation-pill-warning">Con lesión</span>
@@ -255,14 +296,21 @@
             }
 
             <div class="client-card-actions">
-              <button mat-flat-button type="button" class="row-action primary-row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
-                <mat-icon>visibility</mat-icon>
-                Ver
-              </button>
-              <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="editClient(client)">
-                <mat-icon>edit</mat-icon>
-                Editar
-              </button>
+              @if (isArchived(client)) {
+                <button mat-flat-button type="button" class="row-action primary-row-action" [disabled]="isSaving()" (click)="reactivateClient(client)">
+                  <mat-icon>restore</mat-icon>
+                  Reactivar
+                </button>
+              } @else {
+                <button mat-flat-button type="button" class="row-action primary-row-action" [disabled]="isSaving()" (click)="openClientDetails(client)">
+                  <mat-icon>visibility</mat-icon>
+                  Ver
+                </button>
+                <button mat-stroked-button type="button" class="row-action" [disabled]="isSaving()" (click)="editClient(client)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+              }
             </div>
           </article>
         }

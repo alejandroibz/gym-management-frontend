@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import {
   HealthAppointment,
   HealthAppointmentPayload,
+  ArchiveHealthPatientPayload,
   ConfirmHealthPaymentPayload,
   HealthEvaluation,
   HealthEvaluationPayload,
@@ -94,10 +95,11 @@ export class HealthServiceApi {
     return this.http.delete<void>(`${this.apiUrl}/professionals/${id}`);
   }
 
-  getPatients(search = '', pageNumber = 1, pageSize = 10): Observable<HealthPagedResponse<HealthPatientProfile>> {
+  getPatients(search = '', pageNumber = 1, pageSize = 10, includeInactive = false): Observable<HealthPagedResponse<HealthPatientProfile>> {
     let params = new HttpParams()
       .set('pageNumber', pageNumber)
-      .set('pageSize', pageSize);
+      .set('pageSize', pageSize)
+      .set('includeInactive', includeInactive);
     if (search.trim()) {
       params = params.set('search', search.trim());
     }
@@ -110,6 +112,14 @@ export class HealthServiceApi {
 
   updatePatient(id: number, payload: HealthPatientPayload): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/patients/${id}`, payload);
+  }
+
+  archivePatient(id: number, payload: ArchiveHealthPatientPayload): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/patients/${id}/archive`, payload);
+  }
+
+  reactivatePatient(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/patients/${id}/reactivate`, {});
   }
 
   getPatientDetail(id: number): Observable<HealthPatientDetail> {

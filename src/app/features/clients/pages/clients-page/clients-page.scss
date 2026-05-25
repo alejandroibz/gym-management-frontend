@@ -133,6 +133,10 @@
   align-items: start;
 }
 
+.clients-filters {
+  grid-template-columns: minmax(220px, 1.4fr) minmax(140px, 0.7fr) minmax(140px, 0.75fr) minmax(140px, 0.75fr) minmax(180px, 1fr) auto;
+}
+
 .search-field {
   width: 100%;
 }
@@ -328,6 +332,12 @@
   color: #166534;
   background: #dcfce7;
   border: 1px solid #86efac;
+}
+
+.relation-pill-archived {
+  color: #52525b;
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
 }
 
 .relation-pill-info {

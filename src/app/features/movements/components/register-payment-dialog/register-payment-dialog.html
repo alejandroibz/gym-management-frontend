@@ -15,11 +15,18 @@
     <div class="form-grid">
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Cliente</mat-label>
-        <mat-select formControlName="clientId" (selectionChange)="onClientChange()">
-          @for (client of data.clients; track client.id) {
-            <mat-option [value]="client.id">{{ getClientLabel(client) }}</mat-option>
+        <input
+          matInput
+          type="text"
+          [formControl]="clientSearchControl"
+          [matAutocomplete]="clientAutocomplete"
+          placeholder="Escribir nombre, DNI o telefono"
+          (input)="onClientSearchInput()" />
+        <mat-autocomplete #clientAutocomplete="matAutocomplete" [displayWith]="displayClient" (optionSelected)="selectClient($event.option.value)">
+          @for (client of filteredClients(); track client.id) {
+            <mat-option [value]="client">{{ getClientLabel(client) }}</mat-option>
           }
-        </mat-select>
+        </mat-autocomplete>
       </mat-form-field>
 
       <div class="context-box span-2">
@@ -29,6 +36,9 @@
           <small>Buscando la membresía del cliente...</small>
         } @else if (!hasSelectedClientMembership() && form.controls.clientId.value) {
           <small>El cliente seleccionado no tiene una membresía activa para asociar el cobro.</small>
+        }
+        @if (selectedPeriodAlreadyPaid()) {
+          <small class="warning-line">Ya existe un cobro registrado para este cliente en el periodo seleccionado.</small>
         }
       </div>
 

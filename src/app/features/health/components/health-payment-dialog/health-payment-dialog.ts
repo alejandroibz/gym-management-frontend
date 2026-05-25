@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -26,7 +27,7 @@ export interface HealthPaymentDialogData {
 @Component({
   selector: 'app-health-payment-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule, MatOptionModule, MatSelectModule],
+  imports: [CommonModule, ReactiveFormsModule, MatAutocompleteModule, MatButtonModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule, MatOptionModule, MatSelectModule],
   template: `
     <section class="dialog-shell">
       <header class="dialog-header">
@@ -42,11 +43,18 @@ export interface HealthPaymentDialogData {
       <form [formGroup]="form" (ngSubmit)="save()" class="dialog-form">
         <mat-form-field appearance="outline">
           <mat-label>Paciente</mat-label>
-          <mat-select formControlName="healthPatientProfileId">
-            @for (patient of data.patients; track patient.id) {
-              <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+          <input
+            matInput
+            type="text"
+            [formControl]="patientSearchControl"
+            [matAutocomplete]="patientAutocomplete"
+            placeholder="Escribir nombre, DNI o telefono"
+            (input)="onPatientSearchInput()">
+          <mat-autocomplete #patientAutocomplete="matAutocomplete" [displayWith]="displayPatient" (optionSelected)="selectPatient($event.option.value)">
+            @for (patient of filteredPatients(); track patient.id) {
+              <mat-option [value]="patient">{{ patient.clientName }}</mat-option>
             }
-          </mat-select>
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -182,6 +190,8 @@ export class HealthPaymentDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   readonly data = inject<HealthPaymentDialogData>(MAT_DIALOG_DATA);
   private readonly initialService = this.getInitialService();
+  readonly patientSearchControl = new FormControl<HealthPatientProfile | string>(this.getInitialPatient() ?? '', { nonNullable: true });
+  readonly displayPatient = (value: HealthPatientProfile | string): string => typeof value === 'string' ? value : value?.clientName ?? '';
 
   readonly form = this.formBuilder.nonNullable.group(
     {
@@ -210,6 +220,27 @@ export class HealthPaymentDialogComponent {
 
   close(): void {
     this.dialogRef.close(undefined);
+  }
+
+  filteredPatients(): HealthPatientProfile[] {
+    const rawValue = this.patientSearchControl.value;
+    const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue.clientName.toLowerCase();
+    if (!value) return this.data.patients.slice(0, 25);
+    return this.data.patients
+      .filter(patient =>
+        patient.clientName.toLowerCase().includes(value) ||
+        patient.dni?.toLowerCase().includes(value) ||
+        patient.phone?.toLowerCase().includes(value))
+      .slice(0, 25);
+  }
+
+  onPatientSearchInput(): void {
+    this.form.controls.healthPatientProfileId.setValue(0);
+  }
+
+  selectPatient(patient: HealthPatientProfile): void {
+    this.form.controls.healthPatientProfileId.setValue(patient.id);
+    this.patientSearchControl.setValue(patient, { emitEvent: false });
   }
 
   save(): void {
@@ -322,6 +353,11 @@ export class HealthPaymentDialogComponent {
     const serviceId = this.data.appointment?.healthServiceId;
     if (!serviceId) return null;
     return (this.data.services ?? []).find(service => service.id === serviceId) ?? null;
+  }
+
+  private getInitialPatient(): HealthPatientProfile | null {
+    const patientId = this.data.payment?.healthPatientProfileId ?? this.data.appointment?.healthPatientProfileId;
+    return patientId ? this.data.patients.find(patient => patient.id === patientId) ?? null : null;
   }
 
   private getSelectedService(): HealthService | null {

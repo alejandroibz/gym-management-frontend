@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
@@ -39,6 +40,7 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     RouterLink
   ],
   templateUrl: './clients-page.html',
@@ -71,7 +73,11 @@ export class ClientsPageComponent {
   readonly pageSize = signal(12);
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
-    search: ['']
+    search: [''],
+    dni: [''],
+    paymentStatus: ['all'],
+    clientStatus: ['active'],
+    membershipPlanId: [null as number | null]
   });
 
   readonly totalClients = computed(() => this.totalCount());
@@ -81,7 +87,13 @@ export class ClientsPageComponent {
   readonly currentUserEmail = signal<string | null>(null);
   readonly activeFiltersCount = computed(() => {
     const raw = this.filtersForm.getRawValue();
-    return raw.search.trim().length > 0 ? 1 : 0;
+    return [
+      raw.search.trim(),
+      raw.dni.trim(),
+      raw.paymentStatus !== 'all' ? raw.paymentStatus : '',
+      raw.clientStatus !== 'active' ? raw.clientStatus : '',
+      raw.membershipPlanId ? String(raw.membershipPlanId) : ''
+    ].filter(Boolean).length;
   });
   readonly activeFilterChips = computed(() => {
     const raw = this.filtersForm.getRawValue();
@@ -89,6 +101,21 @@ export class ClientsPageComponent {
 
     if (raw.search.trim()) {
       chips.push({ label: 'Búsqueda', value: raw.search.trim() });
+    }
+
+    return chips;
+  });
+  readonly visibleFilterChips = computed(() => {
+    const raw = this.filtersForm.getRawValue();
+    const chips: Array<{ label: string; value: string }> = [];
+
+    if (raw.search.trim()) chips.push({ label: 'Nombre', value: raw.search.trim() });
+    if (raw.dni.trim()) chips.push({ label: 'DNI', value: raw.dni.trim() });
+    if (raw.paymentStatus !== 'all') chips.push({ label: 'Estado', value: raw.paymentStatus === 'pending' ? 'Pendiente' : 'Al dia' });
+    if (raw.clientStatus !== 'active') chips.push({ label: 'Ficha', value: raw.clientStatus === 'archived' ? 'Archivados' : 'Todos' });
+    if (raw.membershipPlanId) {
+      const plan = this.membershipPlans().find(item => item.id === raw.membershipPlanId);
+      chips.push({ label: 'Membresia', value: plan?.nombre ?? `Plan #${raw.membershipPlanId}` });
     }
 
     return chips;
@@ -116,7 +143,11 @@ export class ClientsPageComponent {
 
   resetFilters(): void {
     this.filtersForm.reset({
-      search: ''
+      search: '',
+      dni: '',
+      paymentStatus: 'all',
+      clientStatus: 'active',
+      membershipPlanId: null
     });
     this.pageNumber.set(1);
     this.loadClients();
@@ -156,11 +187,56 @@ export class ClientsPageComponent {
   }
 
   openClientDetails(client: Client): void {
+    if (!client.activo) {
+      return;
+    }
+
     this.router.navigate(['/clients', client.id]);
   }
 
   editClient(client: Client): void {
+    if (!client.activo) {
+      return;
+    }
+
     this.openDialog(client);
+  }
+
+  reactivateClient(client: Client): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      panelClass: 'employee-category-dialog-panel',
+      backdropClass: 'employee-category-dialog-backdrop',
+      data: {
+        title: 'Reactivar cliente',
+        message: `Se reactivara a ${client.nombre} ${client.apellido}.`,
+        confirmLabel: 'Reactivar',
+        cancelLabel: 'Cancelar',
+        tone: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+
+      this.clientsService.reactivate(client.id).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClients();
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.errorMessage.set('No se pudo reactivar el cliente.');
+        }
+      });
+    });
   }
 
   removeClient(client: Client): void {
@@ -171,9 +247,9 @@ export class ClientsPageComponent {
       panelClass: 'employee-category-dialog-panel',
       backdropClass: 'employee-category-dialog-backdrop',
       data: {
-        title: 'Eliminar cliente',
-        message: `Se eliminará a ${client.nombre} ${client.apellido}. Esta acción no se puede deshacer.`,
-        confirmLabel: 'Eliminar',
+        title: 'Archivar cliente',
+        message: `Se archivará a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarán y la ficha de salud, si existe, seguirá disponible desde Salud.`,
+        confirmLabel: 'Archivar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
       }
@@ -333,7 +409,11 @@ export class ClientsPageComponent {
   }
 
   isPaymentPending(client: Client): boolean {
-    return client.debePago;
+    return client.activo && client.debePago;
+  }
+
+  isArchived(client: Client): boolean {
+    return !client.activo;
   }
 
   getMembershipNotificationChips(client: Client): Array<{ label: string; tone: 'warning' | 'info' | 'success' }> {
@@ -368,19 +448,27 @@ export class ClientsPageComponent {
   private getFilters(): ClientFilters {
     const raw = this.filtersForm.getRawValue();
     const search = raw.search.trim();
+    const dni = raw.dni.trim();
     const filters: ClientFilters = {};
 
     if (search) {
-      if (/^\d+$/.test(search)) {
-        filters.dni = search;
-      } else {
-        const [nombre, ...apellidoParts] = search.split(/\s+/);
-        filters.nombre = nombre;
+      filters.search = search;
+    }
 
-        if (apellidoParts.length > 0) {
-          filters.apellido = apellidoParts.join(' ');
-        }
-      }
+    if (dni) {
+      filters.dni = dni;
+    }
+
+    if (raw.paymentStatus !== 'all') {
+      filters.paymentStatus = raw.paymentStatus as 'pending' | 'upToDate';
+    }
+
+    if (raw.clientStatus !== 'active') {
+      filters.clientStatus = raw.clientStatus as 'archived' | 'all';
+    }
+
+    if (raw.membershipPlanId) {
+      filters.membershipPlanId = raw.membershipPlanId;
     }
 
     return filters;
@@ -429,20 +517,6 @@ export class ClientsPageComponent {
   }
 
   private getEffectiveMembership(client: Client): ClientMembership | null {
-    if (client.membership) {
-      return client.membership;
-    }
-
-    const history = client.membershipsHistory ?? [];
-
-    if (history.length === 0) {
-      return null;
-    }
-
-    return [...history].sort((left, right) => {
-      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
-      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
-      return rightDate - leftDate;
-    })[0] ?? null;
+    return client.membership ?? null;
   }
 }

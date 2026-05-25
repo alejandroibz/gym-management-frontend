@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -36,6 +37,7 @@ export interface RegisterPaymentDialogData {
     CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -59,6 +61,7 @@ export class RegisterPaymentDialogComponent {
   readonly isEditing = !!this.data.payment;
   readonly selectedClient = signal<Client | null>(this.getInitialClient());
   readonly isLoadingSelectedClient = signal(false);
+  readonly clientSearchControl = new FormControl<Client | string>(this.getInitialClient() ?? '', { nonNullable: true });
 
   readonly form = this.formBuilder.group(
     {
@@ -90,6 +93,7 @@ export class RegisterPaymentDialogComponent {
     const membership = this.getEffectiveMembership(this.selectedClient());
     return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía activa');
   });
+  readonly displayClient = (value: Client | string): string => typeof value === 'string' ? value : this.getClientLabel(value);
 
   constructor() {
     this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
@@ -123,6 +127,18 @@ export class RegisterPaymentDialogComponent {
     }
 
     this.cancelSelectedClientLookup();
+  }
+
+  onClientSearchInput(): void {
+    this.selectedClient.set(null);
+    this.form.controls.clientId.setValue(null);
+    this.clearMembership();
+  }
+
+  selectClient(client: Client): void {
+    this.form.controls.clientId.setValue(client.id);
+    this.clientSearchControl.setValue(client, { emitEvent: false });
+    this.onClientChange();
   }
 
   submit(): void {
@@ -160,6 +176,19 @@ export class RegisterPaymentDialogComponent {
     return `${client.nombre} ${client.apellido}`;
   }
 
+  filteredClients(): Client[] {
+    const rawValue = this.clientSearchControl.value;
+    const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : this.getClientLabel(rawValue).toLowerCase();
+    if (!value) return this.data.clients.slice(0, 25);
+
+    return this.data.clients
+      .filter(client => {
+        const label = this.getClientLabel(client).toLowerCase();
+        return label.includes(value) || client.dni?.toLowerCase().includes(value) || client.telefono?.toLowerCase().includes(value);
+      })
+      .slice(0, 25);
+  }
+
   getPaymentMethodLabel(method: PaymentMethod): string {
     return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
@@ -174,6 +203,10 @@ export class RegisterPaymentDialogComponent {
 
   hasSelectedClientMembership(): boolean {
     return !!this.getEffectiveMembership(this.selectedClient())?.id;
+  }
+
+  selectedPeriodAlreadyPaid(): boolean {
+    return this.hasPaymentForSelectedPeriod();
   }
 
   hasDiscount(): boolean {
@@ -299,6 +332,34 @@ export class RegisterPaymentDialogComponent {
       monto: 0,
       montoOriginal: null
     });
+  }
+
+  private hasPaymentForSelectedPeriod(): boolean {
+    if (this.isEditing) return false;
+    const client = this.selectedClient();
+    const year = Number(this.form.controls.periodYear.value ?? 0);
+    const month = Number(this.form.controls.periodMonth.value ?? 0);
+    if (!client || !year || !month) return false;
+
+    return (client.payments ?? []).some(payment => {
+      const paymentYear = this.getNumericPaymentField(payment, ['periodyear', 'periodYear']);
+      const paymentMonth = this.getNumericPaymentField(payment, ['periodmonth', 'periodMonth']);
+      return paymentYear === year && paymentMonth === month;
+    });
+  }
+
+  private getNumericPaymentField(payment: Record<string, unknown>, candidateKeys: string[]): number | null {
+    const normalizedKeys = candidateKeys.map(key => key.toLowerCase());
+    for (const [key, value] of Object.entries(payment)) {
+      if (!normalizedKeys.includes(key.trim().toLowerCase())) continue;
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? null : parsed;
+      }
+    }
+
+    return null;
   }
 
   private updateFinalAmountFromDiscount(): void {

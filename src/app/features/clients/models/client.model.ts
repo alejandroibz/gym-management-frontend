@@ -12,6 +12,7 @@ export interface ClientMembership {
   fechaFin: string;
   estado?: string;
   precioFinal: number;
+  activo?: boolean;
   plan?: MembershipPlan | null;
 }
 
@@ -42,6 +43,7 @@ export interface Client {
   tieneLesion: boolean;
   observaciones?: string | null;
   fechaAlta?: string;
+  activo: boolean;
   membership?: ClientMembership | null;
   membershipsHistory?: ClientMembership[];
   payments: ClientRelationRecord[];
@@ -72,10 +74,24 @@ export interface ClientUpdatePayload extends ClientCreatePayload {
   id: number;
 }
 
+export interface ClientMembershipUpdatePayload {
+  clientId: number;
+  membershipId: number;
+  membershipPlanId: number;
+  fechaInicio: string;
+  fechaFin: string;
+  precioFinal: number;
+  estado: 'Active' | 'Inactive';
+}
+
 export interface ClientFilters {
+  search?: string;
   nombre?: string;
   apellido?: string;
   dni?: string;
+  membershipPlanId?: number | null;
+  paymentStatus?: 'pending' | 'upToDate' | null;
+  clientStatus?: 'active' | 'archived' | 'all' | null;
 }
 
 export interface ClientImportError {

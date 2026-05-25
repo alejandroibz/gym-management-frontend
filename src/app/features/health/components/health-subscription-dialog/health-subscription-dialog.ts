@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,7 +21,7 @@ export interface HealthSubscriptionDialogData {
 @Component({
   selector: 'app-health-subscription-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule, MatOptionModule, MatSelectModule],
+  imports: [CommonModule, ReactiveFormsModule, MatAutocompleteModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule, MatOptionModule, MatSelectModule],
   template: `
     <section class="dialog-shell">
       <header class="dialog-header">
@@ -36,11 +37,18 @@ export interface HealthSubscriptionDialogData {
       <form [formGroup]="form" (ngSubmit)="save()" class="dialog-form">
         <mat-form-field appearance="outline">
           <mat-label>Paciente</mat-label>
-          <mat-select formControlName="healthPatientProfileId">
-            @for (patient of data.patients; track patient.id) {
-              <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+          <input
+            matInput
+            type="text"
+            [formControl]="patientSearchControl"
+            [matAutocomplete]="patientAutocomplete"
+            placeholder="Escribir nombre, DNI o telefono"
+            (input)="onPatientSearchInput()">
+          <mat-autocomplete #patientAutocomplete="matAutocomplete" [displayWith]="displayPatient" (optionSelected)="selectPatient($event.option.value)">
+            @for (patient of filteredPatients(); track patient.id) {
+              <mat-option [value]="patient">{{ patient.clientName }}</mat-option>
             }
-          </mat-select>
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -54,7 +62,7 @@ export interface HealthSubscriptionDialogData {
 
         <mat-form-field appearance="outline">
           <mat-label>Servicio mensual</mat-label>
-          <mat-select formControlName="healthServiceId">
+          <mat-select formControlName="healthServiceId" (selectionChange)="onMonthlyServiceChange()">
             @for (service of monthlyServices(); track service.id) {
               <mat-option [value]="service.id">{{ service.name }}</mat-option>
             }
@@ -120,6 +128,8 @@ export class HealthSubscriptionDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   readonly data = inject<HealthSubscriptionDialogData>(MAT_DIALOG_DATA);
   readonly monthlyServices = computed(() => this.data.services.filter(service => service.isMonthlyPlan));
+  readonly patientSearchControl = new FormControl<HealthPatientProfile | string>(this.getInitialPatient() ?? '', { nonNullable: true });
+  readonly displayPatient = (value: HealthPatientProfile | string): string => typeof value === 'string' ? value : value?.clientName ?? '';
 
   readonly form = this.formBuilder.nonNullable.group({
     healthPatientProfileId: [this.data.subscription?.healthPatientProfileId ?? 0, [Validators.required, Validators.min(1)]],
@@ -135,6 +145,35 @@ export class HealthSubscriptionDialogComponent {
 
   close(): void {
     this.dialogRef.close(undefined);
+  }
+
+  filteredPatients(): HealthPatientProfile[] {
+    const rawValue = this.patientSearchControl.value;
+    const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue.clientName.toLowerCase();
+    if (!value) return this.data.patients.slice(0, 25);
+    return this.data.patients
+      .filter(patient =>
+        patient.clientName.toLowerCase().includes(value) ||
+        patient.dni?.toLowerCase().includes(value) ||
+        patient.phone?.toLowerCase().includes(value))
+      .slice(0, 25);
+  }
+
+  onPatientSearchInput(): void {
+    this.form.controls.healthPatientProfileId.setValue(0);
+  }
+
+  selectPatient(patient: HealthPatientProfile): void {
+    this.form.controls.healthPatientProfileId.setValue(patient.id);
+    this.patientSearchControl.setValue(patient, { emitEvent: false });
+  }
+
+  onMonthlyServiceChange(): void {
+    if (this.data.subscription) return;
+    const selectedService = this.getSelectedMonthlyService();
+    if (!selectedService) return;
+
+    this.form.controls.monthlyAmount.setValue(selectedService.price);
   }
 
   save(): void {
@@ -156,6 +195,16 @@ export class HealthSubscriptionDialogComponent {
     if (normalized === 'pending' || normalized === 'pendiente') return 'Pendiente';
     if (normalized === 'expired' || normalized === 'vencido') return 'Vencido';
     return 'Activo';
+  }
+
+  private getSelectedMonthlyService(): HealthService | null {
+    const serviceId = this.form.controls.healthServiceId.value;
+    return this.monthlyServices().find(service => service.id === serviceId) ?? null;
+  }
+
+  private getInitialPatient(): HealthPatientProfile | null {
+    const patientId = this.data.subscription?.healthPatientProfileId;
+    return patientId ? this.data.patients.find(patient => patient.id === patientId) ?? null : null;
   }
 
   private toDateInput(value?: string | null, defaultNextMonth = false): string {

@@ -1,6 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -14,7 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap } from 'rxjs';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { ClientsService } from '../../../clients/services/clients.service';
 import { EmployeesService } from '../../../employees/services/employees.service';
@@ -60,6 +61,7 @@ interface CalendarDayCell {
     CommonModule,
     DatePipe,
     ReactiveFormsModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,
@@ -104,11 +106,14 @@ export class HealthPageComponent {
   readonly professionalTypes = signal<HealthProfessionalType[]>([]);
   readonly professionals = signal<HealthProfessional[]>([]);
   readonly patients = signal<HealthPatientProfile[]>([]);
+  readonly patientLookups = signal<HealthPatientProfile[]>([]);
   readonly patientsTotalCount = signal(0);
   readonly patientsPageNumber = signal(1);
   readonly patientsPageSize = signal(10);
   readonly patientsSearch = signal('');
+  readonly showArchivedPatients = signal(false);
   readonly appointments = signal<HealthAppointment[]>([]);
+  readonly appointmentPatientOptions = signal<HealthPatientProfile[]>([]);
   readonly editingAppointment = signal<HealthAppointment | null>(null);
   readonly payments = signal<HealthPayment[]>([]);
   readonly subscriptions = signal<HealthPlanSubscription[]>([]);
@@ -148,6 +153,7 @@ export class HealthPageComponent {
     isWalkIn: [false],
     notes: ['']
   });
+  readonly appointmentPatientSearchControl = new FormControl<string | HealthPatientProfile>('', { nonNullable: true });
 
   readonly professionalTypeForm = this.formBuilder.nonNullable.group({
     name: ['', Validators.required],
@@ -161,6 +167,8 @@ export class HealthPageComponent {
     from: [''],
     to: ['']
   });
+  readonly paymentPatientFilterSearchControl = new FormControl<HealthPatientProfile | string>('', { nonNullable: true });
+  readonly subscriptionStatusFilter = signal<'all' | 'active' | 'inactive'>('all');
 
   readonly appointmentRangeLabel = computed(() => {
     const range = this.getRange();
@@ -177,9 +185,19 @@ export class HealthPageComponent {
     return this.appointmentRangeLabel();
   });
   readonly calendarDays = computed(() => this.buildCalendarDays());
+  readonly displayAppointmentPatient = (value: string | HealthPatientProfile): string =>
+    typeof value === 'string' ? value : value?.clientName ?? '';
+  readonly displayPaymentFilterPatient = (value: string | HealthPatientProfile): string =>
+    typeof value === 'string' ? value : value?.clientName ?? '';
 
   readonly pendingAppointments = computed(() => this.appointments().filter(item => item.status === 'Pendiente').length);
   readonly activeSubscriptions = computed(() => this.subscriptions().filter(item => this.isActiveSubscription(item)));
+  readonly visibleSubscriptions = computed(() => {
+    const status = this.subscriptionStatusFilter();
+    if (status === 'active') return this.subscriptions().filter(item => this.isActiveSubscription(item));
+    if (status === 'inactive') return this.subscriptions().filter(item => !this.isActiveSubscription(item));
+    return this.subscriptions();
+  });
   readonly selectedProfessionalType = computed(() => {
     const id = this.selectedProfessionalTypeId();
     return id ? this.professionalTypes().find(type => type.id === id) ?? null : null;
@@ -194,6 +212,13 @@ export class HealthPageComponent {
   });
 
   constructor() {
+    this.appointmentPatientSearchControl.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap(value => this.searchAppointmentPatients(value))
+    ).subscribe(patients => this.appointmentPatientOptions.set(patients));
+
     this.loadLookups();
     this.loadHealthData();
     this.route.queryParamMap.subscribe(params => {
@@ -335,6 +360,21 @@ export class HealthPageComponent {
     this.patientsSearch.set(search);
     this.patientsPageNumber.set(1);
     this.loadPatients();
+  }
+
+  toggleArchivedPatients(checked: boolean): void {
+    this.showArchivedPatients.set(checked);
+    this.patientsPageNumber.set(1);
+    this.loadPatients();
+  }
+
+  selectAppointmentPatient(patient: HealthPatientProfile): void {
+    this.appointmentForm.controls.healthPatientProfileId.setValue(patient.id);
+    this.appointmentPatientSearchControl.setValue(patient, { emitEvent: false });
+  }
+
+  onAppointmentPatientSearchInput(): void {
+    this.appointmentForm.controls.healthPatientProfileId.setValue(0);
   }
 
   onPatientsPageChange(event: PageEvent): void {
@@ -572,6 +612,8 @@ export class HealthPageComponent {
 
   editAppointment(appointment: HealthAppointment): void {
     this.editingAppointment.set(appointment);
+    const patient = this.patients().find(item => item.id === appointment.healthPatientProfileId);
+    this.appointmentPatientSearchControl.setValue(patient ?? appointment.patientName, { emitEvent: false });
     this.appointmentForm.patchValue({
       healthPatientProfileId: appointment.healthPatientProfileId,
       healthProfessionalId: appointment.healthProfessionalId,
@@ -585,6 +627,7 @@ export class HealthPageComponent {
 
   cancelAppointmentEdit(): void {
     this.editingAppointment.set(null);
+    this.appointmentPatientSearchControl.setValue('', { emitEvent: false });
     this.appointmentForm.reset({
       healthPatientProfileId: 0,
       healthProfessionalId: 0,
@@ -628,7 +671,7 @@ export class HealthPageComponent {
       autoFocus: false,
       data: {
         payment: payment ?? null,
-        patients: this.patients(),
+        patients: this.patientLookups(),
         paymentMethods: this.paymentMethods(),
         employees: this.employees(),
         professionalTypes: this.professionalTypes(),
@@ -705,6 +748,32 @@ export class HealthPageComponent {
     this.loadPaymentsAndSummary();
   }
 
+  filteredPaymentFilterPatients(): HealthPatientProfile[] {
+    const rawValue = this.paymentPatientFilterSearchControl.value;
+    const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue.clientName.toLowerCase();
+    if (!value) return this.patientLookups().slice(0, 25);
+    return this.patientLookups()
+      .filter(patient =>
+        patient.clientName.toLowerCase().includes(value) ||
+        patient.dni?.toLowerCase().includes(value) ||
+        patient.phone?.toLowerCase().includes(value))
+      .slice(0, 25);
+  }
+
+  onPaymentPatientFilterInput(): void {
+    this.paymentFiltersForm.controls.patientProfileId.setValue(null);
+  }
+
+  selectPaymentFilterPatient(patient: HealthPatientProfile): void {
+    this.paymentFiltersForm.controls.patientProfileId.setValue(patient.id);
+    this.paymentPatientFilterSearchControl.setValue(patient, { emitEvent: false });
+  }
+
+  clearPaymentPatientFilter(): void {
+    this.paymentFiltersForm.controls.patientProfileId.setValue(null);
+    this.paymentPatientFilterSearchControl.setValue('', { emitEvent: false });
+  }
+
   openSubscriptionDialog(subscription?: HealthPlanSubscription): void {
     const dialogRef = this.dialog.open(HealthSubscriptionDialogComponent, {
       width: '680px',
@@ -712,7 +781,7 @@ export class HealthPageComponent {
       autoFocus: false,
       data: {
         subscription: subscription ?? null,
-        patients: this.patients(),
+        patients: this.patientLookups(),
         professionals: this.professionals(),
         services: this.services()
       }
@@ -750,6 +819,7 @@ export class HealthPageComponent {
     this.healthService.getProfessionalTypes().subscribe(response => this.professionalTypes.set(response.items));
     this.healthService.getServices().subscribe(response => this.services.set(response.items));
     this.healthService.getProfessionals().subscribe(response => this.professionals.set(response.items));
+    this.healthService.getPatients('', 1, 1000).subscribe(response => this.patientLookups.set(response.items));
     this.loadPatients();
     this.loadPaymentsAndSummary();
     this.healthService.getSubscriptions().subscribe({
@@ -766,8 +836,11 @@ export class HealthPageComponent {
   }
 
   private loadPatients(): void {
-    this.healthService.getPatients(this.patientsSearch(), this.patientsPageNumber(), this.patientsPageSize()).subscribe(response => {
+    this.healthService.getPatients(this.patientsSearch(), this.patientsPageNumber(), this.patientsPageSize(), this.showArchivedPatients()).subscribe(response => {
       this.patients.set(response.items);
+      if (!this.appointmentPatientSearchControl.value) {
+        this.appointmentPatientOptions.set(response.items.slice(0, 8));
+      }
       this.patientsTotalCount.set(response.totalCount);
       const pendingPatientId = this.pendingPatientId();
       if (pendingPatientId) {
@@ -792,6 +865,17 @@ export class HealthPageComponent {
       from: raw.from ? new Date(`${raw.from}T00:00:00`).toISOString() : undefined,
       to: raw.to ? new Date(`${raw.to}T23:59:59`).toISOString() : undefined
     };
+  }
+
+  private searchAppointmentPatients(value: string | HealthPatientProfile): Observable<HealthPatientProfile[]> {
+    if (typeof value !== 'string') {
+      return of([value]);
+    }
+
+    return this.healthService.getPatients(value, 1, 8).pipe(
+      switchMap(response => of(response.items)),
+      catchError(() => of([]))
+    );
   }
 
   private getDefaultHealthPaymentCategoryId(): number | null {

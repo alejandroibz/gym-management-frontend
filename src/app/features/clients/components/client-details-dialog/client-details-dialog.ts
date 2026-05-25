@@ -34,21 +34,7 @@ export class ClientDetailsDialogComponent {
   }
 
   get currentMembership(): ClientMembership | null {
-    if (this.data.client.membership) {
-      return this.data.client.membership;
-    }
-
-    const history = this.data.client.membershipsHistory ?? [];
-
-    if (history.length === 0) {
-      return null;
-    }
-
-    return [...history].sort((left, right) => {
-      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
-      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
-      return rightDate - leftDate;
-    })[0] ?? null;
+    return this.data.client.membership ?? null;
   }
 
   get hasMembership(): boolean {

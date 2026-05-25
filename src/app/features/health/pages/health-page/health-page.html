@@ -37,11 +37,26 @@
           <form [formGroup]="appointmentForm" (ngSubmit)="saveAppointment()" class="stack-form">
             <mat-form-field appearance="outline">
               <mat-label>Paciente</mat-label>
-              <mat-select formControlName="healthPatientProfileId">
-                @for (patient of patients(); track patient.id) {
-                  <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+              <input
+                matInput
+                type="text"
+                [formControl]="appointmentPatientSearchControl"
+                [matAutocomplete]="appointmentPatientAutocomplete"
+                placeholder="Escribir nombre, DNI o telefono"
+                (input)="onAppointmentPatientSearchInput()">
+              <mat-autocomplete
+                #appointmentPatientAutocomplete="matAutocomplete"
+                [displayWith]="displayAppointmentPatient"
+                (optionSelected)="selectAppointmentPatient($event.option.value)">
+                @for (patient of appointmentPatientOptions(); track patient.id) {
+                  <mat-option [value]="patient">
+                    <strong>{{ patient.clientName }}</strong>
+                    @if (patient.dni || patient.phone) {
+                      <span> - {{ patient.dni || patient.phone }}</span>
+                    }
+                  </mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Profesional</mat-label>
@@ -184,7 +199,7 @@
           <mat-card class="list-panel patients-list-panel wide-panel">
             <div class="panel-heading">
               <h2>Listado</h2>
-              <span>{{ patientsTotalCount() }} activos</span>
+              <span>{{ patientsTotalCount() }} {{ showArchivedPatients() ? 'registros' : 'activos' }}</span>
             </div>
 
             <mat-form-field appearance="outline" class="patient-search-field">
@@ -194,6 +209,10 @@
                 <mat-icon>search</mat-icon>
               </button>
             </mat-form-field>
+
+            <mat-checkbox [checked]="showArchivedPatients()" (change)="toggleArchivedPatients($event.checked)">
+              Ver fichas archivadas
+            </mat-checkbox>
 
             <div class="table-wrapper">
               <table class="health-table patients-table">
@@ -223,6 +242,8 @@
                       <td>
                         @if (getPatientActiveSubscription(patient.id)) {
                           <span class="status-chip done">Plan activo</span>
+                        } @else if (!patient.activo) {
+                          <span class="status-chip">Archivado</span>
                         } @else {
                           <span class="status-chip">Sin plan</span>
                         }
@@ -280,7 +301,17 @@
         <mat-card class="list-panel wide-panel">
           <div class="panel-heading">
             <h2>Planes mensuales creados</h2>
-            <span>{{ subscriptions().length }} registros</span>
+            <span>{{ visibleSubscriptions().length }} registros</span>
+          </div>
+          <div class="filters-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Estado</mat-label>
+              <mat-select [value]="subscriptionStatusFilter()" (selectionChange)="subscriptionStatusFilter.set($event.value)">
+                <mat-option value="all">Todos</mat-option>
+                <mat-option value="active">Activos</mat-option>
+                <mat-option value="inactive">No activos</mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
           <div class="table-wrapper">
             <table class="health-table">
@@ -298,7 +329,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (subscription of subscriptions(); track subscription.id) {
+                @for (subscription of visibleSubscriptions(); track subscription.id) {
                   <tr>
                     <td><strong>{{ getSubscriptionPatientName(subscription) }}</strong></td>
                     <td>{{ getSubscriptionServiceName(subscription) }}</td>
@@ -358,12 +389,24 @@
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Paciente</mat-label>
-              <mat-select formControlName="patientProfileId">
-                <mat-option [value]="null">Todos</mat-option>
-                @for (patient of patients(); track patient.id) {
-                  <mat-option [value]="patient.id">{{ patient.clientName }}</mat-option>
+              <input
+                matInput
+                type="text"
+                [formControl]="paymentPatientFilterSearchControl"
+                [matAutocomplete]="paymentPatientFilterAutocomplete"
+                placeholder="Todos"
+                (input)="onPaymentPatientFilterInput()">
+              <button mat-icon-button matSuffix type="button" aria-label="Limpiar paciente" (click)="clearPaymentPatientFilter()">
+                <mat-icon>close</mat-icon>
+              </button>
+              <mat-autocomplete
+                #paymentPatientFilterAutocomplete="matAutocomplete"
+                [displayWith]="displayPaymentFilterPatient"
+                (optionSelected)="selectPaymentFilterPatient($event.option.value)">
+                @for (patient of filteredPaymentFilterPatients(); track patient.id) {
+                  <mat-option [value]="patient">{{ patient.clientName }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Desde</mat-label>
