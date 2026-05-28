@@ -1,0 +1,161 @@
+<section class="student-platform">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Fase 2</span>
+      <h1>Plataforma del alumno</h1>
+      <p>Gestiona ejercicios, rutinas, progreso y rankings desde un solo lugar.</p>
+    </div>
+    <button mat-flat-button color="primary" type="button" (click)="loadAll()">
+      <mat-icon>refresh</mat-icon>
+      Actualizar
+    </button>
+  </header>
+
+  @if (feedback()) {
+    <div class="feedback">{{ feedback() }}</div>
+  }
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-tab-group animationDuration="160ms">
+    <mat-tab label="Ejercicios">
+      <div class="tab-grid">
+        <mat-card>
+          <h2>{{ exerciseForm.controls.id.value ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</h2>
+          <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="name">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Grupo muscular</mat-label>
+              <input matInput formControlName="muscleGroup">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Descripcion</mat-label>
+              <textarea matInput rows="3" formControlName="description"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Musculos involucrados</mat-label>
+              <input matInput formControlName="musclesInvolved">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Slug QR</mat-label>
+              <input matInput formControlName="qrSlug">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Foto URL</mat-label>
+              <input matInput formControlName="photoUrl">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Video URL</mat-label>
+              <input matInput formControlName="videoUrl">
+            </mat-form-field>
+            <button mat-flat-button color="primary" type="submit">
+              <mat-icon>save</mat-icon>
+              Guardar
+            </button>
+          </form>
+        </mat-card>
+
+        <div class="list">
+          @for (exercise of exercises(); track exercise.id) {
+            <mat-card class="item-card">
+              <div>
+                <strong>{{ exercise.name }}</strong>
+                <span>{{ exercise.muscleGroup }}</span>
+                <p>{{ exercise.description }}</p>
+                <small>QR: {{ exercise.qrUrl }}</small>
+              </div>
+              <div class="actions">
+                <button mat-icon-button type="button" (click)="editExercise(exercise)" aria-label="Editar ejercicio">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" (click)="deleteExercise(exercise)" aria-label="Eliminar ejercicio">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </mat-card>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Rutinas">
+      <div class="tab-grid">
+        <mat-card>
+          <h2>Asignar rutina</h2>
+          <form [formGroup]="routineForm" (ngSubmit)="createRoutine()" class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Alumno</mat-label>
+              <mat-select formControlName="clientId">
+                @for (client of clients(); track client.id) {
+                  <mat-option [value]="client.id">{{ client.apellido }}, {{ client.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Ejercicio inicial</mat-label>
+              <mat-select formControlName="exerciseId">
+                @for (exercise of exercises(); track exercise.id) {
+                  <mat-option [value]="exercise.id">{{ exercise.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="name">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Objetivo</mat-label>
+              <input matInput formControlName="goal">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Series</mat-label>
+              <input matInput type="number" formControlName="sets">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Repeticiones</mat-label>
+              <input matInput type="number" formControlName="reps">
+            </mat-form-field>
+            <button mat-flat-button color="primary" type="submit">
+              <mat-icon>assignment_add</mat-icon>
+              Asignar
+            </button>
+          </form>
+        </mat-card>
+
+        <div class="list">
+          @for (routine of routines(); track routine.id) {
+            <mat-card class="item-card">
+              <div>
+                <strong>{{ routine.name }}</strong>
+                <span>{{ routine.goal }} · {{ routine.level }}</span>
+                <p>{{ routine.exercises.length }} ejercicios · {{ routine.completionPercent }}% completado</p>
+              </div>
+            </mat-card>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Ranking">
+      <div class="ranking-toolbar">
+        <button mat-stroked-button type="button" (click)="loadRanking('attendance')">Asistencia mensual</button>
+        <button mat-stroked-button type="button" (click)="loadRanking('achievements')">Logros mensual</button>
+      </div>
+
+      <div class="ranking-list">
+        @for (item of ranking()?.items ?? []; track item.clientId) {
+          <mat-card class="ranking-row">
+            <strong>#{{ item.position }}</strong>
+            <span>{{ item.apellido }}, {{ item.nombre }}</span>
+            <b>{{ item.score }}</b>
+          </mat-card>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</section>

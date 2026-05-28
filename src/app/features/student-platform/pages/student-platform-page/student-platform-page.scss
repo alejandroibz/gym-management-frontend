@@ -1,0 +1,105 @@
+.student-platform {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.page-header h1,
+mat-card h2 {
+  margin: 0;
+}
+
+.page-header p {
+  color: #5f6877;
+  margin: .35rem 0 0;
+}
+
+.eyebrow {
+  color: #176b87;
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.feedback {
+  background: #e8f4f8;
+  border: 1px solid #b8dbe6;
+  border-radius: 6px;
+  color: #174b5c;
+  padding: .75rem 1rem;
+}
+
+.tab-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(320px, 460px) 1fr;
+  padding: 1rem 0;
+}
+
+.form-grid {
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.list,
+.ranking-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.item-card,
+.ranking-row {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.item-card span,
+.item-card small {
+  color: #607080;
+  display: block;
+}
+
+.item-card p {
+  margin: .35rem 0;
+}
+
+.actions,
+.ranking-toolbar {
+  display: flex;
+  gap: .5rem;
+}
+
+.ranking-row strong {
+  color: #176b87;
+  min-width: 3rem;
+}
+
+.ranking-row span {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .page-header,
+  .item-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tab-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

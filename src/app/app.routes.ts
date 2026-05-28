@@ -146,6 +146,16 @@ export const routes: Routes = [
         data: {
           roles: ['SuperAdmin', 'Admin']
         }
+      },
+      {
+        path: 'student-platform',
+        loadComponent: () =>
+          import('./features/student-platform/pages/student-platform-page/student-platform-page')
+            .then(m => m.StudentPlatformPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
       }
     ]
   }

@@ -87,6 +87,18 @@
             <span class="nav-text">Movimientos</span>
           </div>
         </a>
+
+        <a
+          *ngIf="isAdminOrSuperAdmin$ | async"
+          mat-list-item
+          routerLink="/student-platform"
+          routerLinkActive="active-link"
+          (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content">
+            <mat-icon>school</mat-icon>
+            <span class="nav-text">Alumnos</span>
+          </div>
+        </a>
       </mat-nav-list>
 
       <div class="sidebar-footer">
