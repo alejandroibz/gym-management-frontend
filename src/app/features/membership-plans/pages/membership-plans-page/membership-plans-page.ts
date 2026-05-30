@@ -7,10 +7,10 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { MembershipPlanDetailsDialogComponent } from '../../components/membership-plan-details-dialog/membership-plan-details-dialog';
 import {
@@ -32,9 +32,9 @@ import { MembershipPlansService } from '../../services/membership-plans.service'
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './membership-plans-page.html',
@@ -52,7 +52,7 @@ export class MembershipPlansPageComponent {
   readonly errorMessage = signal('');
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
-  readonly pageSize = signal(12);
+  readonly pageSize = signal(10);
   readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
@@ -70,8 +70,8 @@ export class MembershipPlansPageComponent {
     this.loadPlans();
   }
 
-  handlePageChange(event: PageEvent): void {
-    this.pageNumber.set(event.pageIndex + 1);
+  handlePageChange(event: AppPageEvent): void {
+    this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
     this.loadPlans();
   }

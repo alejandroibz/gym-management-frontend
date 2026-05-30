@@ -182,8 +182,10 @@ export class HealthServiceApi {
     return this.http.delete<void>(`${this.apiUrl}/trainer-notes/${id}`);
   }
 
-  getPayments(filters: { patientProfileId?: number | null; professionalTypeId?: number | null; professionalId?: number | null; from?: string; to?: string } = {}): Observable<HealthPagedResponse<HealthPayment>> {
-    let params = new HttpParams().set('pageSize', 100);
+  getPayments(filters: { patientProfileId?: number | null; professionalTypeId?: number | null; professionalId?: number | null; from?: string; to?: string; pageNumber?: number; pageSize?: number } = {}): Observable<HealthPagedResponse<HealthPayment>> {
+    let params = new HttpParams()
+      .set('pageNumber', filters.pageNumber ?? 1)
+      .set('pageSize', filters.pageSize ?? 10);
     if (filters.patientProfileId) {
       params = params.set('patientProfileId', filters.patientProfileId);
     }
@@ -202,8 +204,11 @@ export class HealthServiceApi {
     return this.http.get<HealthPagedResponse<HealthPayment>>(`${this.apiUrl}/payments`, { params });
   }
 
-  getPaymentSummary(filters: { professionalTypeId?: number | null; professionalId?: number | null; from?: string; to?: string } = {}): Observable<HealthPaymentSummary> {
+  getPaymentSummary(filters: { patientProfileId?: number | null; professionalTypeId?: number | null; professionalId?: number | null; from?: string; to?: string } = {}): Observable<HealthPaymentSummary> {
     let params = new HttpParams();
+    if (filters.patientProfileId) {
+      params = params.set('patientProfileId', filters.patientProfileId);
+    }
     if (filters.professionalTypeId) {
       params = params.set('professionalTypeId', filters.professionalTypeId);
     }
@@ -235,10 +240,18 @@ export class HealthServiceApi {
     return this.http.post<void>(`${this.apiUrl}/payments/${id}/confirm`, payload);
   }
 
-  getSubscriptions(patientProfileId?: number): Observable<HealthPagedResponse<HealthPlanSubscription>> {
-    let params = new HttpParams().set('pageSize', 100);
-    if (patientProfileId) {
-      params = params.set('patientProfileId', patientProfileId);
+  getSubscriptions(filters: { patientProfileId?: number | null; healthServiceId?: number | null; status?: string | null; pageNumber?: number; pageSize?: number } = {}): Observable<HealthPagedResponse<HealthPlanSubscription>> {
+    let params = new HttpParams()
+      .set('pageNumber', filters.pageNumber ?? 1)
+      .set('pageSize', filters.pageSize ?? 10);
+    if (filters.patientProfileId) {
+      params = params.set('patientProfileId', filters.patientProfileId);
+    }
+    if (filters.healthServiceId) {
+      params = params.set('healthServiceId', filters.healthServiceId);
+    }
+    if (filters.status && filters.status !== 'all') {
+      params = params.set('status', filters.status);
     }
     return this.http.get<HealthPagedResponse<HealthPlanSubscription>>(`${this.apiUrl}/subscriptions`, { params });
   }

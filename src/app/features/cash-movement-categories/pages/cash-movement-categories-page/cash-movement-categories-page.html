@@ -220,13 +220,12 @@
         }
       </div>
 
-      <mat-paginator
+      <app-paginator
         [length]="totalCount()"
-        [pageIndex]="pageNumber() - 1"
+        [pageNumber]="pageNumber()"
         [pageSize]="pageSize()"
-        [pageSizeOptions]="[5, 10, 20, 50]"
-        (page)="handlePageChange($event)">
-      </mat-paginator>
+        [pageSizeOptions]="[5, 10, 15, 20, 40]"
+        (pageChange)="handlePageChange($event)" />
     </mat-card>
   </section>
 </section>

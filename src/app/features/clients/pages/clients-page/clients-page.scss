@@ -374,9 +374,8 @@
   display: none;
 }
 
-mat-paginator {
+app-paginator {
   margin-top: 0.85rem;
-  background: transparent;
 }
 
 @media (max-width: 1024px) {
@@ -518,7 +517,7 @@ mat-paginator {
     box-shadow: none;
   }
 
-  mat-paginator {
+  app-paginator {
     margin-inline: -0.5rem;
   }
 }

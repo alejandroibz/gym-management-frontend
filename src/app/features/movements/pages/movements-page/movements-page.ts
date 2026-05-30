@@ -9,10 +9,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory, CashMovementType } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -43,9 +43,9 @@ import { CashMovementsService } from '../../services/cash-movements.service';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './movements-page.html',
@@ -189,8 +189,8 @@ export class MovementsPageComponent {
     this.collapseSectionOnMobile(this.paymentFiltersExpanded);
   }
 
-  handlePaymentPageChange(event: PageEvent): void {
-    this.paymentPageNumber.set(event.pageIndex + 1);
+  handlePaymentPageChange(event: AppPageEvent): void {
+    this.paymentPageNumber.set(event.pageNumber);
     this.paymentPageSize.set(event.pageSize);
     this.loadPayments();
   }
@@ -431,8 +431,8 @@ export class MovementsPageComponent {
     this.collapseSectionOnMobile(this.movementFiltersExpanded);
   }
 
-  handleMovementPageChange(event: PageEvent): void {
-    this.movementPageNumber.set(event.pageIndex + 1);
+  handleMovementPageChange(event: AppPageEvent): void {
+    this.movementPageNumber.set(event.pageNumber);
     this.movementPageSize.set(event.pageSize);
     this.loadCashMovements();
   }

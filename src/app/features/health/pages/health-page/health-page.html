@@ -264,13 +264,12 @@
               </table>
             </div>
 
-            <mat-paginator
+            <app-paginator
               [length]="patientsTotalCount()"
-              [pageIndex]="patientsPageNumber() - 1"
+              [pageNumber]="patientsPageNumber()"
               [pageSize]="patientsPageSize()"
-              [pageSizeOptions]="[10, 25, 50, 100]"
-              (page)="onPatientsPageChange($event)">
-            </mat-paginator>
+              [pageSizeOptions]="[5, 10, 15, 20, 40]"
+              (pageChange)="onPatientsPageChange($event)" />
           </mat-card>
 
         </div>
@@ -301,18 +300,56 @@
         <mat-card class="list-panel wide-panel">
           <div class="panel-heading">
             <h2>Planes mensuales creados</h2>
-            <span>{{ visibleSubscriptions().length }} registros</span>
+            <span>{{ subscriptionsTotalCount() }} registros</span>
           </div>
-          <div class="filters-row">
+          <form class="filters-row" [formGroup]="subscriptionFiltersForm" (ngSubmit)="applySubscriptionFilters()">
+            <mat-form-field appearance="outline">
+              <mat-label>Paciente</mat-label>
+              <input
+                matInput
+                type="text"
+                [formControl]="subscriptionPatientFilterSearchControl"
+                [matAutocomplete]="subscriptionPatientFilterAutocomplete"
+                placeholder="Todos"
+                (input)="onSubscriptionPatientFilterInput()">
+              <button mat-icon-button matSuffix type="button" aria-label="Limpiar paciente" (click)="clearSubscriptionPatientFilter()">
+                <mat-icon>close</mat-icon>
+              </button>
+              <mat-autocomplete
+                #subscriptionPatientFilterAutocomplete="matAutocomplete"
+                [displayWith]="displaySubscriptionFilterPatient"
+                (optionSelected)="selectSubscriptionFilterPatient($event.option.value)">
+                @for (patient of filteredSubscriptionFilterPatients(); track patient.id) {
+                  <mat-option [value]="patient">{{ patient.clientName }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Servicio</mat-label>
+              <mat-select formControlName="healthServiceId">
+                <mat-option [value]="null">Todos</mat-option>
+                @for (service of services(); track service.id) {
+                  <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Estado</mat-label>
-              <mat-select [value]="subscriptionStatusFilter()" (selectionChange)="subscriptionStatusFilter.set($event.value)">
+              <mat-select formControlName="status">
                 <mat-option value="all">Todos</mat-option>
                 <mat-option value="active">Activos</mat-option>
                 <mat-option value="inactive">No activos</mat-option>
               </mat-select>
             </mat-form-field>
-          </div>
+            <button mat-flat-button type="submit">
+              <mat-icon>filter_alt</mat-icon>
+              Filtrar
+            </button>
+            <button mat-stroked-button type="button" (click)="resetSubscriptionFilters()">
+              <mat-icon>restart_alt</mat-icon>
+              Limpiar
+            </button>
+          </form>
           <div class="table-wrapper">
             <table class="health-table">
               <thead>
@@ -361,12 +398,18 @@
               </tbody>
             </table>
           </div>
+          <app-paginator
+            [length]="subscriptionsTotalCount()"
+            [pageNumber]="subscriptionsPageNumber()"
+            [pageSize]="subscriptionsPageSize()"
+            [pageSizeOptions]="[5, 10, 15, 20, 40]"
+            (pageChange)="onSubscriptionsPageChange($event)" />
         </mat-card>
 
         <mat-card class="list-panel wide-panel">
           <div class="panel-heading">
             <h2>Movimientos de salud</h2>
-            <span>{{ payments().length }} registros</span>
+            <span>{{ paymentsTotalCount() }} registros</span>
           </div>
           <form class="filters-row" [formGroup]="paymentFiltersForm" (ngSubmit)="applyPaymentFilters()">
             <mat-form-field appearance="outline">
@@ -492,6 +535,12 @@
               </tbody>
             </table>
           </div>
+          <app-paginator
+            [length]="paymentsTotalCount()"
+            [pageNumber]="paymentsPageNumber()"
+            [pageSize]="paymentsPageSize()"
+            [pageSizeOptions]="[5, 10, 15, 20, 40]"
+            (pageChange)="onPaymentsPageChange($event)" />
         </mat-card>
       </div>
     </mat-tab>

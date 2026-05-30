@@ -7,9 +7,9 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
@@ -34,8 +34,8 @@ import { EmployeesService } from '../../services/employees.service';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './employees-page.html',
@@ -60,7 +60,7 @@ export class EmployeesPageComponent {
   readonly errorMessage = signal('');
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
-  readonly pageSize = signal(12);
+  readonly pageSize = signal(10);
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     search: ['']
@@ -86,8 +86,8 @@ export class EmployeesPageComponent {
     this.loadHealthProfessionals();
   }
 
-  handlePageChange(event: PageEvent): void {
-    this.pageNumber.set(event.pageIndex + 1);
+  handlePageChange(event: AppPageEvent): void {
+    this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
     this.loadEmployees();
   }

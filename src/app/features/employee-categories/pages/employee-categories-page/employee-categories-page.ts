@@ -6,10 +6,10 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   EmployeeCategoryDialogComponent,
@@ -29,9 +29,9 @@ import { EmployeeCategoriesService } from '../../services/employee-categories.se
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './employee-categories-page.html',
@@ -92,8 +92,8 @@ export class EmployeeCategoriesPageComponent {
     this.filtersExpanded.update(value => !value);
   }
 
-  handlePageChange(event: PageEvent): void {
-    this.pageNumber.set(event.pageIndex + 1);
+  handlePageChange(event: AppPageEvent): void {
+    this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
     this.loadCategories();
   }

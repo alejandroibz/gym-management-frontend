@@ -6,9 +6,9 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   CashMovementCategoryDialogComponent,
@@ -33,8 +33,8 @@ type CategoryMovementFilter = 'all' | CashMovementType;
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatSelectModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './cash-movement-categories-page.html',
@@ -99,8 +99,8 @@ export class CashMovementCategoriesPageComponent {
     this.filtersExpanded.update(value => !value);
   }
 
-  handlePageChange(event: PageEvent): void {
-    this.pageNumber.set(event.pageIndex + 1);
+  handlePageChange(event: AppPageEvent): void {
+    this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
     this.loadCategories();
   }

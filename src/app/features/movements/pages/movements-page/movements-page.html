@@ -298,13 +298,12 @@
           </div>
         }
 
-        <mat-paginator
+        <app-paginator
           [length]="paymentTotalCount()"
-          [pageIndex]="paymentPageNumber() - 1"
+          [pageNumber]="paymentPageNumber()"
           [pageSize]="paymentPageSize()"
-          [pageSizeOptions]="[5, 10, 20, 50]"
-          (page)="handlePaymentPageChange($event)">
-        </mat-paginator>
+          [pageSizeOptions]="[5, 10, 15, 20, 40]"
+          (pageChange)="handlePaymentPageChange($event)" />
       </mat-card>
   <mat-card class="health-payments-card">
     <div class="health-payments-copy">
@@ -519,13 +518,12 @@
           </div>
         }
 
-        <mat-paginator
+        <app-paginator
           [length]="movementTotalCount()"
-          [pageIndex]="movementPageNumber() - 1"
+          [pageNumber]="movementPageNumber()"
           [pageSize]="movementPageSize()"
-          [pageSizeOptions]="[5, 10, 20, 50]"
-          (page)="handleMovementPageChange($event)">
-        </mat-paginator>
+          [pageSizeOptions]="[5, 10, 15, 20, 40]"
+          (pageChange)="handleMovementPageChange($event)" />
       </mat-card>
     </div>
   </section>

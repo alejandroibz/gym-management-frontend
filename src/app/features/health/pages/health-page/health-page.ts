@@ -13,9 +13,9 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap } from 'rxjs';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { ClientsService } from '../../../clients/services/clients.service';
 import { EmployeesService } from '../../../employees/services/employees.service';
@@ -71,9 +71,9 @@ interface CalendarDayCell {
     MatInputModule,
     MatOptionModule,
     MatProgressSpinnerModule,
-    MatPaginatorModule,
     MatSelectModule,
     MatTabsModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './health-page.html',
@@ -116,7 +116,13 @@ export class HealthPageComponent {
   readonly appointmentPatientOptions = signal<HealthPatientProfile[]>([]);
   readonly editingAppointment = signal<HealthAppointment | null>(null);
   readonly payments = signal<HealthPayment[]>([]);
+  readonly paymentsTotalCount = signal(0);
+  readonly paymentsPageNumber = signal(1);
+  readonly paymentsPageSize = signal(10);
   readonly subscriptions = signal<HealthPlanSubscription[]>([]);
+  readonly subscriptionsTotalCount = signal(0);
+  readonly subscriptionsPageNumber = signal(1);
+  readonly subscriptionsPageSize = signal(10);
   readonly paymentSummary = signal<HealthPaymentSummary | null>(null);
   readonly clients = signal<Client[]>([]);
   readonly employees = signal<Employee[]>([]);
@@ -168,7 +174,12 @@ export class HealthPageComponent {
     to: ['']
   });
   readonly paymentPatientFilterSearchControl = new FormControl<HealthPatientProfile | string>('', { nonNullable: true });
-  readonly subscriptionStatusFilter = signal<'all' | 'active' | 'inactive'>('all');
+  readonly subscriptionPatientFilterSearchControl = new FormControl<HealthPatientProfile | string>('', { nonNullable: true });
+  readonly subscriptionFiltersForm = this.formBuilder.nonNullable.group({
+    patientProfileId: [null as number | null],
+    healthServiceId: [null as number | null],
+    status: ['all']
+  });
 
   readonly appointmentRangeLabel = computed(() => {
     const range = this.getRange();
@@ -189,15 +200,12 @@ export class HealthPageComponent {
     typeof value === 'string' ? value : value?.clientName ?? '';
   readonly displayPaymentFilterPatient = (value: string | HealthPatientProfile): string =>
     typeof value === 'string' ? value : value?.clientName ?? '';
+  readonly displaySubscriptionFilterPatient = (value: string | HealthPatientProfile): string =>
+    typeof value === 'string' ? value : value?.clientName ?? '';
 
   readonly pendingAppointments = computed(() => this.appointments().filter(item => item.status === 'Pendiente').length);
   readonly activeSubscriptions = computed(() => this.subscriptions().filter(item => this.isActiveSubscription(item)));
-  readonly visibleSubscriptions = computed(() => {
-    const status = this.subscriptionStatusFilter();
-    if (status === 'active') return this.subscriptions().filter(item => this.isActiveSubscription(item));
-    if (status === 'inactive') return this.subscriptions().filter(item => !this.isActiveSubscription(item));
-    return this.subscriptions();
-  });
+  readonly visibleSubscriptions = computed(() => this.subscriptions());
   readonly selectedProfessionalType = computed(() => {
     const id = this.selectedProfessionalTypeId();
     return id ? this.professionalTypes().find(type => type.id === id) ?? null : null;
@@ -377,10 +385,22 @@ export class HealthPageComponent {
     this.appointmentForm.controls.healthPatientProfileId.setValue(0);
   }
 
-  onPatientsPageChange(event: PageEvent): void {
-    this.patientsPageNumber.set(event.pageIndex + 1);
+  onPatientsPageChange(event: AppPageEvent): void {
+    this.patientsPageNumber.set(event.pageNumber);
     this.patientsPageSize.set(event.pageSize);
     this.loadPatients();
+  }
+
+  onPaymentsPageChange(event: AppPageEvent): void {
+    this.paymentsPageNumber.set(event.pageNumber);
+    this.paymentsPageSize.set(event.pageSize);
+    this.loadPaymentsAndSummary();
+  }
+
+  onSubscriptionsPageChange(event: AppPageEvent): void {
+    this.subscriptionsPageNumber.set(event.pageNumber);
+    this.subscriptionsPageSize.set(event.pageSize);
+    this.loadSubscriptions();
   }
 
   openPatientDialog(patient?: HealthPatientProfile): void {
@@ -745,7 +765,50 @@ export class HealthPageComponent {
   }
 
   applyPaymentFilters(): void {
+    this.paymentsPageNumber.set(1);
     this.loadPaymentsAndSummary();
+  }
+
+  applySubscriptionFilters(): void {
+    this.subscriptionsPageNumber.set(1);
+    this.loadSubscriptions();
+  }
+
+  resetSubscriptionFilters(): void {
+    this.subscriptionFiltersForm.reset({
+      patientProfileId: null,
+      healthServiceId: null,
+      status: 'all'
+    });
+    this.subscriptionPatientFilterSearchControl.setValue('', { emitEvent: false });
+    this.subscriptionsPageNumber.set(1);
+    this.loadSubscriptions();
+  }
+
+  filteredSubscriptionFilterPatients(): HealthPatientProfile[] {
+    const rawValue = this.subscriptionPatientFilterSearchControl.value;
+    const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue.clientName.toLowerCase();
+    if (!value) return this.patientLookups().slice(0, 25);
+    return this.patientLookups()
+      .filter(patient =>
+        patient.clientName.toLowerCase().includes(value) ||
+        patient.dni?.toLowerCase().includes(value) ||
+        patient.phone?.toLowerCase().includes(value))
+      .slice(0, 25);
+  }
+
+  onSubscriptionPatientFilterInput(): void {
+    this.subscriptionFiltersForm.controls.patientProfileId.setValue(null);
+  }
+
+  selectSubscriptionFilterPatient(patient: HealthPatientProfile): void {
+    this.subscriptionFiltersForm.controls.patientProfileId.setValue(patient.id);
+    this.subscriptionPatientFilterSearchControl.setValue(patient, { emitEvent: false });
+  }
+
+  clearSubscriptionPatientFilter(): void {
+    this.subscriptionFiltersForm.controls.patientProfileId.setValue(null);
+    this.subscriptionPatientFilterSearchControl.setValue('', { emitEvent: false });
   }
 
   filteredPaymentFilterPatients(): HealthPatientProfile[] {
@@ -789,13 +852,19 @@ export class HealthPageComponent {
 
     dialogRef.afterClosed().subscribe(payload => {
       if (!payload) return;
-      this.save(() => subscription ? this.healthService.updateSubscription(subscription.id, payload) : this.healthService.createSubscription(payload), () => this.loadHealthData());
+      this.save(() => subscription ? this.healthService.updateSubscription(subscription.id, payload) : this.healthService.createSubscription(payload), () => {
+        this.loadSubscriptions();
+        this.loadPaymentsAndSummary();
+      });
     });
   }
 
   deleteSubscription(subscription: HealthPlanSubscription): void {
     this.confirmDelete('Eliminar plan mensual', `Se va a eliminar el plan de ${this.getSubscriptionPatientName(subscription)}.`, () => {
-      this.save(() => this.healthService.deleteSubscription(subscription.id), () => this.loadHealthData());
+      this.save(() => this.healthService.deleteSubscription(subscription.id), () => {
+        this.loadSubscriptions();
+        this.loadPaymentsAndSummary();
+      });
     });
   }
 
@@ -822,17 +891,9 @@ export class HealthPageComponent {
     this.healthService.getPatients('', 1, 1000).subscribe(response => this.patientLookups.set(response.items));
     this.loadPatients();
     this.loadPaymentsAndSummary();
-    this.healthService.getSubscriptions().subscribe({
-      next: response => {
-        this.subscriptions.set(response.items);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.feedback.set('No se pudo cargar el módulo de salud.');
-        this.isLoading.set(false);
-      }
-    });
+    this.loadSubscriptions();
     this.loadAppointments();
+    this.isLoading.set(false);
   }
 
   private loadPatients(): void {
@@ -852,8 +913,40 @@ export class HealthPageComponent {
 
   private loadPaymentsAndSummary(): void {
     const filters = this.buildPaymentFilters();
-    this.healthService.getPayments(filters).subscribe(response => this.payments.set(response.items));
+    this.healthService.getPayments({
+      ...filters,
+      pageNumber: this.paymentsPageNumber(),
+      pageSize: this.paymentsPageSize()
+    }).subscribe(response => {
+      this.payments.set(response.items);
+      this.paymentsTotalCount.set(response.totalCount);
+      this.paymentsPageNumber.set(response.pageNumber);
+      this.paymentsPageSize.set(response.pageSize);
+    });
     this.healthService.getPaymentSummary(filters).subscribe(response => this.paymentSummary.set(response));
+  }
+
+  private loadSubscriptions(): void {
+    const raw = this.subscriptionFiltersForm.getRawValue();
+    this.healthService.getSubscriptions({
+      patientProfileId: raw.patientProfileId,
+      healthServiceId: raw.healthServiceId,
+      status: raw.status,
+      pageNumber: this.subscriptionsPageNumber(),
+      pageSize: this.subscriptionsPageSize()
+    }).subscribe({
+      next: response => {
+        this.subscriptions.set(response.items);
+        this.subscriptionsTotalCount.set(response.totalCount);
+        this.subscriptionsPageNumber.set(response.pageNumber);
+        this.subscriptionsPageSize.set(response.pageSize);
+      },
+      error: () => {
+        this.subscriptions.set([]);
+        this.subscriptionsTotalCount.set(0);
+        this.feedback.set('No se pudieron cargar los planes mensuales.');
+      }
+    });
   }
 
   private buildPaymentFilters(): { patientProfileId?: number | null; professionalTypeId?: number | null; professionalId?: number | null; from?: string; to?: string } {

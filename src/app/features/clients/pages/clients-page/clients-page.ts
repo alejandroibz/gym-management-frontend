@@ -8,10 +8,10 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -38,9 +38,9 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    AppPaginatorComponent,
     RouterLink
   ],
   templateUrl: './clients-page.html',
@@ -70,7 +70,10 @@ export class ClientsPageComponent {
   readonly importFileName = signal('');
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
-  readonly pageSize = signal(12);
+  readonly pageSize = signal(10);
+  readonly clientsWithMembershipCount = signal(0);
+  readonly pendingPaymentsTotalCount = signal(0);
+  private clientStatsRequestId = 0;
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     search: [''],
@@ -81,8 +84,8 @@ export class ClientsPageComponent {
   });
 
   readonly totalClients = computed(() => this.totalCount());
-  readonly clientsWithMembership = computed(() => this.clients().filter(client => Boolean(client.membership)).length);
-  readonly pendingPaymentsCount = computed(() => this.clients().filter(client => client.debePago).length);
+  readonly clientsWithMembership = computed(() => this.clientsWithMembershipCount());
+  readonly pendingPaymentsCount = computed(() => this.pendingPaymentsTotalCount());
   readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
   readonly currentUserEmail = signal<string | null>(null);
   readonly activeFiltersCount = computed(() => {
@@ -130,8 +133,8 @@ export class ClientsPageComponent {
     this.loadClients();
   }
 
-  handlePageChange(event: PageEvent): void {
-    this.pageNumber.set(event.pageIndex + 1);
+  handlePageChange(event: AppPageEvent): void {
+    this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
     this.loadClients();
   }
@@ -384,11 +387,14 @@ export class ClientsPageComponent {
           this.totalCount.set(response.totalCount);
           this.pageNumber.set(response.pageNumber);
           this.pageSize.set(response.pageSize);
+          this.loadClientStats(response.totalCount);
           this.isLoading.set(false);
         },
         error: () => {
           this.clients.set([]);
           this.totalCount.set(0);
+          this.clientsWithMembershipCount.set(0);
+          this.pendingPaymentsTotalCount.set(0);
           this.isLoading.set(false);
           this.errorMessage.set('No se pudieron cargar los clientes desde la API.');
         }
@@ -513,6 +519,41 @@ export class ClientsPageComponent {
     this.cashMovementCategoriesService.getPaged(1, 1000).subscribe({
       next: response => this.cashMovementCategories.set(response.items),
       error: () => this.cashMovementCategories.set([])
+    });
+  }
+
+  private loadClientStats(totalCount: number): void {
+    const requestId = ++this.clientStatsRequestId;
+
+    if (totalCount === 0) {
+      this.clientsWithMembershipCount.set(0);
+      this.pendingPaymentsTotalCount.set(0);
+      return;
+    }
+
+    if (totalCount === this.clients().length) {
+      this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(client.membership)).length);
+      this.pendingPaymentsTotalCount.set(this.clients().filter(client => client.debePago).length);
+      return;
+    }
+
+    this.clientsService.getPaged(1, totalCount, this.getFilters()).subscribe({
+      next: response => {
+        if (requestId !== this.clientStatsRequestId) {
+          return;
+        }
+
+        this.clientsWithMembershipCount.set(response.items.filter(client => Boolean(client.membership)).length);
+        this.pendingPaymentsTotalCount.set(response.items.filter(client => client.debePago).length);
+      },
+      error: () => {
+        if (requestId !== this.clientStatsRequestId) {
+          return;
+        }
+
+        this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(client.membership)).length);
+        this.pendingPaymentsTotalCount.set(this.clients().filter(client => client.debePago).length);
+      }
     });
   }
 
