@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap } from 'rxjs';
+import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { ClientsService } from '../../../clients/services/clients.service';
@@ -85,6 +87,7 @@ export class HealthPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly roleService = inject(RoleService);
   private readonly healthService = inject(HealthServiceApi);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
@@ -131,6 +134,7 @@ export class HealthPageComponent {
   readonly editingProfessionalType = signal<HealthProfessionalType | null>(null);
   readonly editingProfessional = signal<HealthProfessional | null>(null);
   readonly editingService = signal<HealthService | null>(null);
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   readonly serviceForm = this.formBuilder.nonNullable.group({
     healthProfessionalTypeId: [null as number | null],
@@ -532,6 +536,10 @@ export class HealthPageComponent {
   }
 
   deleteService(service: HealthService): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.confirmDelete('Eliminar servicio', `Se va a desactivar "${service.name}" del catalogo de salud.`, () => {
       this.save(() => this.healthService.deleteService(service.id), () => {
         this.cancelServiceEdit();
@@ -560,6 +568,10 @@ export class HealthPageComponent {
   }
 
   deleteProfessional(professional: HealthProfessional): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.confirmDelete('Eliminar profesional', `Se va a desactivar a ${professional.employeeName} como profesional de salud.`, () => {
       this.save(() => this.healthService.deleteProfessional(professional.id), () => {
         this.cancelProfessionalEdit();
@@ -588,6 +600,10 @@ export class HealthPageComponent {
   }
 
   deleteProfessionalType(type: HealthProfessionalType): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.confirmDelete('Eliminar tipo de profesional', `Se va a desactivar "${type.name}" para nuevos usos.`, () => {
       this.save(() => this.healthService.deleteProfessionalType(type.id), () => {
         this.cancelProfessionalTypeEdit();
@@ -660,6 +676,10 @@ export class HealthPageComponent {
   }
 
   deleteAppointment(appointment: HealthAppointment): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -685,6 +705,10 @@ export class HealthPageComponent {
   }
 
   openPaymentDialog(payment?: HealthPayment): void {
+    if (payment && !this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthPaymentDialogComponent, {
       width: '680px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -706,6 +730,10 @@ export class HealthPageComponent {
   }
 
   deletePayment(payment: HealthPayment): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.confirmDelete('Eliminar pago', `Se va a eliminar el cobro de ${payment.patientName} por ${this.formatCurrency(payment.monto)}.`, () => {
       this.save(() => this.healthService.deletePayment(payment.id), () => {
         this.loadHealthData();
@@ -838,6 +866,10 @@ export class HealthPageComponent {
   }
 
   openSubscriptionDialog(subscription?: HealthPlanSubscription): void {
+    if (subscription && !this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthSubscriptionDialogComponent, {
       width: '680px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -860,6 +892,10 @@ export class HealthPageComponent {
   }
 
   deleteSubscription(subscription: HealthPlanSubscription): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.confirmDelete('Eliminar plan mensual', `Se va a eliminar el plan de ${this.getSubscriptionPatientName(subscription)}.`, () => {
       this.save(() => this.healthService.deleteSubscription(subscription.id), () => {
         this.loadSubscriptions();

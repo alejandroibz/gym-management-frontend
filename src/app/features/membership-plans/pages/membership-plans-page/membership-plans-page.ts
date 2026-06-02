@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { MembershipPlanDetailsDialogComponent } from '../../components/membership-plan-details-dialog/membership-plan-details-dialog';
@@ -44,6 +46,7 @@ import { MembershipPlansService } from '../../services/membership-plans.service'
 export class MembershipPlansPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
+  private readonly roleService = inject(RoleService);
   private readonly membershipPlansService = inject(MembershipPlansService);
 
   readonly plans = signal<MembershipPlan[]>([]);
@@ -54,6 +57,7 @@ export class MembershipPlansPageComponent {
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);
   readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     nombre: ['']
@@ -139,6 +143,10 @@ export class MembershipPlansPageComponent {
   }
 
   removePlan(plan: MembershipPlan): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',

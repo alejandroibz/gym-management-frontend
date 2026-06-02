@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RoleService } from '../../../../core/auth/role';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -60,6 +61,7 @@ export class ClientDetailsPageComponent {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
+  private readonly roleService = inject(RoleService);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
   private readonly membershipPlansService = inject(MembershipPlansService);
@@ -111,6 +113,7 @@ export class ClientDetailsPageComponent {
   readonly observacionesLength = signal(0);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
   readonly currentUserEmail = signal<string | null>(null);
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   constructor() {
     this.form.disable({ emitEvent: false });
@@ -228,6 +231,10 @@ export class ClientDetailsPageComponent {
   }
 
   deleteClient(): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const client = this.client();
 
     if (!client) {
@@ -300,6 +307,10 @@ export class ClientDetailsPageComponent {
   }
 
   deleteMembership(membership: ClientMembership): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const client = this.client();
     if (!client || !membership.id) return;
 
@@ -399,6 +410,10 @@ export class ClientDetailsPageComponent {
   }
 
   editPayment(paymentRecord: ClientRelationRecord): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const payment = this.toPayment(paymentRecord);
     const client = this.client();
 
@@ -453,6 +468,10 @@ export class ClientDetailsPageComponent {
   }
 
   deletePayment(payment: ClientRelationRecord): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const paymentId = this.getPaymentId(payment);
     const amount = this.getPaymentAmount(payment);
 

@@ -68,7 +68,7 @@
             </button>
           }
 
-          <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteClient()">
+          <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteClient()">
             <mat-icon>inventory_2</mat-icon>
             Archivar
           </button>
@@ -312,7 +312,7 @@
                     <button mat-icon-button type="button" aria-label="Editar membresia" [disabled]="isSaving()" (click)="editMembership(membership)">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Quitar membresia" [disabled]="isSaving()" (click)="deleteMembership(membership)">
+                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Quitar membresia" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteMembership(membership)">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -371,10 +371,10 @@
                         Confirmar cobro
                       </button>
                     }
-                    <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving()" (click)="editPayment(payment)">
+                    <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="editPayment(payment)">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar pago" [disabled]="isSaving()" (click)="deletePayment(payment)">
+                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="deletePayment(payment)">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>

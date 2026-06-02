@@ -50,7 +50,7 @@
               <mat-icon>edit</mat-icon>
               Editar salud
             </button>
-            <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="archivePatient()">
+            <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving() || !isSuperAdmin()" (click)="archivePatient()">
               <mat-icon>inventory_2</mat-icon>
               Archivar ficha
             </button>
@@ -146,7 +146,7 @@
                   Cancelar
                 </button>
                 @if (detail.trainerNotes[0]; as note) {
-                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteTrainerNote(note)">
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteTrainerNote(note)">
                     <mat-icon>delete</mat-icon>
                     Eliminar
                   </button>
@@ -193,7 +193,7 @@
                 <button mat-icon-button type="button" aria-label="Editar turno" [disabled]="isSaving()" (click)="editAppointment(appointment)">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" [disabled]="isSaving()" (click)="deleteAppointment(appointment)">
+                <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteAppointment(appointment)">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -241,11 +241,11 @@
                 <p>{{ subscription.notes }}</p>
               }
               <div class="form-actions">
-                <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="editSubscription(subscription)">
+                <button mat-stroked-button type="button" [disabled]="isSaving() || !isSuperAdmin()" (click)="editSubscription(subscription)">
                   <mat-icon>edit</mat-icon>
                   Editar
                 </button>
-                <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving()" (click)="deleteSubscription(subscription)">
+                <button mat-stroked-button type="button" class="danger-action" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteSubscription(subscription)">
                   <mat-icon>delete</mat-icon>
                   Eliminar
                 </button>

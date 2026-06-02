@@ -203,9 +203,9 @@ export class EmployeesPageComponent {
               this.isSaving.set(false);
               this.loadEmployees();
             },
-            error: () => {
+            error: error => {
               this.isSaving.set(false);
-              this.errorMessage.set('No se pudo actualizar el empleado.');
+              this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo actualizar el empleado.'));
             }
           });
         return;
@@ -217,9 +217,9 @@ export class EmployeesPageComponent {
           this.pageNumber.set(1);
           this.loadEmployees();
         },
-        error: () => {
+        error: error => {
           this.isSaving.set(false);
-          this.errorMessage.set('No se pudo crear el empleado.');
+          this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo crear el empleado.'));
         }
       });
     });
@@ -332,6 +332,19 @@ export class EmployeesPageComponent {
       sueldo: result.sueldo,
       appAccess: result.appAccess ?? null
     };
+  }
+
+  private getApiErrorMessage(error: unknown, fallback: string): string {
+    const apiError = error as { error?: { error?: unknown; message?: unknown } | string };
+    const rawMessage = typeof apiError.error === 'string'
+      ? apiError.error
+      : typeof apiError.error?.error === 'string'
+        ? apiError.error.error
+        : typeof apiError.error?.message === 'string'
+          ? apiError.error.message
+          : '';
+
+    return rawMessage || fallback;
   }
 
   private syncLayoutAfterDataLoad(): void {

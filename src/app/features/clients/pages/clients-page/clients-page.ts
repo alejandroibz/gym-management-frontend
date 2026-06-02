@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
+import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
@@ -52,6 +54,7 @@ export class ClientsPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly roleService = inject(RoleService);
   private readonly clientsService = inject(ClientsService);
   private readonly membershipPlansService = inject(MembershipPlansService);
   private readonly employeesService = inject(EmployeesService);
@@ -88,6 +91,7 @@ export class ClientsPageComponent {
   readonly pendingPaymentsCount = computed(() => this.pendingPaymentsTotalCount());
   readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
   readonly currentUserEmail = signal<string | null>(null);
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
   readonly activeFiltersCount = computed(() => {
     const raw = this.filtersForm.getRawValue();
     return [
@@ -243,6 +247,10 @@ export class ClientsPageComponent {
   }
 
   removeClient(client: Client): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',

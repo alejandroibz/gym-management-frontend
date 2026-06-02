@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -12,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
+import { RoleService } from '../../../../core/auth/role';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { Client } from '../../../clients/models/client.model';
 import { ClientsService } from '../../../clients/services/clients.service';
@@ -53,6 +55,7 @@ export class HealthPatientDetailPageComponent {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly roleService = inject(RoleService);
   private readonly healthService = inject(HealthServiceApi);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
@@ -70,6 +73,7 @@ export class HealthPatientDetailPageComponent {
   readonly feedback = signal('');
   readonly isTrainerNoteEditorOpen = signal(false);
   readonly editingTrainerNote = signal<HealthTrainerNote | null>(null);
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   readonly patientName = computed(() => this.detail()?.patient.clientName ?? 'Paciente');
   readonly isPatientArchived = computed(() => this.detail()?.patient.activo === false);
@@ -122,6 +126,10 @@ export class HealthPatientDetailPageComponent {
   }
 
   archivePatient(): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const current = this.detail();
     if (!current || !current.patient.activo) return;
 
@@ -225,6 +233,10 @@ export class HealthPatientDetailPageComponent {
   }
 
   deleteTrainerNote(note: HealthTrainerNote): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -245,6 +257,10 @@ export class HealthPatientDetailPageComponent {
   }
 
   editSubscription(subscription: HealthPlanSubscription): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthSubscriptionDialogComponent, {
       width: '680px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -264,6 +280,10 @@ export class HealthPatientDetailPageComponent {
   }
 
   deleteSubscription(subscription: HealthPlanSubscription): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -327,6 +347,10 @@ export class HealthPatientDetailPageComponent {
   }
 
   deleteAppointment(appointment: HealthAppointment): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',

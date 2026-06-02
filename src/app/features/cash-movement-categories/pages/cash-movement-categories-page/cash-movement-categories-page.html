@@ -198,7 +198,7 @@
                     mat-stroked-button
                     type="button"
                     class="action-button"
-                    [disabled]="isSaving()"
+                    [disabled]="isSaving() || !isSuperAdmin()"
                     (click)="editCategory(category)">
                     <mat-icon>edit</mat-icon>
                     Editar
@@ -208,7 +208,7 @@
                     mat-stroked-button
                     type="button"
                     class="action-button warn-button"
-                    [disabled]="isSaving()"
+                    [disabled]="isSaving() || !isSuperAdmin()"
                     (click)="removeCategory(category.id)">
                     <mat-icon>delete</mat-icon>
                     Eliminar

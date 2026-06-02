@@ -200,10 +200,10 @@
                             <mat-icon>check_circle</mat-icon>
                           </button>
                         }
-                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSavingPayment()" (click)="openPaymentDialog(payment)">
+                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSavingPayment() || !isSuperAdmin()" (click)="openPaymentDialog(payment)">
                           <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSavingPayment()" (click)="deletePayment(payment)">
+                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSavingPayment() || !isSuperAdmin()" (click)="deletePayment(payment)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -284,11 +284,11 @@
                       Confirmar
                     </button>
                   }
-                  <button mat-stroked-button type="button" [disabled]="isSavingPayment()" (click)="openPaymentDialog(payment)">
+                  <button mat-stroked-button type="button" [disabled]="isSavingPayment() || !isSuperAdmin()" (click)="openPaymentDialog(payment)">
                     <mat-icon>edit</mat-icon>
                     Editar
                   </button>
-                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingPayment()" (click)="deletePayment(payment)">
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingPayment() || !isSuperAdmin()" (click)="deletePayment(payment)">
                     <mat-icon>delete</mat-icon>
                     Eliminar
                   </button>
@@ -447,10 +447,10 @@
                     <td>{{ movement.descripcion }}</td>
                     <td>
                       <div class="row-actions">
-                        <button mat-icon-button type="button" aria-label="Editar movimiento externo" [disabled]="isSavingMovement()" (click)="openMovementDialog(movement)">
+                        <button mat-icon-button type="button" aria-label="Editar movimiento externo" [disabled]="isSavingMovement() || !isSuperAdmin()" (click)="openMovementDialog(movement)">
                           <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar movimiento externo" class="danger-icon-button" [disabled]="isSavingMovement()" (click)="deleteMovement(movement)">
+                        <button mat-icon-button type="button" aria-label="Eliminar movimiento externo" class="danger-icon-button" [disabled]="isSavingMovement() || !isSuperAdmin()" (click)="deleteMovement(movement)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -504,11 +504,11 @@
                 </div>
 
                 <div class="record-actions">
-                  <button mat-stroked-button type="button" [disabled]="isSavingMovement()" (click)="openMovementDialog(movement)">
+                  <button mat-stroked-button type="button" [disabled]="isSavingMovement() || !isSuperAdmin()" (click)="openMovementDialog(movement)">
                     <mat-icon>edit</mat-icon>
                     Editar
                   </button>
-                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingMovement()" (click)="deleteMovement(movement)">
+                  <button mat-stroked-button type="button" class="danger-action" [disabled]="isSavingMovement() || !isSuperAdmin()" (click)="deleteMovement(movement)">
                     <mat-icon>delete</mat-icon>
                     Eliminar
                   </button>

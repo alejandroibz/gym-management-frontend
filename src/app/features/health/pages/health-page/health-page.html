@@ -156,7 +156,7 @@
                             <button mat-icon-button type="button" aria-label="Editar turno" (click)="$event.stopPropagation(); editAppointment(appointment)">
                               <mat-icon>edit</mat-icon>
                             </button>
-                            <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" (click)="$event.stopPropagation(); deleteAppointment(appointment)">
+                            <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" [disabled]="!isSuperAdmin()" (click)="$event.stopPropagation(); deleteAppointment(appointment)">
                               <mat-icon>delete</mat-icon>
                             </button>
                           </div>
@@ -381,10 +381,10 @@
                         <button mat-icon-button type="button" aria-label="Ver paciente" [routerLink]="['/health', 'patients', subscription.healthPatientProfileId]">
                           <mat-icon>open_in_new</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Editar plan" [disabled]="isSaving()" (click)="openSubscriptionDialog(subscription)">
+                        <button mat-icon-button type="button" aria-label="Editar plan" [disabled]="isSaving() || !isSuperAdmin()" (click)="openSubscriptionDialog(subscription)">
                           <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar plan" class="danger-icon-button" [disabled]="isSaving()" (click)="deleteSubscription(subscription)">
+                        <button mat-icon-button type="button" aria-label="Eliminar plan" class="danger-icon-button" [disabled]="isSaving() || !isSuperAdmin()" (click)="deleteSubscription(subscription)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -522,10 +522,10 @@
                             <mat-icon>check_circle</mat-icon>
                           </button>
                         }
-                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving()" (click)="openPaymentDialog(payment)">
+                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="openPaymentDialog(payment)">
                           <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSaving()" (click)="deletePayment(payment)">
+                        <button mat-icon-button type="button" aria-label="Eliminar pago" class="danger-icon-button" [disabled]="isSaving() || !isSuperAdmin()" (click)="deletePayment(payment)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -656,7 +656,7 @@
                     <mat-icon>edit</mat-icon>
                     Editar especialidad
                   </button>
-                  <button mat-stroked-button type="button" (click)="deleteProfessionalType(type)">
+                  <button mat-stroked-button type="button" [disabled]="!isSuperAdmin()" (click)="deleteProfessionalType(type)">
                     <mat-icon>delete</mat-icon>
                     Desactivar
                   </button>
@@ -700,7 +700,7 @@
                           <mat-icon>edit</mat-icon>
                           Editar
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar profesional" (click)="deleteProfessional(professional)">
+                        <button mat-icon-button type="button" aria-label="Eliminar profesional" [disabled]="!isSuperAdmin()" (click)="deleteProfessional(professional)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -736,7 +736,7 @@
                           <mat-icon>edit</mat-icon>
                           Editar
                         </button>
-                        <button mat-icon-button type="button" aria-label="Eliminar servicio" (click)="deleteService(service)">
+                        <button mat-icon-button type="button" aria-label="Eliminar servicio" [disabled]="!isSuperAdmin()" (click)="deleteService(service)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>

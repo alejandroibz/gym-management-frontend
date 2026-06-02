@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -8,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
@@ -43,6 +45,7 @@ type CategoryMovementFilter = 'all' | CashMovementType;
 })
 export class CashMovementCategoriesPageComponent {
   private readonly dialog = inject(MatDialog);
+  private readonly roleService = inject(RoleService);
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
 
   readonly categories = signal<CashMovementCategory[]>([]);
@@ -55,6 +58,7 @@ export class CashMovementCategoriesPageComponent {
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);
   readonly filtersExpanded = signal(this.getInitialFiltersExpanded());
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   readonly totalCategories = computed(() => this.totalCount());
   readonly categoriesOnPage = computed(() => this.categories().length);
@@ -110,6 +114,10 @@ export class CashMovementCategoriesPageComponent {
   }
 
   editCategory(category: CashMovementCategory): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     this.isSaving.set(true);
     this.errorMessage.set('');
 
@@ -126,6 +134,10 @@ export class CashMovementCategoriesPageComponent {
   }
 
   removeCategory(categoryId: number): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',

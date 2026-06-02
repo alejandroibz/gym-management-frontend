@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
@@ -14,6 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { RoleService } from '../../../../core/auth/role';
 import { CashMovementCategory, CashMovementType } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
 import { Client } from '../../../clients/models/client.model';
@@ -57,6 +59,7 @@ export class MovementsPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly roleService = inject(RoleService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly clientsService = inject(ClientsService);
   private readonly employeesService = inject(EmployeesService);
@@ -85,6 +88,7 @@ export class MovementsPageComponent {
   readonly isSavingMovement = signal(false);
   readonly errorMessage = signal('');
   readonly currentUserEmail = signal<string | null>(null);
+  readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 
   readonly paymentPageNumber = signal(1);
   readonly paymentPageSize = signal(10);
@@ -196,6 +200,10 @@ export class MovementsPageComponent {
   }
 
   openPaymentDialog(payment?: Payment): void {
+    if (payment && !this.isSuperAdmin()) {
+      return;
+    }
+
     if (!payment) {
       this.router.navigate(['/movements/payments/new'], {
         queryParams: {
@@ -255,6 +263,10 @@ export class MovementsPageComponent {
   }
 
   deletePayment(payment: Payment): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -330,6 +342,10 @@ export class MovementsPageComponent {
   }
 
   openMovementDialog(movement?: CashMovement): void {
+    if (movement && !this.isSuperAdmin()) {
+      return;
+    }
+
     if (this.categories().length === 0) {
       this.openMissingCategoriesDialog();
       return;
@@ -378,6 +394,10 @@ export class MovementsPageComponent {
   }
 
   deleteMovement(movement: CashMovement): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '460px',
       maxWidth: 'calc(100vw - 1rem)',
