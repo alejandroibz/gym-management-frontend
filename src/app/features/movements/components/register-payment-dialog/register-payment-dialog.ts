@@ -152,7 +152,7 @@ export class RegisterPaymentDialogComponent {
     this.dialogRef.close({
       clientId: Number(raw.clientId),
       clientMembershipId: Number(raw.clientMembershipId),
-      fechaPago: new Date(`${raw.fechaPago}T00:00:00`).toISOString(),
+      fechaPago: this.toLocalDateIso(raw.fechaPago),
       monto: Number(raw.monto),
       montoOriginal: raw.aplicarDescuento && raw.montoOriginal !== null && raw.montoOriginal !== undefined
         ? Number(raw.montoOriginal)
@@ -239,6 +239,18 @@ export class RegisterPaymentDialogComponent {
       descuentoMotivo: ''
     }, { emitEvent: false });
     this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onPaymentDateChange(): void {
+    const paymentDate = this.getDateFromInput(this.form.controls.fechaPago.value);
+    if (!paymentDate) {
+      return;
+    }
+
+    this.form.patchValue({
+      periodYear: paymentDate.getFullYear(),
+      periodMonth: paymentDate.getMonth() + 1
+    }, { emitEvent: false });
   }
 
   onDiscountAmountInput(): void {
@@ -440,6 +452,19 @@ export class RegisterPaymentDialogComponent {
 
   private toDateInputValue(value: string): string {
     return value.slice(0, 10);
+  }
+
+  private toLocalDateIso(value: string | null | undefined): string {
+    return (this.getDateFromInput(value) ?? new Date()).toISOString();
+  }
+
+  private getDateFromInput(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private getInitialEmployeeEmail(): string {

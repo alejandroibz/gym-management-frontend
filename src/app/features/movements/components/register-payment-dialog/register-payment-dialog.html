@@ -74,7 +74,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Fecha</mat-label>
-        <input matInput type="date" formControlName="fechaPago" />
+        <input matInput type="date" formControlName="fechaPago" (change)="onPaymentDateChange()" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">

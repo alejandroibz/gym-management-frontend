@@ -77,7 +77,7 @@
         </a>
 
         <a
-          *ngIf="isAdminOrSuperAdmin$ | async"
+          *ngIf="isSuperAdmin$ | async"
           mat-list-item
           routerLink="/movements"
           routerLinkActive="active-link"

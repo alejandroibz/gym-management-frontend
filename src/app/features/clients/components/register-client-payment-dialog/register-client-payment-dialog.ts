@@ -65,7 +65,7 @@ export class RegisterClientPaymentDialogComponent {
     {
       paymentMethodId: [null as number | null, [Validators.required]],
       cashMovementCategoryId: [null as number | null, [Validators.required]],
-      fechaPago: [this.today.toISOString().slice(0, 10), [Validators.required]],
+      fechaPago: [this.toDateInputValue(this.today), [Validators.required]],
       monto: [this.data.defaultAmount || 0, [Validators.required, Validators.min(0)]],
       aplicarDescuento: [false],
       montoOriginal: [this.data.defaultAmount || null as number | null, [Validators.min(0)]],
@@ -107,7 +107,7 @@ export class RegisterClientPaymentDialogComponent {
     this.dialogRef.close({
       clientId: this.data.clientId,
       clientMembershipId: this.data.clientMembershipId,
-      fechaPago: new Date(`${value.fechaPago}T00:00:00`).toISOString(),
+      fechaPago: this.toLocalDateIso(value.fechaPago),
       monto: Number(value.monto),
       montoOriginal: value.aplicarDescuento && value.montoOriginal !== null && value.montoOriginal !== undefined
         ? Number(value.montoOriginal)
@@ -169,6 +169,18 @@ export class RegisterClientPaymentDialogComponent {
       descuentoMotivo: ''
     }, { emitEvent: false });
     this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onPaymentDateChange(): void {
+    const paymentDate = this.getDateFromInput(this.form.controls.fechaPago.value);
+    if (!paymentDate) {
+      return;
+    }
+
+    this.form.patchValue({
+      periodYear: paymentDate.getFullYear(),
+      periodMonth: paymentDate.getMonth() + 1
+    }, { emitEvent: false });
   }
 
   onOriginalAmountInput(): void {
@@ -279,6 +291,26 @@ export class RegisterClientPaymentDialogComponent {
 
     this.form.controls.monto.setValue(Math.max(0, originalAmount - discountAmount), { emitEvent: false });
     this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private toDateInputValue(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toLocalDateIso(value: string | null | undefined): string {
+    return (this.getDateFromInput(value) ?? new Date()).toISOString();
+  }
+
+  private getDateFromInput(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private discountValidator(control: AbstractControl): ValidationErrors | null {

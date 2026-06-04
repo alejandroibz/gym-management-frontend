@@ -7,6 +7,7 @@ import {
   DashboardBirthdayItem,
   DashboardEmployeeCountResponse,
   DashboardFinancialSummaryResponse,
+  DashboardMonthlyPaymentsResponse,
   DashboardNewClientsResponse,
   DashboardPendingPayment,
   DashboardRecentPayment,
@@ -44,6 +45,11 @@ export class DashboardService {
     return this.http.get<DashboardFinancialSummaryResponse>(`${this.apiUrl}/financial-summary`);
   }
 
+  getMonthlyPayments(months = 6): Observable<DashboardMonthlyPaymentsResponse> {
+    const params = new HttpParams().set('Months', months);
+    return this.http.get<DashboardMonthlyPaymentsResponse>(`${this.apiUrl}/monthly-payments`, { params });
+  }
+
   getEmployeeCount(): Observable<DashboardEmployeeCountResponse> {
     return this.http.get<DashboardEmployeeCountResponse>(`${this.apiUrl}/employee-count`);
   }
@@ -65,6 +71,7 @@ export class DashboardService {
       newClients: this.getNewClients(),
       recentPayments: this.getRecentPayments(),
       financialSummary: this.getFinancialSummary(),
+      monthlyPayments: this.getMonthlyPayments(),
       employeeCount: this.getEmployeeCount(),
       upcomingExpirations: this.getUpcomingExpirations(),
       pendingPayments: this.getPendingPayments()

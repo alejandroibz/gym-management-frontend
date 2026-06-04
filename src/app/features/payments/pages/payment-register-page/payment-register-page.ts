@@ -92,7 +92,7 @@ export class PaymentRegisterPageComponent {
       clientMembershipId: [null as number | null],
       cashMovementCategoryId: [null as number | null, [Validators.required]],
       paymentMethodId: [null as number | null, [Validators.required]],
-      fechaPago: [this.toDateInputValue(new Date().toISOString()), [Validators.required]],
+      fechaPago: [this.toDateInputValue(new Date()), [Validators.required]],
       monto: [0, [Validators.required, Validators.min(0)]],
       aplicarDescuento: [false],
       montoOriginal: [null as number | null, [Validators.min(0)]],
@@ -364,12 +364,12 @@ export class PaymentRegisterPageComponent {
 
   private buildPayload(): PaymentCreatePayload {
     const raw = this.form.getRawValue();
-    const paymentDate = new Date(`${raw.fechaPago}T00:00:00`);
+    const paymentDate = this.getDateFromInput(raw.fechaPago);
 
     return {
       clientId: Number(raw.clientId),
       clientMembershipId: this.isMembershipPayment() ? Number(raw.clientMembershipId) : null,
-      fechaPago: paymentDate.toISOString(),
+      fechaPago: this.toLocalDateIso(raw.fechaPago),
       monto: Number(raw.monto),
       montoOriginal: raw.aplicarDescuento && raw.montoOriginal !== null && raw.montoOriginal !== undefined
         ? Number(raw.montoOriginal)
@@ -491,8 +491,20 @@ export class PaymentRegisterPageComponent {
     return Object.keys(errors).length > 0 ? errors : null;
   }
 
-  private toDateInputValue(value: string): string {
-    return value.slice(0, 10);
+  private toDateInputValue(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toLocalDateIso(value: string | null | undefined): string {
+    return this.getDateFromInput(value).toISOString();
+  }
+
+  private getDateFromInput(value: string | null | undefined): Date {
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
   }
 
   private normalizeText(value: string): string {

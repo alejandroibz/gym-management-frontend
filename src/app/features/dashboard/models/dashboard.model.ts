@@ -81,6 +81,20 @@ export interface DashboardFinancialSummaryResponse {
   averageDiscountAmount?: number;
 }
 
+export interface DashboardMonthlyPaymentItem {
+  year: number;
+  month: number;
+  label: string;
+  gymIncome: number;
+  healthIncome: number;
+  externalIncome: number;
+  totalIncome: number;
+}
+
+export interface DashboardMonthlyPaymentsResponse {
+  months: DashboardMonthlyPaymentItem[];
+}
+
 export interface DashboardEmployeeCountResponse {
   totalEmployees: number;
 }
@@ -113,6 +127,7 @@ export interface DashboardSnapshot {
   newClients: DashboardNewClientsResponse;
   recentPayments: DashboardRecentPayment[];
   financialSummary: DashboardFinancialSummaryResponse;
+  monthlyPayments: DashboardMonthlyPaymentsResponse;
   employeeCount: DashboardEmployeeCountResponse;
   upcomingExpirations: DashboardUpcomingExpiration[];
   pendingPayments: DashboardPendingPayment[];

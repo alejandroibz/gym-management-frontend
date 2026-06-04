@@ -124,7 +124,7 @@ export const routes: Routes = [
             .then(m => m.MovementsPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -134,7 +134,7 @@ export const routes: Routes = [
             .then(m => m.PaymentRegisterPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -144,7 +144,7 @@ export const routes: Routes = [
             .then(m => m.CashMovementCategoriesPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       }
     ]

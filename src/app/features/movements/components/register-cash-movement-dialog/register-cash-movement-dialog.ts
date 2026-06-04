@@ -133,7 +133,7 @@ export class RegisterCashMovementDialogComponent {
       cashMovementCategoryId: Number(raw.cashMovementCategoryId),
       tipoMovimiento: Number(raw.tipoMovimiento) as CashMovementType,
       monto: Number(raw.monto),
-      fechaMovimiento: new Date(`${raw.fechaMovimiento}T00:00:00`).toISOString(),
+      fechaMovimiento: this.toLocalDateIso(raw.fechaMovimiento),
       descripcion: raw.descripcion?.trim() ?? '',
       metodoPago: raw.metodoPago?.trim() || null,
       relatedEmployeeId: raw.relatedEmployeeId ? Number(raw.relatedEmployeeId) : null,
@@ -200,5 +200,10 @@ export class RegisterCashMovementDialogComponent {
 
   private toDateInputValue(value: string): string {
     return value.slice(0, 10);
+  }
+
+  private toLocalDateIso(value: string | null | undefined): string {
+    const date = value ? new Date(`${value}T12:00:00`) : new Date();
+    return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
   }
 }

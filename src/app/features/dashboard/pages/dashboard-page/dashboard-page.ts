@@ -15,6 +15,8 @@ import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import {
   DashboardFinancialSummaryResponse,
+  DashboardMonthlyPaymentItem,
+  DashboardMonthlyPaymentsResponse,
   DashboardPendingPayment,
   DashboardRecentPayment,
   DashboardSummaryResponse,
@@ -47,11 +49,30 @@ interface DashboardIncomeBreakdownItem {
   color: string;
 }
 
+interface DashboardMonthlyPaymentSegment {
+  label: string;
+  value: number;
+  displayValue: string;
+  color: string;
+}
+
+interface DashboardMonthlyPaymentColumn {
+  label: string;
+  year: number;
+  month: number;
+  total: number;
+  displayTotal: string;
+  segments: DashboardMonthlyPaymentSegment[];
+}
+
 interface DashboardViewModel {
   stats: DashboardStatItem[];
   incomeBreakdown: DashboardIncomeBreakdownItem[];
   incomeChartStyle: Record<string, string>;
   maxMonthlyIncome: number;
+  monthlyPayments: DashboardMonthlyPaymentColumn[];
+  monthlyPaymentsMaxTotal: number;
+  monthlyPaymentsTotal: string;
   recentPayments: DashboardTableRow[];
   pendingPayments: DashboardTableRow[];
   upcomingExpirations: DashboardTableRow[];
@@ -114,13 +135,30 @@ export class DashboardPageComponent implements AfterViewInit {
     return `${Math.max((item.value / maxMonthlyIncome) * 100, item.value > 0 ? 3 : 0)}%`;
   }
 
+  monthlyColumnHeight(item: DashboardMonthlyPaymentColumn, maxTotal: number): string {
+    if (maxTotal <= 0 || item.total <= 0) {
+      return '0%';
+    }
+
+    return `${Math.max((item.total / maxTotal) * 100, 8)}%`;
+  }
+
+  monthlySegmentHeight(segment: DashboardMonthlyPaymentSegment, total: number): string {
+    if (total <= 0 || segment.value <= 0) {
+      return '0%';
+    }
+
+    return `${(segment.value / total) * 100}%`;
+  }
+
   private loadDashboard(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
     forkJoin({
       summary: this.dashboardService.getSummary(),
-      financialSummary: this.dashboardService.getFinancialSummary().pipe(catchError(() => of(null)))
+      financialSummary: this.dashboardService.getFinancialSummary().pipe(catchError(() => of(null))),
+      monthlyPayments: this.dashboardService.getMonthlyPayments(6).pipe(catchError(() => of(null)))
     })
       .pipe(
         catchError(() => {
@@ -137,7 +175,7 @@ export class DashboardPageComponent implements AfterViewInit {
             return;
           }
 
-          this.dashboard.set(this.buildViewModel(response.summary, response.financialSummary));
+          this.dashboard.set(this.buildViewModel(response.summary, response.financialSummary, response.monthlyPayments));
           this.lastUpdated.set(new Date());
           this.isLoading.set(false);
           this.stabilizeLayout();
@@ -147,9 +185,11 @@ export class DashboardPageComponent implements AfterViewInit {
 
   private buildViewModel(
     summary: DashboardSummaryResponse,
-    financialSummary: DashboardFinancialSummaryResponse | null
+    financialSummary: DashboardFinancialSummaryResponse | null,
+    monthlyPaymentsResponse: DashboardMonthlyPaymentsResponse | null
   ): DashboardViewModel {
     const incomeBreakdown = this.buildIncomeBreakdown(summary);
+    const monthlyPayments = this.buildMonthlyPayments(monthlyPaymentsResponse?.months ?? []);
 
     return {
       stats: [
@@ -283,6 +323,9 @@ export class DashboardPageComponent implements AfterViewInit {
       incomeBreakdown,
       incomeChartStyle: this.buildIncomeChartStyle(incomeBreakdown),
       maxMonthlyIncome: Math.max(...incomeBreakdown.map(item => item.value), 1),
+      monthlyPayments,
+      monthlyPaymentsMaxTotal: Math.max(...monthlyPayments.map(item => item.total), 1),
+      monthlyPaymentsTotal: this.formatCurrency(monthlyPayments.reduce((sum, item) => sum + item.total, 0)),
       recentPayments: this.mapRecentPayments(summary.recentPayments),
       pendingPayments: this.mapPendingPayments(summary.pendingPaymentsPreview),
       upcomingExpirations: this.mapUpcomingExpirations(summary.upcomingExpirations)
@@ -349,6 +392,36 @@ export class DashboardPageComponent implements AfterViewInit {
     });
 
     return { background: `conic-gradient(${segments.join(', ')})` };
+  }
+
+  private buildMonthlyPayments(items: DashboardMonthlyPaymentItem[]): DashboardMonthlyPaymentColumn[] {
+    return items.map(item => ({
+      label: item.label,
+      year: item.year,
+      month: item.month,
+      total: item.totalIncome,
+      displayTotal: this.formatCurrency(item.totalIncome),
+      segments: [
+        {
+          label: 'Gimnasio',
+          value: item.gymIncome,
+          displayValue: this.formatCurrency(item.gymIncome),
+          color: '#2563eb'
+        },
+        {
+          label: 'Salud',
+          value: item.healthIncome,
+          displayValue: this.formatCurrency(item.healthIncome),
+          color: '#0f766e'
+        },
+        {
+          label: 'Caja externa',
+          value: item.externalIncome,
+          displayValue: this.formatCurrency(item.externalIncome),
+          color: '#c1121f'
+        }
+      ]
+    }));
   }
 
   private formatCurrency(value: number): string {

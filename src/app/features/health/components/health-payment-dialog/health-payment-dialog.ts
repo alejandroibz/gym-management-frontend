@@ -247,7 +247,7 @@ export class HealthPaymentDialogComponent {
     if (this.form.invalid) return;
     const raw = this.form.getRawValue();
     const { healthProfessionalTypeId, healthServiceId, aplicarDescuento, ...payload } = raw;
-    const date = new Date(`${raw.fechaPago}T12:00:00`);
+    const date = this.getDateFromInput(raw.fechaPago);
     this.dialogRef.close({
       ...payload,
       monto: Number(raw.monto),
@@ -259,7 +259,7 @@ export class HealthPaymentDialogComponent {
         ? Number(raw.descuentoPorcentaje)
         : null,
       descuentoMotivo: aplicarDescuento ? raw.descuentoMotivo?.trim() || null : null,
-      fechaPago: date.toISOString(),
+      fechaPago: this.toLocalDateIso(raw.fechaPago),
       periodYear: raw.periodYear || date.getFullYear(),
       periodMonth: raw.periodMonth || date.getMonth() + 1
     });
@@ -346,7 +346,24 @@ export class HealthPaymentDialogComponent {
   }
 
   private toDateInput(value?: string | null): string {
-    return value ? new Date(value).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+    return this.toDateInputValue(value ?? this.data.appointment?.startsAt ?? null);
+  }
+
+  private toDateInputValue(value?: string | null): string {
+    const date = value ? new Date(value) : new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toLocalDateIso(value: string): string {
+    return new Date(`${value}T12:00:00`).toISOString();
+  }
+
+  private getDateFromInput(value: string | null | undefined): Date {
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
   }
 
   private getInitialService(): HealthService | null {

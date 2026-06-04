@@ -107,6 +107,69 @@
       </section>
 
 
+      <section class="panel-card monthly-payments-panel">
+        <div class="card-heading">
+          <div class="card-heading-copy">
+            <h2>Pagos por mes</h2>
+            <p>Ultimos 6 meses de ingresos confirmados por gimnasio, salud y caja externa.</p>
+          </div>
+
+          <div class="heading-badge">
+            <mat-icon>bar_chart</mat-icon>
+            <span>{{ snapshot.monthlyPaymentsTotal }}</span>
+          </div>
+        </div>
+
+        @if (snapshot.monthlyPayments.length === 0) {
+          <div class="empty-state compact">
+            <mat-icon>bar_chart</mat-icon>
+            <h3>Sin datos mensuales</h3>
+            <p>No hay pagos confirmados para graficar.</p>
+          </div>
+        } @else {
+          <div class="monthly-chart">
+            @for (item of snapshot.monthlyPayments; track item.year + '-' + item.month) {
+              <div class="monthly-column">
+                <div class="monthly-bar-track">
+                  @if (item.total > 0) {
+                    <div
+                      class="monthly-bar-stack"
+                      [style.height]="monthlyColumnHeight(item, snapshot.monthlyPaymentsMaxTotal)"
+                      [attr.aria-label]="item.label + ': ' + item.displayTotal">
+                      @for (segment of item.segments; track segment.label) {
+                        @if (segment.value > 0) {
+                          <span
+                            class="monthly-bar-segment"
+                            [style.background]="segment.color"
+                            [style.height]="monthlySegmentHeight(segment, item.total)"
+                            [attr.title]="segment.label + ': ' + segment.displayValue">
+                          </span>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="monthly-column-copy">
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.displayTotal }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="monthly-legend">
+            @for (item of snapshot.incomeBreakdown; track trackByIncome($index, item)) {
+              <span>
+                <i [style.background]="item.color"></i>
+                {{ item.label }}
+              </span>
+            }
+          </div>
+        }
+      </section>
+
+
     <section class="stats-grid">
       @for (item of snapshot.stats; track trackByLabel($index, item)) {
         <article class="stat-card" [class.info]="item.tone === 'info'" [class.success]="item.tone === 'success'" [class.accent]="item.tone === 'accent'">

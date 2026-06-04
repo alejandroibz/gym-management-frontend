@@ -56,10 +56,12 @@
             Editar
           </button>
 
-          <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
-            <mat-icon>payments</mat-icon>
-            Registrar cobro
-          </button>
+          @if (isSuperAdmin()) {
+            <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
+              <mat-icon>payments</mat-icon>
+              Registrar cobro
+            </button>
+          }
 
           @if (hasHealthProfile()) {
             <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="openHealthProfile()">
