@@ -108,12 +108,13 @@ export class ClientDetailsPageComponent {
   readonly payments = computed(() => this.client()?.payments ?? []);
   readonly latestPaymentDate = computed(() => this.client()?.ultimoPagoFecha ?? this.getLatestPaymentDateFromHistory());
   readonly trainerNote = computed(() => this.client()?.healthProfile?.trainerNotes?.[0] ?? null);
-  readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing());
+  readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing() && this.isAdminOrSuperAdmin());
   readonly incomeCategories = computed(() => this.cashMovementCategories().filter(category => category.tipoMovimiento === 1));
   readonly observacionesLength = signal(0);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
   readonly currentUserEmail = signal<string | null>(null);
   readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
+  readonly isAdminOrSuperAdmin = toSignal(this.roleService.hasAnyRole(['SuperAdmin', 'Admin']), { initialValue: false });
 
   constructor() {
     this.form.disable({ emitEvent: false });
@@ -352,11 +353,48 @@ export class ClientDetailsPageComponent {
       return;
     }
 
-    this.router.navigate(['/movements/payments/new'], {
-      queryParams: {
-        clientId: client.id,
-        from: 'clients'
+    if (this.paymentMethods().length === 0 || this.incomeCategories().length === 0) {
+      this.errorMessage.set('No se pudieron cargar metodos de pago o categorias para registrar el cobro.');
+      return;
+    }
+
+    const today = new Date();
+    const dialogRef = this.dialog.open(RegisterPaymentDialogComponent, {
+      width: '760px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      panelClass: 'employee-dialog-panel',
+      backdropClass: 'employee-dialog-backdrop',
+      data: {
+        clients: [client],
+        employees: this.employees(),
+        paymentMethods: this.paymentMethods(),
+        incomeCategories: this.incomeCategories(),
+        defaultDate: this.toDateInputValue(today.toISOString()),
+        defaultMonth: today.getMonth() + 1,
+        defaultYear: today.getFullYear(),
+        defaultEmployeeEmail: this.currentUserEmail()
       }
+    });
+
+    dialogRef.afterClosed().subscribe((payload?: PaymentCreatePayload) => {
+      if (!payload) {
+        return;
+      }
+
+      this.isSaving.set(true);
+      this.errorMessage.set('');
+
+      this.paymentsService.create(payload).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.loadClient();
+        },
+        error: error => {
+          this.isSaving.set(false);
+          this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo registrar el pago.'));
+        }
+      });
     });
   }
 

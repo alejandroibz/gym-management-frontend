@@ -56,7 +56,7 @@
             Editar
           </button>
 
-          @if (isSuperAdmin()) {
+          @if (isAdminOrSuperAdmin()) {
             <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
               <mat-icon>payments</mat-icon>
               Registrar cobro
