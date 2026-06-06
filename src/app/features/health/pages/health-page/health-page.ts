@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -93,6 +93,7 @@ export class HealthPageComponent {
   private readonly employeesService = inject(EmployeesService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
+  private hasLoadedRestrictedHealthData = false;
 
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
@@ -135,6 +136,7 @@ export class HealthPageComponent {
   readonly editingProfessional = signal<HealthProfessional | null>(null);
   readonly editingService = signal<HealthService | null>(null);
   readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
+  readonly canManageHealth = computed(() => this.isSuperAdmin());
 
   readonly serviceForm = this.formBuilder.nonNullable.group({
     healthProfessionalTypeId: [null as number | null],
@@ -224,6 +226,15 @@ export class HealthPageComponent {
   });
 
   constructor() {
+    effect(() => {
+      if (this.canManageHealth() && !this.hasLoadedRestrictedHealthData) {
+        this.hasLoadedRestrictedHealthData = true;
+        this.loadLookups();
+        this.loadPaymentsAndSummary();
+        this.loadSubscriptions();
+      }
+    });
+
     this.appointmentPatientSearchControl.valueChanges.pipe(
       startWith(''),
       debounceTime(250),
@@ -231,17 +242,20 @@ export class HealthPageComponent {
       switchMap(value => this.searchAppointmentPatients(value))
     ).subscribe(patients => this.appointmentPatientOptions.set(patients));
 
-    this.loadLookups();
     this.loadHealthData();
     this.route.queryParamMap.subscribe(params => {
       const tab = params.get('tab');
-      if (tab === 'patients') {
+      const canManageHealth = this.canManageHealth();
+      if (!canManageHealth) {
+        this.selectedTabIndex.set(0);
+      }
+      if (canManageHealth && tab === 'patients') {
         this.selectedTabIndex.set(1);
       }
       if (tab === 'agenda') {
         this.selectedTabIndex.set(0);
       }
-      if (tab === 'payments' || tab === 'plans') {
+      if (canManageHealth && (tab === 'payments' || tab === 'plans')) {
         this.selectedTabIndex.set(2);
       }
       const appointmentId = Number(params.get('appointmentId'));
@@ -256,12 +270,12 @@ export class HealthPageComponent {
         this.loadAppointments();
       }
       const employeeId = Number(params.get('employeeId'));
-      if (employeeId > 0) {
+      if (canManageHealth && employeeId > 0) {
         this.pendingProfessionalEmployeeId.set(employeeId);
         this.selectedTabIndex.set(3);
       }
       const patientId = Number(params.get('patientId'));
-      if (patientId > 0) {
+      if (canManageHealth && patientId > 0) {
         this.pendingPatientId.set(patientId);
         this.selectedTabIndex.set(1);
         this.router.navigate(['/health', 'patients', patientId]);
@@ -271,6 +285,10 @@ export class HealthPageComponent {
 
   selectProfessionalType(typeId: number | null): void {
     this.selectedProfessionalTypeId.set(typeId);
+  }
+
+  selectHealthTab(index: number): void {
+    this.selectedTabIndex.set(this.canManageHealth() ? index : 0);
   }
 
   getProfessionalCount(typeId: number): number {
@@ -308,6 +326,10 @@ export class HealthPageComponent {
   }
 
   filterPaymentsByProfessional(professional: HealthProfessional): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     this.paymentFiltersForm.patchValue({
       professionalTypeId: professional.healthProfessionalTypeId ?? null,
       professionalId: professional.id,
@@ -365,6 +387,10 @@ export class HealthPageComponent {
   }
 
   openPatientDetail(patient: HealthPatientProfile): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     this.router.navigate(['/health', 'patients', patient.id]);
   }
 
@@ -408,6 +434,10 @@ export class HealthPageComponent {
   }
 
   openPatientDialog(patient?: HealthPatientProfile): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthPatientDialogComponent, {
       width: '680px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -428,6 +458,10 @@ export class HealthPageComponent {
   }
 
   openProfessionalTypeDialog(type?: HealthProfessionalType): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthProfessionalTypeDialogComponent, {
       width: '520px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -444,6 +478,10 @@ export class HealthPageComponent {
   }
 
   openProfessionalDialog(professional?: HealthProfessional, selectedEmployeeId?: number | null): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(HealthProfessionalDialogComponent, {
       width: '620px',
       maxWidth: 'calc(100vw - 1rem)',
@@ -642,7 +680,7 @@ export class HealthPageComponent {
   }
 
   openPatientFromAppointment(appointment: HealthAppointment): void {
-    if (this.calendarView() !== 'day') return;
+    if (this.calendarView() !== 'day' || !this.canManageHealth()) return;
     this.router.navigate(['/health', 'patients', appointment.healthPatientProfileId]);
   }
 
@@ -705,6 +743,10 @@ export class HealthPageComponent {
   }
 
   openPaymentDialog(payment?: HealthPayment): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     if (payment && !this.isSuperAdmin()) {
       return;
     }
@@ -742,6 +784,10 @@ export class HealthPageComponent {
   }
 
   confirmPayment(payment: HealthPayment): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     const categoryId = payment.cashMovementCategoryId ?? this.getDefaultHealthPaymentCategoryId();
     const employeeEmail = payment.collectedByEmployeeEmail;
 
@@ -866,6 +912,10 @@ export class HealthPageComponent {
   }
 
   openSubscriptionDialog(subscription?: HealthPlanSubscription): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     if (subscription && !this.isSuperAdmin()) {
       return;
     }
@@ -905,6 +955,10 @@ export class HealthPageComponent {
   }
 
   private loadLookups(): void {
+    if (!this.canManageHealth()) {
+      return;
+    }
+
     this.clientsService.getPaged(1, 1000).subscribe(response => this.clients.set(response.items));
     this.employeesService.getPaged(1, 1000).subscribe(response => {
       this.employees.set(response.items);
@@ -926,8 +980,10 @@ export class HealthPageComponent {
     this.healthService.getProfessionals().subscribe(response => this.professionals.set(response.items));
     this.healthService.getPatients('', 1, 1000).subscribe(response => this.patientLookups.set(response.items));
     this.loadPatients();
-    this.loadPaymentsAndSummary();
-    this.loadSubscriptions();
+    if (this.canManageHealth()) {
+      this.loadPaymentsAndSummary();
+      this.loadSubscriptions();
+    }
     this.loadAppointments();
     this.isLoading.set(false);
   }

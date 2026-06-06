@@ -23,7 +23,8 @@ export class AccessDeniedComponent {
   private readonly auth = inject(AuthService);
   private readonly roleService = inject(RoleService);
 
-  isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
+  isSuperAdmin$ = this.roleService.hasRole('SuperAdmin');
+  isAdmin$ = this.roleService.hasRole('Admin');
 
   logout(): void {
     const returnTo = environment.auth0.logoutReturnTo || window.location.origin;

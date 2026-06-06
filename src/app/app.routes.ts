@@ -18,7 +18,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'clients',
         pathMatch: 'full'
       },
       {
@@ -34,7 +34,7 @@ export const routes: Routes = [
             .then(m => m.DashboardPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -94,7 +94,7 @@ export const routes: Routes = [
             .then(m => m.HealthPatientDetailPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {

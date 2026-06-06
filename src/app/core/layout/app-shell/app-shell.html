@@ -29,7 +29,7 @@
 
       <mat-nav-list class="nav-list">
         <a
-          *ngIf="isAdminOrSuperAdmin$ | async"
+          *ngIf="isSuperAdmin$ | async"
           mat-list-item
           routerLink="/dashboard"
           routerLinkActive="active-link"

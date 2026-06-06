@@ -2,13 +2,15 @@
   <header class="page-header">
     <div>
       <h1>Salud</h1>
-      <p>Agenda, pacientes, planes, profesionales y cobros.</p>
+      <p>{{ canManageHealth() ? 'Agenda, pacientes, planes, profesionales y cobros.' : 'Agenda de turnos de salud.' }}</p>
     </div>
     <div class="header-stats">
       <span><strong>{{ appointments().length }}</strong> turnos</span>
       <span><strong>{{ pendingAppointments() }}</strong> pendientes</span>
-      <span><strong>{{ patients().length }}</strong> pacientes</span>
-      <span><strong>{{ activeSubscriptions().length }}</strong> planes activos</span>
+      @if (canManageHealth()) {
+        <span><strong>{{ patients().length }}</strong> pacientes</span>
+        <span><strong>{{ activeSubscriptions().length }}</strong> planes activos</span>
+      }
     </div>
   </header>
 
@@ -26,7 +28,7 @@
     </div>
   }
 
-  <mat-tab-group animationDuration="180ms" class="health-tabs" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectedTabIndex.set($event)">
+  <mat-tab-group animationDuration="180ms" class="health-tabs" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectHealthTab($event)">
     <mat-tab label="Agenda">
       <div class="tab-grid agenda-grid">
         <mat-card class="tool-panel">
@@ -156,9 +158,11 @@
                             <button mat-icon-button type="button" aria-label="Editar turno" (click)="$event.stopPropagation(); editAppointment(appointment)">
                               <mat-icon>edit</mat-icon>
                             </button>
-                            <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" [disabled]="!isSuperAdmin()" (click)="$event.stopPropagation(); deleteAppointment(appointment)">
-                              <mat-icon>delete</mat-icon>
-                            </button>
+                            @if (isSuperAdmin()) {
+                              <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar turno" (click)="$event.stopPropagation(); deleteAppointment(appointment)">
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            }
                           </div>
                         }
                       </article>
@@ -174,6 +178,7 @@
       </div>
     </mat-tab>
 
+    @if (canManageHealth()) {
     <mat-tab label="Pacientes">
       <div class="patients-workspace">
         <mat-card class="list-panel wide-panel">
@@ -751,5 +756,6 @@
         }
       </div>
     </mat-tab>
+    }
   </mat-tab-group>
 </section>

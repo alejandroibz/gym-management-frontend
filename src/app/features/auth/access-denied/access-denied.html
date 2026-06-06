@@ -12,10 +12,15 @@
     </p>
 
     <div class="actions">
-      @if (isAdminOrSuperAdmin$ | async) {
+      @if (isSuperAdmin$ | async) {
         <a mat-flat-button routerLink="/dashboard">
           <mat-icon>dashboard</mat-icon>
           Ir al dashboard
+        </a>
+      } @else if (isAdmin$ | async) {
+        <a mat-flat-button routerLink="/clients">
+          <mat-icon>person</mat-icon>
+          Ir a clientes
         </a>
       }
 
