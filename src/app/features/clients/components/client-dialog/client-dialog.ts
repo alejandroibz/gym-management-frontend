@@ -145,6 +145,12 @@ export class ClientDialogComponent {
         this.updateInitialPaymentValidators();
       });
 
+    this.form.controls.membershipPlanId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.applySelectedMembershipPlan();
+      });
+
     this.form.controls.registerInitialPayment.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -188,20 +194,7 @@ export class ClientDialogComponent {
   }
 
   onMembershipPlanChange(): void {
-    const plan = this.getSelectedPlan();
-
-    if (!plan) {
-      return;
-    }
-
-    const fechaInicio = this.form.controls.fechaInicio.value || this.today;
-    const fechaFin = this.addDays(fechaInicio, plan.duracionDias);
-
-    this.form.patchValue({
-      precioFinal: plan.precio,
-      fechaFin,
-      initialPaymentAmount: plan.precio
-    });
+    this.applySelectedMembershipPlan();
   }
 
   onFechaInicioChange(): void {
@@ -282,6 +275,19 @@ export class ClientDialogComponent {
 
   private getSelectedPlan(): MembershipPlan | undefined {
     return this.data.membershipPlans.find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
+  }
+
+  private applySelectedMembershipPlan(): void {
+    const plan = this.getSelectedPlan();
+    if (!plan || !this.form.controls.hasMembership.value) return;
+
+    const fechaInicio = this.form.controls.fechaInicio.value || this.today;
+    this.form.patchValue({
+      fechaInicio,
+      precioFinal: plan.precio,
+      fechaFin: this.addDays(fechaInicio, plan.duracionDias),
+      initialPaymentAmount: plan.precio
+    }, { emitEvent: false });
   }
 
   private addDays(dateInput: string, days: number): string {

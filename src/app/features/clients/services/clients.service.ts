@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResponse } from '../../../core/models/paged-response.model';
-import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientMembershipUpdatePayload, ClientUpdatePayload } from '../models/client.model';
+import { Client, ClientCreatePayload, ClientFilters, ClientImportResult, ClientMembershipUpdatePayload, ClientUpdatePayload, StudentGoalAdmin, StudentMeasurementAdmin } from '../models/client.model';
 
 interface RawPagedResponse<T> {
   items?: T[];
@@ -96,6 +96,18 @@ export class ClientsService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<ClientImportResult>(`${this.apiUrl}/import`, formData);
+  }
+
+  getStudentGoals(clientId: number): Observable<StudentGoalAdmin[]> {
+    return this.http.get<StudentGoalAdmin[]>(`${environment.apiUrl}/api/admin/student-experience/clients/${clientId}/goals`);
+  }
+
+  saveProfessionalMeasurement(clientId: number, payload: { weightKg: number; measuredAt: string; notes?: string | null }): Observable<StudentMeasurementAdmin> {
+    return this.http.post<StudentMeasurementAdmin>(`${environment.apiUrl}/api/admin/student-experience/clients/${clientId}/body-measurements`, payload);
+  }
+
+  saveProfessionalGoal(clientId: number, payload: { type: string; title: string; description?: string | null; startValue: number; targetValue: number; currentValue: number; unit: string; targetDate?: string | null; exerciseId?: number | null }): Observable<StudentGoalAdmin> {
+    return this.http.post<StudentGoalAdmin>(`${environment.apiUrl}/api/admin/student-experience/clients/${clientId}/goals`, payload);
   }
 
   private normalizePagedResponse(

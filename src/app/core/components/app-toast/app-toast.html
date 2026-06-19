@@ -1,0 +1,9 @@
+<div class="toast-card" [class]="data.tone">
+  <span class="toast-icon">
+    <mat-icon>{{ icon }}</mat-icon>
+  </span>
+  <p>{{ data.message }}</p>
+  <button mat-icon-button type="button" aria-label="Cerrar notificacion" (click)="close()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>

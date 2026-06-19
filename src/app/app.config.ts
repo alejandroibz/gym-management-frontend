@@ -1,8 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 import { MatPaginatorIntl } from '@angular/material/paginator';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { authHttpInterceptorFn, provideAuth0 } from '@auth0/auth0-angular';
 
 import { routes } from './app.routes';
@@ -20,6 +21,8 @@ export const appConfig: ApplicationConfig = {
     ),
 
     provideRouter(routes),
+
+    importProvidersFrom(MatSnackBarModule),
 
     {
       provide: MatPaginatorIntl,

@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
@@ -10,6 +10,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { RoleService } from '../../auth/role';
 import { environment } from '../../../../environments/environment';
+import { UserProfile } from '../../../features/profile/models/profile.model';
+import { ProfileService } from '../../../features/profile/services/profile.service';
 
 @Component({
   selector: 'app-shell',
@@ -33,19 +35,24 @@ export class AppShell {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly roleService = inject(RoleService);
   private readonly auth = inject(AuthService);
+  private readonly profileService = inject(ProfileService);
 
 
   isSuperAdmin$ = this.roleService.hasRole('SuperAdmin');
   isAdminOrSuperAdmin$ = this.roleService.hasAnyRole(['SuperAdmin', 'Admin']);
   user$ = this.auth.user$;
+  readonly currentProfile = signal<UserProfile | null>(null);
   isCollapsed = true;
   isMobile = false;
   isMobileSidebarOpen = false;
   employeesMenuOpen = false;
   clientsMenuOpen = false;
   movementsMenuOpen = false;
+  isDarkTheme = false;
 
   constructor() {
+    this.initTheme();
+
     this.breakpointObserver.observe('(max-width: 1024px)').subscribe(({ matches }) => {
       this.isMobile = matches;
 
@@ -63,9 +70,12 @@ export class AppShell {
 
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
+        this.loadCurrentProfile();
         this.syncLayout();
       }
     });
+
+    this.loadCurrentProfile();
   }
 
   get isEmployeesSectionActive(): boolean {
@@ -126,6 +136,11 @@ export class AppShell {
     }
   }
 
+  toggleTheme(): void {
+    this.isDarkTheme = !this.isDarkTheme;
+    this.applyTheme();
+  }
+
   logout(): void {
     const returnTo = environment.auth0.logoutReturnTo || window.location.origin;
 
@@ -137,6 +152,12 @@ export class AppShell {
   }
 
   getUserDisplayName(user: Record<string, unknown> | null | undefined): string {
+    const profile = this.currentProfile();
+    const profileName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim();
+    if (profileName) {
+      return profileName;
+    }
+
     const name = user?.['name'];
     const nickname = user?.['nickname'];
     const email = user?.['email'];
@@ -156,9 +177,50 @@ export class AppShell {
     return 'usuario';
   }
 
+  getUserInitials(user: Record<string, unknown> | null | undefined): string {
+    const profile = this.currentProfile();
+    const displayName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim() || this.getUserDisplayName(user);
+    const parts = displayName
+      .split(/[\s@._-]+/)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    const initials = parts.slice(0, 2).map(part => part[0]?.toUpperCase()).join('');
+    return initials || 'U';
+  }
+
+  getUserPicture(user: Record<string, unknown> | null | undefined): string | null {
+    const profileAvatar = this.currentProfile()?.avatarUrl;
+    if (profileAvatar?.trim()) {
+      return profileAvatar;
+    }
+
+    const picture = user?.['picture'];
+    return typeof picture === 'string' && picture.trim() ? picture : null;
+  }
+
+  private loadCurrentProfile(): void {
+    this.profileService.getMe().subscribe({
+      next: profile => this.currentProfile.set(profile),
+      error: () => this.currentProfile.set(null)
+    });
+  }
+
   private syncLayout(): void {
     requestAnimationFrame(() => {
       window.dispatchEvent(new Event('resize'));
     });
+  }
+
+  private initTheme(): void {
+    const savedTheme = localStorage.getItem('gym-theme');
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+    this.isDarkTheme = savedTheme ? savedTheme === 'dark' : prefersDark;
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    document.body.classList.toggle('dark-theme', this.isDarkTheme);
+    localStorage.setItem('gym-theme', this.isDarkTheme ? 'dark' : 'light');
   }
 }

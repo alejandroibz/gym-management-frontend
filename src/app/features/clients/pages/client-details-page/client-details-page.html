@@ -125,6 +125,7 @@
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput type="email" formControlName="email" />
+              <mat-error>Ingresa un email valido.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="span-2">
@@ -284,6 +285,39 @@
             <p>No hay indicaciones para profesores cargadas para este cliente.</p>
           </div>
         }
+      </mat-card>
+
+      <mat-card class="content-card span-full student-progress-admin-card">
+        <div class="card-heading">
+          <div><h2>Progreso y objetivos del alumno</h2><p>Metas personales y mediciones verificadas por el equipo.</p></div>
+          <div class="progress-admin-actions"><button mat-stroked-button type="button" (click)="showProfessionalGoalForm.set(!showProfessionalGoalForm())"><mat-icon>flag</mat-icon>Nuevo objetivo</button><button mat-flat-button type="button" (click)="showMeasurementForm.set(!showMeasurementForm())"><mat-icon>monitor_weight</mat-icon>Registrar peso</button></div>
+        </div>
+        @if (showMeasurementForm()) {
+          <form class="professional-measurement-form" [formGroup]="measurementForm" (ngSubmit)="saveProfessionalMeasurement()">
+            <mat-form-field appearance="outline"><mat-label>Peso</mat-label><input matInput type="number" formControlName="weightKg"><span matTextSuffix>kg</span></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Fecha</mat-label><input matInput type="date" formControlName="measuredAt"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Nota</mat-label><input matInput formControlName="notes"></mat-form-field>
+            <button mat-flat-button type="submit" [disabled]="measurementForm.invalid || isSaving()">Guardar</button>
+          </form>
+        }
+        @if (showProfessionalGoalForm()) {
+          <form class="professional-goal-form" [formGroup]="professionalGoalForm" (ngSubmit)="saveProfessionalGoal()">
+            <mat-form-field appearance="outline"><mat-label>Tipo</mat-label><mat-select formControlName="type"><mat-option value="BodyWeight">Peso corporal</mat-option><mat-option value="ExerciseWeight">Fuerza en ejercicio</mat-option><mat-option value="Attendance">Asistencias</mat-option><mat-option value="WorkoutCount">Workouts</mat-option><mat-option value="Custom">Personalizado</mat-option></mat-select></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Titulo</mat-label><input matInput formControlName="title"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Valor actual</mat-label><input matInput type="number" formControlName="currentValue"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Meta</mat-label><input matInput type="number" formControlName="targetValue"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Unidad</mat-label><input matInput formControlName="unit"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Fecha objetivo</mat-label><input matInput type="date" formControlName="targetDate"></mat-form-field>
+            <mat-form-field appearance="outline" class="span-full"><mat-label>Descripcion</mat-label><input matInput formControlName="description"></mat-form-field>
+            <button mat-flat-button type="submit" [disabled]="professionalGoalForm.invalid || isSaving()">Crear objetivo verificado</button>
+          </form>
+        }
+        @if (latestProfessionalMeasurement(); as measurement) { <div class="measurement-success"><mat-icon>verified</mat-icon><span><strong>{{ measurement.weightKg }} kg registrados</strong><small>Medicion verificada del {{ measurement.measuredAt | date:'dd/MM/yyyy' }}</small></span></div> }
+        <div class="admin-goal-grid">
+          @for (goal of studentGoals(); track goal.id) {
+            <article><div><mat-icon>{{ goal.type === 'BodyWeight' ? 'monitor_weight' : 'flag' }}</mat-icon><span class="status-chip">{{ goal.status === 'Completed' ? 'Completado' : 'En curso' }}</span></div><h3>{{ goal.title }}</h3><p>{{ goal.currentValue }} de {{ goal.targetValue }} {{ goal.unit }}</p><mat-progress-bar mode="determinate" [value]="goal.progressPercent"></mat-progress-bar><footer><span>{{ goal.progressPercent }}%</span><small>{{ goal.createdByType === 'Professional' ? 'Profesional' : 'Alumno' }}</small></footer></article>
+          } @empty { <div class="empty-state compact"><mat-icon>flag</mat-icon><p>El alumno todavia no creo objetivos.</p></div> }
+        </div>
       </mat-card>
 
       <mat-card class="content-card span-full">

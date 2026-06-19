@@ -105,3 +105,11 @@ export interface ClientImportResult {
   skippedCount: number;
   errors: ClientImportError[];
 }
+
+export interface StudentGoalAdmin {
+  id: number; type: string; title: string; description?: string | null; startValue: number; targetValue: number; currentValue: number; unit: string; targetDate?: string | null; createdByType: string; isVerified: boolean; status: string; progressPercent: number;
+}
+
+export interface StudentMeasurementAdmin {
+  id: number; weightKg: number; measuredAt: string; source: string; isVerified: boolean; notes?: string | null;
+}

@@ -2,8 +2,8 @@
   <header class="page-header">
     <div>
       <span class="eyebrow">Fase 2</span>
-      <h1>Plataforma del alumno</h1>
-      <p>Gestiona ejercicios, rutinas, progreso y rankings desde un solo lugar.</p>
+      <h1>Plataforma de entrenamiento</h1>
+      <p>Biblioteca de ejercicios, planes de entrenamiento, workouts y asignaciones.</p>
     </div>
     <button mat-flat-button color="primary" type="button" (click)="loadAll()">
       <mat-icon>refresh</mat-icon>
@@ -11,151 +11,1591 @@
     </button>
   </header>
 
-  @if (feedback()) {
-    <div class="feedback">{{ feedback() }}</div>
-  }
-
   @if (isLoading()) {
     <mat-progress-bar mode="indeterminate" />
   }
 
-  <mat-tab-group animationDuration="160ms">
-    <mat-tab label="Ejercicios">
-      <div class="tab-grid">
-        <mat-card>
-          <h2>{{ exerciseForm.controls.id.value ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</h2>
-          <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" class="form-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Nombre</mat-label>
-              <input matInput formControlName="name">
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Grupo muscular</mat-label>
-              <input matInput formControlName="muscleGroup">
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="wide">
-              <mat-label>Descripcion</mat-label>
-              <textarea matInput rows="3" formControlName="description"></textarea>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Musculos involucrados</mat-label>
-              <input matInput formControlName="musclesInvolved">
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Slug QR</mat-label>
-              <input matInput formControlName="qrSlug">
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Foto URL</mat-label>
-              <input matInput formControlName="photoUrl">
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Video URL</mat-label>
-              <input matInput formControlName="videoUrl">
-            </mat-form-field>
-            <button mat-flat-button color="primary" type="submit">
-              <mat-icon>save</mat-icon>
-              Guardar
+  <mat-tab-group animationDuration="160ms" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectedTabIndex.set($event)">
+    <mat-tab label="Planes">
+      <ng-template #planAssignmentDialog>
+        <section class="panel dialog-panel assignment-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Asignacion principal</span>
+              <h2>Plan a alumno</h2>
+              <small>Este es el flujo recomendado: el alumno recibe un plan completo, compuesto por uno o mas workouts.</small>
+            </div>
+            <button mat-icon-button type="button" mat-dialog-close matTooltip="Cerrar" aria-label="Cerrar asignacion de plan">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <form [formGroup]="planAssignmentForm" class="form-grid">
+            <div class="wide picker-field">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar plan</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input
+                  matInput
+                  [formControl]="assignmentPlanSearch"
+                  (focus)="planAssignmentPlanPickerOpen.set(true)"
+                  (click)="planAssignmentPlanPickerOpen.set(true)"
+                  (blur)="closePlanAssignmentPlanPickerSoon()">
+                <button mat-icon-button matSuffix type="button" matTooltip="Mostrar planes" (mousedown)="$event.preventDefault()" (click)="planAssignmentPlanPickerOpen.update(open => !open)">
+                  <mat-icon>{{ planAssignmentPlanPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+              </mat-form-field>
+              @if (planAssignmentPlanPickerOpen()) {
+                <div class="search-results dropdown-results">
+                  @for (plan of getAssignmentPlanMatches(); track plan.id) {
+                    <button type="button" [class.selected]="planAssignmentForm.controls.trainingPlanId.value === plan.id" (mousedown)="$event.preventDefault()" (click)="selectPlanForAssignment(plan)">
+                      <strong>{{ plan.name }}</strong>
+                      <span>{{ plan.workoutCount }} workouts</span>
+                    </button>
+                  } @empty {
+                    <div class="search-empty">No encontramos planes con ese criterio.</div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="wide picker-field">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar alumno</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input
+                  matInput
+                  [formControl]="planAssignmentClientSearch"
+                  (focus)="planAssignmentClientPickerOpen.set(true)"
+                  (click)="planAssignmentClientPickerOpen.set(true)"
+                  (blur)="closePlanAssignmentClientPickerSoon()">
+                <button mat-icon-button matSuffix type="button" matTooltip="Mostrar alumnos" (mousedown)="$event.preventDefault()" (click)="planAssignmentClientPickerOpen.update(open => !open)">
+                  <mat-icon>{{ planAssignmentClientPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+              </mat-form-field>
+              @if (planAssignmentClientPickerOpen()) {
+                <div class="search-results dropdown-results">
+                  @for (client of getPlanAssignmentClientMatches(); track client.id) {
+                    <button type="button" [class.selected]="planAssignmentForm.controls.clientId.value === client.id" (mousedown)="$event.preventDefault()" (click)="selectClientForPlanAssignment(client)">
+                      <strong>{{ client.apellido }}, {{ client.nombre }}</strong>
+                      <span>DNI {{ client.dni }}</span>
+                    </button>
+                  } @empty {
+                    <div class="search-empty">No encontramos alumnos con ese criterio.</div>
+                  }
+                </div>
+              }
+            </div>
+            <button mat-flat-button color="primary" type="button" class="wide" (click)="assignTrainingPlan()">
+              <mat-icon>assignment_ind</mat-icon>
+              Asignar plan
             </button>
           </form>
-        </mat-card>
+        </section>
+      </ng-template>
 
-        <div class="list">
-          @for (exercise of exercises(); track exercise.id) {
-            <mat-card class="item-card">
-              <div>
-                <strong>{{ exercise.name }}</strong>
-                <span>{{ exercise.muscleGroup }}</span>
-                <p>{{ exercise.description }}</p>
-                <small>QR: {{ exercise.qrUrl }}</small>
-              </div>
-              <div class="actions">
-                <button mat-icon-button type="button" (click)="editExercise(exercise)" aria-label="Editar ejercicio">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button type="button" (click)="deleteExercise(exercise)" aria-label="Eliminar ejercicio">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </mat-card>
+      <div class="workspace-grid">
+        <section class="panel">
+          <div class="list-toolbar">
+            <div>
+              <span class="eyebrow">Programacion</span>
+              <h2>Planes de entrenamiento</h2>
+              <small>Un plan agrupa varios workouts. Cada workout representa un dia de entrenamiento.</small>
+            </div>
+            <div class="toolbar-actions">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar plan</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput [formControl]="planSearch">
+              </mat-form-field>
+              <button mat-flat-button color="primary" type="button" routerLink="/student-platform/training-plans/new">
+                <mat-icon>add</mat-icon>
+                Nuevo plan
+              </button>
+              <button mat-stroked-button type="button" (click)="openTemplate(planAssignmentDialog, '820px')">
+                <mat-icon>assignment_ind</mat-icon>
+                Asignar plan
+              </button>
+            </div>
+          </div>
+
+          @if (!trainingPlans().length) {
+            <div class="empty-state">
+              <mat-icon>calendar_month</mat-icon>
+              <h3>Todavia no hay planes de entrenamiento</h3>
+              <p>Crea un plan y agregale workouts como Dia 1, Piernas, Empuje o Full body.</p>
+              <button mat-flat-button color="primary" type="button" routerLink="/student-platform/training-plans/new">
+                <mat-icon>add</mat-icon>
+                Crear primer plan
+              </button>
+            </div>
+          } @else if (!filteredTrainingPlans().length) {
+            <div class="empty-state">
+              <mat-icon>search_off</mat-icon>
+              <h3>No encontramos planes</h3>
+              <p>Proba buscando por nombre, objetivo, nivel o nombre de workout.</p>
+            </div>
+          } @else {
+            <div class="routine-card-grid training-plan-grid">
+              @for (plan of filteredTrainingPlans(); track plan.id) {
+                <article class="routine-card training-plan-card">
+                  <div class="routine-summary plan-summary">
+                    <span class="routine-icon"><mat-icon>calendar_view_week</mat-icon></span>
+                    <span class="routine-title">
+                      <strong>{{ plan.name }}</strong>
+                      <small>{{ plan.goal }} | {{ plan.level }}</small>
+                    </span>
+                    <span class="stat-pill">{{ plan.workoutCount }} workouts</span>
+                    <span
+                      class="stat-pill muted clickable-pill"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="'Ver asignaciones del plan ' + plan.name"
+                      (click)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
+                      (keydown.enter)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
+                      (keydown.space)="$event.preventDefault(); $event.stopPropagation(); showAssignmentsForPlan(plan)">
+                      {{ plan.assignmentCount || 0 }} asignaciones
+                    </span>
+                  </div>
+
+                  <div class="routine-actions">
+                    <button mat-icon-button type="button" matTooltip="Ver detalle" [routerLink]="['/student-platform/training-plans', plan.id]">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" matTooltip="Asignar plan" (click)="selectPlanForAssignment(plan); openTemplate(planAssignmentDialog, '820px')">
+                      <mat-icon>assignment_ind</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" matTooltip="Eliminar plan" (click)="deleteTrainingPlan(plan)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+
+                  @if (plan.description) {
+                    <p class="plan-description">{{ plan.description }}</p>
+                  }
+
+                  <div class="plan-card-footer">
+                    <span>{{ plan.workouts[0]?.dayLabel || plan.workouts[0]?.routineName || 'Sin workouts' }}</span>
+                    @if (plan.workoutCount > 1) {
+                      <span>+ {{ plan.workoutCount - 1 }} mas</span>
+                    }
+                    <a [routerLink]="['/student-platform/training-plans', plan.id]">Ver detalle</a>
+                  </div>
+                </article>
+              }
+            </div>
           }
-        </div>
+
+          <section class="assignment-list-panel">
+            <div class="panel-heading compact-heading">
+              <div>
+                <span class="eyebrow">Asignaciones</span>
+                <h3>Buscar asignaciones por plan</h3>
+                <small>Selecciona un plan o toca el chip de asignaciones de una card para ver sus alumnos.</small>
+              </div>
+              <button mat-stroked-button type="button" (click)="refreshTrainingPlanAssignments()">
+                <mat-icon>refresh</mat-icon>
+                Actualizar
+              </button>
+            </div>
+
+            <div class="assignment-search-row picker-field">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar plan</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input
+                  matInput
+                  [formControl]="assignmentListPlanSearch"
+                  (focus)="assignmentListPlanPickerOpen.set(true)"
+                  (click)="assignmentListPlanPickerOpen.set(true)"
+                  (blur)="closeAssignmentListPlanPickerSoon()"
+                  placeholder="Escribe el nombre del plan">
+                @if (selectedAssignmentPlanId()) {
+                  <button mat-icon-button matSuffix type="button" matTooltip="Limpiar busqueda" (click)="clearAssignmentListSearch()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                } @else {
+                  <button mat-icon-button matSuffix type="button" matTooltip="Mostrar planes" (mousedown)="$event.preventDefault()" (click)="assignmentListPlanPickerOpen.update(open => !open)">
+                    <mat-icon>{{ assignmentListPlanPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                }
+              </mat-form-field>
+              @if (assignmentListPlanPickerOpen()) {
+                <div class="search-results dropdown-results">
+                  @for (plan of getAssignmentListPlanMatches(); track plan.id) {
+                    <button type="button" [class.selected]="selectedAssignmentPlanId() === plan.id" (mousedown)="$event.preventDefault()" (click)="showAssignmentsForPlan(plan)">
+                      <strong>{{ plan.name }}</strong>
+                      <span>{{ plan.goal }} | {{ plan.level }}</span>
+                    </button>
+                  } @empty {
+                    <div class="search-empty">No encontramos planes con ese criterio.</div>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (!shouldShowAssignmentResults()) {
+              <div class="inline-empty">
+                Las asignaciones no se cargan de una para evitar una lista enorme. Selecciona un plan o toca el chip de asignaciones de una card.
+              </div>
+            } @else if (!trainingPlanAssignments().length) {
+              <div class="inline-empty">
+                Todavia no hay planes asignados. Usa "Asignar plan" para vincular un plan con un alumno.
+              </div>
+            } @else if (!filteredTrainingPlanAssignments().length) {
+              <div class="inline-empty">
+                Este plan todavia no tiene asignaciones.
+              </div>
+            } @else {
+              <div class="assignment-list">
+                @for (assignment of pagedTrainingPlanAssignments(); track assignment.id) {
+                  <article class="assignment-row">
+                    <div class="assignment-person">
+                      @if (assignment.clientAvatarUrl) {
+                        <img [src]="assignment.clientAvatarUrl" [alt]="assignment.clientApellido + ', ' + assignment.clientNombre">
+                      } @else {
+                        <span>{{ assignment.clientNombre.charAt(0) }}{{ assignment.clientApellido.charAt(0) }}</span>
+                      }
+                      <div>
+                        <strong>{{ assignment.clientApellido }}, {{ assignment.clientNombre }}</strong>
+                        <small>DNI {{ assignment.clientDni || '-' }}</small>
+                      </div>
+                    </div>
+                    <div>
+                      <strong>{{ assignment.trainingPlanName }}</strong>
+                      <small>{{ assignment.trainingPlanGoal }} | {{ assignment.trainingPlanLevel }}</small>
+                    </div>
+                    <span class="stat-pill">{{ assignment.workoutCount }} workouts</span>
+                    <small>{{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
+                    <span class="status-chip">{{ assignment.status }}</span>
+                  </article>
+                }
+              </div>
+              <div class="assignment-pagination">
+                <button mat-icon-button type="button" matTooltip="Pagina anterior" [disabled]="assignmentListPage() <= 1" (click)="setAssignmentListPage(-1)">
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                <span>Pagina {{ assignmentListPage() }} de {{ assignmentListTotalPages() }}</span>
+                <button mat-icon-button type="button" matTooltip="Pagina siguiente" [disabled]="assignmentListPage() >= assignmentListTotalPages()" (click)="setAssignmentListPage(1)">
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
+            }
+          </section>
+        </section>
       </div>
     </mat-tab>
 
-    <mat-tab label="Rutinas">
-      <div class="tab-grid">
-        <mat-card>
-          <h2>Asignar rutina</h2>
-          <form [formGroup]="routineForm" (ngSubmit)="createRoutine()" class="form-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Alumno</mat-label>
-              <mat-select formControlName="clientId">
-                @for (client of clients(); track client.id) {
-                  <mat-option [value]="client.id">{{ client.apellido }}, {{ client.nombre }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Ejercicio inicial</mat-label>
-              <mat-select formControlName="exerciseId">
-                @for (exercise of exercises(); track exercise.id) {
-                  <mat-option [value]="exercise.id">{{ exercise.name }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+    <mat-tab label="Workouts">
+      <ng-template #routineBuilderDialog>
+        <section class="panel dialog-panel routine-builder">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Dia reutilizable</span>
+              <h2>{{ routineForm.controls.id.value ? 'Editar workout' : 'Nuevo workout' }}</h2>
+            </div>
+            <button mat-icon-button type="button" matTooltip="Limpiar" (click)="resetRoutineBuilder()">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+
+          <form [formGroup]="routineForm" class="form-grid compact">
             <mat-form-field appearance="outline">
               <mat-label>Nombre</mat-label>
-              <input matInput formControlName="name">
+              <input matInput formControlName="name" placeholder="PIERNAS">
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Objetivo</mat-label>
               <input matInput formControlName="goal">
             </mat-form-field>
             <mat-form-field appearance="outline">
+              <mat-label>Nivel</mat-label>
+              <input matInput formControlName="level">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Descripcion</mat-label>
+              <input matInput formControlName="description">
+            </mat-form-field>
+          </form>
+
+          <form [formGroup]="routineExerciseForm" class="exercise-picker">
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Buscar ejercicio</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [formControl]="builderExerciseSearch">
+            </mat-form-field>
+            <div class="search-results wide">
+              @for (exercise of getBuilderExerciseMatches(); track exercise.id) {
+                <button type="button" (click)="selectBuilderExercise(exercise)">
+                  <strong>{{ exercise.name }}</strong>
+                  <span>{{ exercise.muscleGroup }}</span>
+                </button>
+              }
+            </div>
+            <mat-form-field appearance="outline">
               <mat-label>Series</mat-label>
               <input matInput type="number" formControlName="sets">
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Repeticiones</mat-label>
+              <mat-label>Reps</mat-label>
               <input matInput type="number" formControlName="reps">
             </mat-form-field>
-            <button mat-flat-button color="primary" type="submit">
-              <mat-icon>assignment_add</mat-icon>
-              Asignar
+            <mat-form-field appearance="outline">
+              <mat-label>Peso</mat-label>
+              <input matInput type="number" formControlName="weight">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Descanso seg.</mat-label>
+              <input matInput type="number" formControlName="restSeconds">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Notas</mat-label>
+              <input matInput formControlName="notes">
+            </mat-form-field>
+            <button mat-stroked-button type="button" class="wide" (click)="addExerciseToRoutine()">
+              <mat-icon>playlist_add</mat-icon>
+              Agregar ejercicio
             </button>
           </form>
-        </mat-card>
 
-        <div class="list">
-          @for (routine of routines(); track routine.id) {
-            <mat-card class="item-card">
-              <div>
-                <strong>{{ routine.name }}</strong>
-                <span>{{ routine.goal }} · {{ routine.level }}</span>
-                <p>{{ routine.exercises.length }} ejercicios · {{ routine.completionPercent }}% completado</p>
+          <div class="builder-list">
+            @for (item of routineBuilderExercises(); track item.exerciseId; let i = $index) {
+              <div class="builder-row">
+                <strong>{{ item.sortOrder }}</strong>
+                <div>
+                  <b>{{ item.exerciseName }}</b>
+                  <span>{{ item.sets || '-' }} x {{ item.reps || '-' }} | {{ item.restSeconds || '-' }}s</span>
+                </div>
+                <div class="row-actions">
+                  <button mat-icon-button type="button" matTooltip="Subir" (click)="moveRoutineExercise(i, -1)">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button mat-icon-button type="button" matTooltip="Bajar" (click)="moveRoutineExercise(i, 1)">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button mat-icon-button type="button" matTooltip="Quitar" (click)="removeRoutineExercise(i)">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
               </div>
-            </mat-card>
+            }
+          </div>
+
+          @if (!routineBuilderExercises().length) {
+            <div class="inline-warning">
+              Agrega al menos un ejercicio para guardar el workout.
+            </div>
           }
-        </div>
+
+          <button mat-flat-button color="primary" type="button" [disabled]="!canSaveRoutine()" (click)="saveRoutineTemplate()">
+            <mat-icon>save</mat-icon>
+            Guardar workout
+          </button>
+        </section>
+      </ng-template>
+
+      <ng-template #routineAssignmentDialog>
+        <section class="panel dialog-panel assignment-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Asignacion directa</span>
+              <h2>Workout directo a alumno</h2>
+              <small>Uso puntual para casos especiales. El flujo principal es asignar un plan completo al alumno.</small>
+            </div>
+          </div>
+
+          <form [formGroup]="assignmentForm" class="form-grid">
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Buscar workout</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [formControl]="assignmentRoutineSearch">
+            </mat-form-field>
+            <div class="search-results wide">
+              @for (routine of getAssignmentRoutineMatches(); track routine.id) {
+                <button type="button" (click)="selectRoutineForAssignment(routine)">
+                  <strong>{{ routine.name }}</strong>
+                  <span>{{ routine.exercises.length }} ejercicios</span>
+                </button>
+              }
+            </div>
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Buscar alumno</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [formControl]="assignmentClientSearch">
+            </mat-form-field>
+            <div class="search-results wide">
+              @for (client of getAssignmentClientMatches(); track client.id) {
+                <button type="button" (click)="selectClientForAssignment(client)">
+                  <strong>{{ client.apellido }}, {{ client.nombre }}</strong>
+                  <span>DNI {{ client.dni }}</span>
+                </button>
+              }
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Inicio</mat-label>
+              <input matInput type="date" formControlName="startsAt">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Fin</mat-label>
+              <input matInput type="date" formControlName="endsAt">
+            </mat-form-field>
+            <div class="day-picker wide">
+              @for (day of [1,2,3,4,5,6,0]; track day) {
+                <button type="button" [class.active]="selectedScheduleDays().includes(day)" (click)="toggleScheduleDay(day)">
+                  {{ getDayLabel(day) }}
+                </button>
+              }
+            </div>
+            <button mat-flat-button color="primary" type="button" class="wide" (click)="assignRoutine()">
+              <mat-icon>assignment_ind</mat-icon>
+              Asignar workout directo
+            </button>
+          </form>
+        </section>
+      </ng-template>
+
+      <div class="workspace-grid">
+        <section class="panel">
+          <div class="list-toolbar">
+            <div>
+              <span class="eyebrow">Biblioteca</span>
+              <h2>Workouts</h2>
+              <small>Son dias de entrenamiento reutilizables. Luego podes combinarlos dentro de un plan.</small>
+            </div>
+            <div class="toolbar-actions">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar workout</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput [formControl]="routineSearch">
+              </mat-form-field>
+              <button mat-flat-button color="primary" type="button" routerLink="/student-platform/routines/new">
+                <mat-icon>add</mat-icon>
+                Nuevo workout
+              </button>
+              <button mat-stroked-button type="button" (click)="openTemplate(routineAssignmentDialog, '820px')">
+                <mat-icon>assignment_ind</mat-icon>
+                Asignar directo
+              </button>
+            </div>
+          </div>
+
+          @if (!filteredRoutineTemplates().length) {
+            <div class="empty-state">
+              <mat-icon>assignment</mat-icon>
+              <h3>No hay workouts</h3>
+              <p>Crea un dia reutilizable y despues agregalo a uno o mas planes de entrenamiento.</p>
+              @if (isAdminOrSuperAdmin$ | async) {
+                <button mat-flat-button color="primary" type="button" routerLink="/student-platform/routines/new">
+                  <mat-icon>add</mat-icon>
+                  Nuevo workout
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="dense-table workout-table">
+              <div class="table-header">
+                <span>Nombre</span>
+                <span>Descripcion</span>
+                <span>Ejercicios</span>
+                <span>Planes</span>
+                <span>Directas</span>
+                <span></span>
+              </div>
+              @for (routine of filteredRoutineTemplates(); track routine.id) {
+                <div class="table-row" [id]="'routine-card-' + routine.id">
+                  <div class="name-cell">
+                    <span class="thumb-placeholder compact-thumb"><mat-icon>fitness_center</mat-icon></span>
+                    <div>
+                      <strong>{{ routine.name }}</strong>
+                      <small>{{ routine.goal }} | {{ routine.level }}</small>
+                    </div>
+                  </div>
+                  <span class="description-cell" [matTooltip]="routine.description || 'Sin descripcion'" [matTooltipDisabled]="!routine.description">
+                    {{
+                      routine.description
+                        ? (routine.description.length > 50 ? (routine.description.slice(0, 50) + '...') : routine.description)
+                        : '-'
+                    }}
+                  </span>
+                  <span>{{ routine.exercises.length }}</span>
+                  <span>{{ routine.planCount || 0 }}</span>
+                  <span>{{ routine.assignmentCount }}</span>
+                  <div class="row-actions">
+                    <button mat-stroked-button type="button" [routerLink]="['/student-platform/routines', routine.id]">
+                      Ver mas
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
       </div>
     </mat-tab>
 
-    <mat-tab label="Ranking">
-      <div class="ranking-toolbar">
-        <button mat-stroked-button type="button" (click)="loadRanking('attendance')">Asistencia mensual</button>
-        <button mat-stroked-button type="button" (click)="loadRanking('achievements')">Logros mensual</button>
-      </div>
+    <mat-tab label="Seguimiento">
+      <ng-template #attendanceDialog>
+        <section class="panel dialog-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Asistencia</span>
+              <h2>Registrar asistencia</h2>
+            </div>
+          </div>
 
-      <div class="ranking-list">
-        @for (item of ranking()?.items ?? []; track item.clientId) {
-          <mat-card class="ranking-row">
-            <strong>#{{ item.position }}</strong>
-            <span>{{ item.apellido }}, {{ item.nombre }}</span>
-            <b>{{ item.score }}</b>
-          </mat-card>
+          <form [formGroup]="trackingForm" class="form-grid">
+            <label class="select-field wide">
+              <span>Alumno</span>
+              <select formControlName="clientId">
+                <option [value]="0">Seleccionar</option>
+                @for (client of clients(); track client.id) {
+                  <option [value]="client.id">{{ client.apellido }}, {{ client.nombre }}</option>
+                }
+              </select>
+            </label>
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha asistencia</mat-label>
+              <input matInput type="date" formControlName="attendanceDate">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Notas</mat-label>
+              <input matInput formControlName="attendanceNotes">
+            </mat-form-field>
+            <button mat-flat-button color="primary" type="button" class="wide" (click)="saveManualAttendance()">
+              <mat-icon>event_available</mat-icon>
+              Registrar asistencia
+            </button>
+          </form>
+        </section>
+      </ng-template>
+
+      <section class="panel tracking-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Alumno</span>
+            <h2>Asistencia y progreso</h2>
+          </div>
+          <button mat-flat-button color="primary" type="button" (click)="openTemplate(attendanceDialog, '620px')">
+            <mat-icon>event_available</mat-icon>
+            Registrar asistencia
+          </button>
+        </div>
+
+        <form [formGroup]="trackingForm" class="form-grid tracking-controls">
+          <div class="wide student-combobox">
+            <mat-form-field appearance="outline" class="wide-field">
+              <mat-label>Buscar alumno</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input
+                matInput
+                [formControl]="trackingClientSearch"
+                (focus)="trackingClientPickerOpen.set(true)"
+                (blur)="closeTrackingClientPickerSoon()"
+                placeholder="Escribe nombre, apellido o DNI">
+              <button mat-icon-button matSuffix type="button" matTooltip="Mostrar alumnos" (mousedown)="$event.preventDefault()" (click)="trackingClientPickerOpen.update(open => !open)">
+                <mat-icon>{{ trackingClientPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+            </mat-form-field>
+            @if (trackingClientPickerOpen()) {
+              <div class="search-results tracking-client-options">
+                @for (client of filteredTrackingClients(); track client.id) {
+                  <button type="button" [class.selected]="client.id === trackingForm.controls.clientId.value" (mousedown)="$event.preventDefault(); selectClientForTracking(client)">
+                    <strong>{{ client.apellido }}, {{ client.nombre }}</strong>
+                    <span>DNI {{ client.dni }}</span>
+                  </button>
+                }
+                @if (!filteredTrackingClients().length) {
+                  <div class="inline-empty">
+                    No encontramos alumnos con ese criterio.
+                  </div>
+                }
+              </div>
+            }
+            @if (selectedTrackingClient()) {
+              <div class="selected-student-pill">
+                <mat-icon>person</mat-icon>
+                <span>{{ selectedTrackingClient()!.apellido }}, {{ selectedTrackingClient()!.nombre }}</span>
+              </div>
+            }
+          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Desde</mat-label>
+            <input matInput type="date" [formControl]="trackingFrom">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Hasta</mat-label>
+            <input matInput type="date" [formControl]="trackingTo">
+          </mat-form-field>
+          <div class="form-actions wide">
+            <button mat-stroked-button type="button" [disabled]="trackingForm.controls.clientId.value <= 0" (click)="loadStudentTracking()">
+              <mat-icon>search</mat-icon>
+              Ver seguimiento
+            </button>
+          </div>
+        </form>
+
+        @if (!selectedTrackingClient()) {
+          <div class="empty-state">
+            <mat-icon>person_search</mat-icon>
+            <h3>Selecciona un alumno</h3>
+            <p>Busca por nombre, apellido o DNI para ver asistencias, workouts realizados e historial de progreso.</p>
+          </div>
+        } @else {
+          <div class="tracking-summary">
+            <article>
+              <span>Alumno</span>
+              <strong>{{ selectedTrackingClient()!.apellido }}, {{ selectedTrackingClient()!.nombre }}</strong>
+            </article>
+            <article>
+              <span>Asistencias</span>
+              <strong>{{ attendance().length }}</strong>
+            </article>
+            <article>
+              <span>Planes asignados</span>
+              <strong>{{ selectedTrackingClientPlanAssignments().length }}</strong>
+            </article>
+            <article>
+              <span>Historial</span>
+              <strong>{{ progressHistory()?.points?.length || 0 }}</strong>
+            </article>
+          </div>
+
+          <div class="tracking-grid">
+            <section class="tracking-card">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <span class="eyebrow">Asistencia</span>
+                  <h3>Registros</h3>
+                </div>
+              </div>
+              @if (!attendance().length) {
+                <div class="inline-empty">
+                  Todavia no hay asistencias para el rango seleccionado.
+                </div>
+              } @else {
+                <div class="dense-table">
+                  <div class="table-header">
+                    <span>Fecha</span>
+                    <span>Origen</span>
+                    <span>Notas</span>
+                  </div>
+                  @for (item of attendance(); track item.id) {
+                    <div class="table-row">
+                      <span>{{ item.date | date:'dd/MM/yyyy' }}</span>
+                      <span>{{ item.source }}</span>
+                      <small>{{ item.notes || '-' }}</small>
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+
+            <section class="tracking-card">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <span class="eyebrow">Planes</span>
+                  <h3>Asignaciones del alumno</h3>
+                </div>
+              </div>
+              @if (!selectedTrackingClientPlanAssignments().length) {
+                <div class="inline-empty">
+                  Este alumno todavia no tiene planes asignados.
+                </div>
+              } @else {
+                <div class="dense-table">
+                  <div class="table-header">
+                    <span>Plan</span>
+                    <span>Workouts</span>
+                    <span>Asignado</span>
+                  </div>
+                  @for (assignment of selectedTrackingClientPlanAssignments(); track assignment.id) {
+                    <div class="table-row">
+                      <span>{{ assignment.trainingPlanName }}</span>
+                      <span>{{ assignment.workoutCount }}</span>
+                      <small>{{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+          </div>
+
+          <section class="tracking-card">
+            <div class="panel-heading compact-heading">
+              <div>
+                <span class="eyebrow">Progreso</span>
+                <h3>Historial por ejercicio</h3>
+                <small>Elegi un ejercicio para ver como fue evolucionando el peso y las repeticiones.</small>
+              </div>
+            </div>
+            <form [formGroup]="trackingForm" class="progress-picker-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Ejercicio</mat-label>
+                <select matNativeControl formControlName="exerciseId">
+                  <option [value]="0">Seleccionar ejercicio</option>
+                  @for (exercise of exercises(); track exercise.id) {
+                    <option [value]="exercise.id">{{ exercise.name }}</option>
+                  }
+                </select>
+              </mat-form-field>
+              <button mat-stroked-button type="button" [disabled]="trackingForm.controls.clientId.value <= 0 || trackingForm.controls.exerciseId.value <= 0" (click)="loadExerciseProgress()">
+                <mat-icon>show_chart</mat-icon>
+                Ver progreso
+              </button>
+            </form>
+            @if (!progressHistory()) {
+              <div class="inline-empty">
+                Selecciona un ejercicio para consultar el historial de progreso.
+              </div>
+            } @else if (!progressHistory()!.points.length) {
+              <div class="inline-empty">
+                Este alumno todavia no tiene registros para {{ progressHistory()!.exerciseName }}.
+              </div>
+            } @else {
+              <div class="dense-table progress-table">
+                <div class="table-header">
+                  <span>Fecha</span>
+                  <span>Workout</span>
+                  <span>Serie</span>
+                  <span>Peso/Reps</span>
+                </div>
+                @for (point of progressHistory()!.points; track point.trainingDate + '-' + point.setNumber) {
+                  <div class="table-row progress-row">
+                    <span>{{ point.trainingDate | date:'dd/MM/yyyy' }}</span>
+                    <span>{{ point.routineName }}</span>
+                    <span>{{ point.setNumber }}</span>
+                    <strong>{{ point.weight || 0 }} kg / {{ point.reps || 0 }}</strong>
+                  </div>
+                }
+              </div>
+            }
+          </section>
         }
+      </section>
+    </mat-tab>
+
+    <mat-tab label="Ejercicios">
+      <ng-template #exerciseEditorDialog>
+        <section class="exercise-dialog">
+          <header class="exercise-dialog-header">
+            <div>
+              <span class="eyebrow">Biblioteca</span>
+              <h2>{{ exerciseForm.controls.id.value ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</h2>
+              <p>Define la ficha que despues ve el alumno: anatomia, imagen, video y QR.</p>
+            </div>
+            @if (exerciseForm.controls.id.value) {
+              <button mat-icon-button type="button" matTooltip="Nuevo" (click)="resetExerciseForm()">
+                <mat-icon>add</mat-icon>
+              </button>
+            }
+          </header>
+
+          <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" class="exercise-dialog-form">
+            <div class="exercise-dialog-main">
+              <section class="form-section">
+                <div class="section-heading">
+                  <mat-icon>edit_note</mat-icon>
+                  <div>
+                    <h3>Datos principales</h3>
+                    <span>Nombre visible, grupo y descripcion corta.</span>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Nombre</mat-label>
+                    <input matInput formControlName="name">
+                    @if (exerciseForm.controls.name.hasError('required')) {
+                      <mat-error>El nombre es obligatorio.</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Grupo muscular libre</mat-label>
+                    <input matInput formControlName="muscleGroup">
+                    @if (exerciseForm.controls.muscleGroup.hasError('required')) {
+                      <mat-error>El grupo muscular es obligatorio.</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="wide">
+                    <mat-label>Descripcion</mat-label>
+                    <textarea matInput rows="4" formControlName="description"></textarea>
+                    @if (exerciseForm.controls.description.hasError('required')) {
+                      <mat-error>La descripcion es obligatoria.</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+              </section>
+
+              <section class="form-section">
+                <div class="section-heading">
+                  <mat-icon>hub</mat-icon>
+                  <div>
+                    <h3>Anatomia</h3>
+                    <span>Relaciona el ejercicio con grupos y musculos especificos.</span>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <label class="select-field">
+                    <span>Grupo principal</span>
+                    <select formControlName="primaryMuscleGroupId">
+                      <option [value]="0">Sin asignar</option>
+                      @for (group of muscleGroups(); track group.id) {
+                        <option [value]="group.id">{{ group.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="select-field">
+                    <span>Grupo secundario</span>
+                    <select formControlName="secondaryMuscleGroupId">
+                      <option [value]="0">Sin asignar</option>
+                      @for (group of muscleGroups(); track group.id) {
+                        <option [value]="group.id">{{ group.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <mat-form-field appearance="outline" class="wide">
+                    <mat-label>Musculos involucrados adicionales</mat-label>
+                    <input matInput formControlName="musclesInvolved">
+                  </mat-form-field>
+                </div>
+
+                <div class="muscle-picker">
+                  @for (group of muscleGroups(); track group.id) {
+                    <div>
+                      <strong>{{ group.name }}</strong>
+                      <div class="chip-list">
+                        @for (muscle of group.muscles; track muscle.id) {
+                          <button type="button" [class.active]="selectedExerciseMuscleIds().includes(muscle.id)" (click)="toggleExerciseMuscle(muscle.id)">
+                            {{ muscle.name }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </section>
+            </div>
+
+            <aside class="exercise-dialog-side">
+              <section class="media-card">
+                <div class="section-heading">
+                  <mat-icon>image</mat-icon>
+                  <div>
+                    <h3>Imagen</h3>
+                    <span>Se guarda en blobs y se muestra al alumno.</span>
+                  </div>
+                </div>
+                <div class="image-dropzone" (click)="exerciseImageInput.click()">
+                  <input #exerciseImageInput type="file" accept="image/*" hidden (change)="onExerciseImageSelected($event)">
+                  @if (imagePreviewUrl()) {
+                    <img [src]="imagePreviewUrl()" alt="">
+                  } @else {
+                    <mat-icon>add_photo_alternate</mat-icon>
+                    <strong>Subir imagen</strong>
+                    <span>PNG, JPG o WEBP</span>
+                  }
+                </div>
+                <button mat-stroked-button type="button" (click)="exerciseImageInput.click()">
+                  <mat-icon>upload</mat-icon>
+                  Elegir archivo
+                </button>
+              </section>
+
+              <section class="media-card">
+                <div class="section-heading">
+                  <mat-icon>smart_display</mat-icon>
+                  <div>
+                    <h3>Video</h3>
+                    <span>URL de YouTube o link externo.</span>
+                  </div>
+                </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Video YouTube / URL</mat-label>
+                  <input matInput formControlName="videoUrl">
+                  @if (!isExerciseVideoValid()) {
+                    <mat-error>Usa una URL valida que empiece con http o https.</mat-error>
+                  }
+                </mat-form-field>
+              </section>
+            </aside>
+
+            <div class="dialog-footer">
+              <button mat-stroked-button type="button" (click)="closeDialogs()">Cancelar</button>
+              <button mat-flat-button color="primary" type="submit" [disabled]="!canSaveExercise() || isLoading()">
+                <mat-icon>save</mat-icon>
+                Guardar ejercicio
+              </button>
+            </div>
+          </form>
+        </section>
+      </ng-template>
+
+      <ng-template #exerciseQrDialog>
+        <section class="panel dialog-panel qr-dialog">
+          <header class="qr-dialog-header">
+            <div>
+              <span class="eyebrow">QR del ejercicio</span>
+              <h2>{{ selectedQrExercise()?.name }}</h2>
+              <p>Escaneando este codigo el alumno abre directamente la ficha del ejercicio.</p>
+            </div>
+            <button mat-icon-button type="button" matTooltip="Cerrar" (click)="closeDialogs()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </header>
+
+          @if (selectedQrExercise(); as exercise) {
+            <div class="qr-preview-card">
+              <div class="qr-code-frame">
+                <img [src]="getExerciseQrImageUrl(exercise)" [alt]="'QR de ' + exercise.name">
+              </div>
+              <div class="qr-link-box">
+                <span>Destino</span>
+                <a [href]="getExerciseQrDestination(exercise)" target="_blank" rel="noopener">
+                  {{ getExerciseQrDestination(exercise) }}
+                </a>
+              </div>
+            </div>
+
+            <div class="dialog-footer">
+              <button mat-stroked-button type="button" (click)="copyExerciseQr(exercise)">
+                <mat-icon>content_copy</mat-icon>
+                Copiar link
+              </button>
+              <button mat-stroked-button type="button" (click)="downloadExerciseQr(exercise)">
+                <mat-icon>download</mat-icon>
+                Descargar QR
+              </button>
+              <a mat-flat-button color="primary" [href]="getExerciseQrDestination(exercise)" target="_blank" rel="noopener">
+                <mat-icon>open_in_new</mat-icon>
+                Abrir ficha
+              </a>
+            </div>
+          }
+        </section>
+      </ng-template>
+
+      <div class="workspace-grid">
+        <section class="panel">
+          <div class="list-toolbar">
+            <div>
+              <span class="eyebrow">Catalogo</span>
+              <h2>Ejercicios</h2>
+            </div>
+            <div class="toolbar-actions exercise-filter-bar">
+              <label class="select-field exercise-search-control">
+                <span>Ejercicio</span>
+                <div class="exercise-search-input">
+                  <mat-icon>search</mat-icon>
+                  <input [formControl]="exerciseSearch" type="search" placeholder="Buscar ejercicio">
+                </div>
+              </label>
+              <label class="select-field compact-select">
+                <span>Grupo muscular</span>
+                <select [formControl]="exerciseGroupFilter">
+                  <option [value]="0">Todos los grupos</option>
+                  @for (group of muscleGroups(); track group.id) {
+                    <option [value]="group.id">{{ group.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="select-field compact-select">
+                <span>Musculo</span>
+                <select [formControl]="exerciseMuscleFilter">
+                  <option [value]="0">Todos los musculos</option>
+                  @for (muscle of exerciseMuscleOptions(); track muscle.id) {
+                    <option [value]="muscle.id">{{ muscle.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (hasExerciseFilters()) {
+                <button mat-stroked-button type="button" (click)="clearExerciseFilters()">
+                  <mat-icon>filter_alt_off</mat-icon>
+                  Limpiar
+                </button>
+              }
+              @if (isAdminOrSuperAdmin$ | async) {
+                <button mat-flat-button color="primary" type="button" routerLink="/student-platform/exercises/new">
+                  <mat-icon>add</mat-icon>
+                  Nuevo ejercicio
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (!filteredExercises().length) {
+            <div class="empty-state">
+              <mat-icon>fitness_center</mat-icon>
+              <h3>No hay ejercicios para mostrar</h3>
+              <p>Ajusta los filtros o crea un nuevo ejercicio para empezar la biblioteca.</p>
+              @if (isAdminOrSuperAdmin$ | async) {
+                <button mat-flat-button color="primary" type="button" routerLink="/student-platform/exercises/new">
+                  <mat-icon>add</mat-icon>
+                  Nuevo ejercicio
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="dense-table exercise-table enhanced-exercise-table">
+              <div class="table-header">
+                <span>Ejercicio</span>
+                <span>Grupos</span>
+                <span>Musculos</span>
+                <span>Media</span>
+                <span>QR</span>
+                <span></span>
+              </div>
+              @for (exercise of filteredExercises(); track exercise.id) {
+                <div class="table-row" [id]="'exercise-row-' + exercise.id">
+                  <div class="name-cell">
+                    @if (exercise.photoUrl) {
+                      <img [src]="exercise.photoUrl" alt="">
+                    } @else {
+                      <span class="thumb-placeholder"><mat-icon>fitness_center</mat-icon></span>
+                    }
+                    <div>
+                      <strong>{{ exercise.name }}</strong>
+                      <small>{{ exercise.description }}</small>
+                    </div>
+                  </div>
+                  <div class="tag-stack">
+                    <span class="soft-tag primary-tag">{{ exercise.primaryMuscleGroupName || exercise.muscleGroup || 'Sin principal' }}</span>
+                    @if (exercise.secondaryMuscleGroupName) {
+                      <span class="soft-tag">{{ exercise.secondaryMuscleGroupName }}</span>
+                    }
+                  </div>
+                  <div class="mini-chip-list">
+                    @for (muscle of exercise.muscles.slice(0, 4); track muscle.id) {
+                      <span>{{ muscle.name }}</span>
+                    }
+                    @if (exercise.muscles.length > 4) {
+                      <span>+{{ exercise.muscles.length - 4 }}</span>
+                    }
+                    @if (!exercise.muscles.length) {
+                      <small>-</small>
+                    }
+                  </div>
+                  <div class="media-status">
+                    <span [class.ok]="exercise.photoUrl"><mat-icon>image</mat-icon>{{ exercise.photoUrl ? 'OK' : '-' }}</span>
+                    <span [class.ok]="exercise.videoUrl"><mat-icon>smart_display</mat-icon>{{ exercise.videoUrl ? 'OK' : '-' }}</span>
+                  </div>
+                  <button mat-stroked-button type="button" class="qr-action" (click)="openExerciseQr(exercise, exerciseQrDialog)" [title]="getExerciseQrDestination(exercise)">
+                    <mat-icon>qr_code_2</mat-icon>
+                    Ver QR
+                  </button>
+                  <div class="row-actions">
+                    @if (isAdminOrSuperAdmin$ | async) {
+                      <a mat-icon-button matTooltip="Ver detalle" [routerLink]="['/student-platform/exercises', exercise.id]">
+                        <mat-icon>visibility</mat-icon>
+                      </a>
+                      <button mat-icon-button type="button" matTooltip="Eliminar" (click)="deleteExercise(exercise)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
       </div>
+    </mat-tab>
+
+    <mat-tab label="Grupos musculares">
+      <div class="workspace-grid anatomy-workspace">
+        <section class="anatomy-hero">
+          <div class="anatomy-hero-copy">
+            <span class="eyebrow">Catalogo anatomico</span>
+            <h2>Grupos musculares</h2>
+            <p>Organiza la base anatomica que despues usan los ejercicios, workouts y logros.</p>
+          </div>
+
+          <div class="anatomy-summary">
+            <article>
+              <span>Grupos</span>
+              <strong>{{ muscleGroups().length }}</strong>
+            </article>
+            <article>
+              <span>Musculos</span>
+              <strong>{{ totalMuscleCount() }}</strong>
+            </article>
+            <article>
+              <span>Sin completar</span>
+              <strong>{{ emptyMuscleGroupCount() }}</strong>
+            </article>
+          </div>
+
+          <div class="catalog-actions anatomy-actions">
+            <button mat-flat-button color="primary" type="button" (click)="openMuscleGroupDialog()">
+              <mat-icon>add</mat-icon>
+              Nuevo grupo
+            </button>
+            <button mat-stroked-button type="button" (click)="openSelectedMuscleDialog()">
+              <mat-icon>add</mat-icon>
+              Nuevo musculo
+            </button>
+          </div>
+        </section>
+
+        <section class="panel catalog-panel anatomy-panel">
+          <div class="anatomy-toolbar">
+            <div>
+              <span class="eyebrow">Biblioteca</span>
+              <h2>Mapa muscular</h2>
+              <small>{{ filteredMuscleGroups().length }} de {{ muscleGroups().length }} grupos visibles</small>
+            </div>
+            <div class="anatomy-searchbar">
+              <mat-form-field appearance="outline">
+                <mat-label>Buscar grupo o musculo</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput [formControl]="catalogSearch">
+              </mat-form-field>
+              <button
+                mat-stroked-button
+                type="button"
+                [class.active-filter]="showEmptyMuscleGroupsOnly()"
+                (click)="toggleEmptyMuscleGroupsFilter()">
+                <mat-icon>filter_list</mat-icon>
+                Sin musculos
+              </button>
+            </div>
+          </div>
+
+          @if (!muscleGroups().length) {
+            <div class="empty-state">
+              <mat-icon>fitness_center</mat-icon>
+              <h3>Todavia no hay grupos musculares</h3>
+              <p>Crea el primer grupo para empezar a ordenar los ejercicios por anatomia.</p>
+              <button mat-flat-button color="primary" type="button" (click)="openMuscleGroupDialog()">
+                <mat-icon>add</mat-icon>
+                Crear primer grupo
+              </button>
+            </div>
+          } @else if (!filteredMuscleGroups().length) {
+            <div class="empty-state">
+              <mat-icon>search_off</mat-icon>
+              <h3>No encontramos resultados</h3>
+              <p>Probá con otro nombre o desactivá el filtro de grupos sin músculos.</p>
+              <button mat-stroked-button type="button" (click)="catalogSearch.setValue(''); showEmptyMuscleGroupsOnly.set(false)">
+                Limpiar filtros
+              </button>
+            </div>
+          } @else {
+            <div class="anatomy-main">
+              <div class="muscle-group-grid" aria-label="Grupos musculares">
+                @for (group of filteredMuscleGroups(); track group.id) {
+                  <article
+                    class="muscle-group-card"
+                    [class.selected]="selectedMuscleGroup()?.id === group.id"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-pressed]="selectedMuscleGroup()?.id === group.id"
+                    (click)="selectMuscleGroup(group)"
+                    (keydown.enter)="selectMuscleGroup(group)"
+                    (keydown.space)="selectMuscleGroup(group)">
+                    <div class="group-card-header">
+                      <span class="group-icon">
+                        <mat-icon>fitness_center</mat-icon>
+                      </span>
+                      <span class="muscle-count">{{ group.muscles.length }} musculos</span>
+                    </div>
+
+                    <div class="group-title">
+                      <strong>{{ group.name }}</strong>
+                      <small>{{ group.description || 'Grupo muscular' }}</small>
+                    </div>
+
+                    <div class="muscle-preview">
+                      @for (muscle of group.muscles.slice(0, 3); track muscle.id) {
+                        <span>{{ muscle.name }}</span>
+                      }
+                      @if (group.muscles.length > 3) {
+                        <span>+{{ group.muscles.length - 3 }}</span>
+                      }
+                      @if (!group.muscles.length) {
+                        <small>Sin musculos cargados</small>
+                      }
+                    </div>
+
+                    <div class="group-actions" aria-label="Acciones del grupo">
+                      <button mat-icon-button type="button" matTooltip="Editar grupo" aria-label="Editar grupo" (click)="$event.stopPropagation(); editMuscleGroup(group)">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button type="button" matTooltip="Eliminar grupo" aria-label="Eliminar grupo" (click)="$event.stopPropagation(); deleteMuscleGroup(group)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </article>
+                }
+              </div>
+
+              <aside class="muscle-detail-panel">
+                @if (selectedMuscleGroup(); as selectedGroup) {
+                  <div class="detail-header">
+                    <span class="group-icon detail-icon">
+                      <mat-icon>accessibility_new</mat-icon>
+                    </span>
+                    <div>
+                      <span class="eyebrow">Detalle del grupo</span>
+                      <h3>{{ selectedGroup.name }}</h3>
+                      <p>{{ selectedGroup.description || 'Administra los musculos asociados a este grupo.' }}</p>
+                    </div>
+                  </div>
+
+                  <div class="detail-actions">
+                    <button mat-flat-button color="primary" type="button" (click)="openMuscleDialog(selectedGroup)">
+                      <mat-icon>add</mat-icon>
+                      Agregar musculo
+                    </button>
+                    <button mat-stroked-button type="button" (click)="editMuscleGroup(selectedGroup)">
+                      <mat-icon>edit</mat-icon>
+                      Editar grupo
+                    </button>
+                  </div>
+
+                  @if (selectedGroup.muscles.length) {
+                    <div class="muscle-detail-list">
+                      @for (muscle of selectedGroup.muscles; track muscle.id) {
+                        <div class="muscle-detail-row">
+                          <span>
+                            <strong>{{ muscle.name }}</strong>
+                            @if (muscle.description) {
+                              <small>{{ muscle.description }}</small>
+                            } @else {
+                              <small>Sin descripcion</small>
+                            }
+                          </span>
+                          <div class="muscle-actions">
+                            <button mat-icon-button type="button" matTooltip="Editar musculo" aria-label="Editar musculo" (click)="editMuscle(selectedGroup.id, muscle.id)">
+                              <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button type="button" matTooltip="Eliminar musculo" aria-label="Eliminar musculo" (click)="deleteMuscle(selectedGroup, muscle)">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="empty-group detail-empty">
+                      <span>Este grupo todavia no tiene musculos.</span>
+                      <button mat-stroked-button type="button" (click)="openMuscleDialog(selectedGroup)">
+                        <mat-icon>add</mat-icon>
+                        Crear musculo
+                      </button>
+                    </div>
+                  }
+                }
+              </aside>
+            </div>
+          }
+        </section>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Logros y ranking">
+      <section class="gamification-page">
+        <header class="gamification-hero">
+          <div>
+            <span class="eyebrow">Gamificacion</span>
+            <h2>Logros y ranking</h2>
+            <p>Motiva progreso real con badges, habitos saludables y rankings justos.</p>
+          </div>
+          <div class="gamification-metrics">
+            <article><span>Logros activos</span><strong>{{ gamificationMetrics()?.activeAchievements || achievements().length }}</strong></article>
+            <article><span>Badges ganados</span><strong>{{ gamificationMetrics()?.badgesEarned || 0 }}</strong></article>
+            <article><span>Puntos entregados</span><strong>{{ gamificationMetrics()?.pointsDelivered || 0 }}</strong></article>
+            <article><span>Alumnos rankeados</span><strong>{{ gamificationMetrics()?.rankedStudents || ranking()?.items?.length || 0 }}</strong></article>
+            <article><span>Habitos registrados</span><strong>{{ gamificationMetrics()?.habitEntries || 0 }}</strong></article>
+            <article><span>Rachas activas</span><strong>{{ gamificationMetrics()?.activeStreaks || 0 }}</strong></article>
+          </div>
+        </header>
+
+        <mat-tab-group class="gamification-tabs">
+          <mat-tab label="Logros">
+            <section class="gamification-section">
+              <div class="section-toolbar">
+                <div>
+                  <h3>Logros configurados</h3>
+                  <small>Badges por asistencia, workouts, rachas, habitos o acciones manuales.</small>
+                </div>
+                <div class="toolbar-actions">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Buscar logro</mat-label>
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput [formControl]="achievementSearch">
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" type="button" (click)="openAchievementDrawer()">
+                    <mat-icon>add</mat-icon>
+                    Nuevo logro
+                  </button>
+                </div>
+              </div>
+
+              <div class="achievement-grid">
+                @for (achievement of filteredAchievements(); track achievement.id) {
+                  <article class="achievement-tile" [class.inactive]="!achievement.unlockedCount && achievement.points === 0">
+                    <div class="badge-frame">
+                      @if (achievement.badgeImageUrl) {
+                        <img [src]="achievement.badgeImageUrl" [alt]="achievement.name">
+                      } @else {
+                        <mat-icon>{{ achievement.icon || 'emoji_events' }}</mat-icon>
+                      }
+                    </div>
+                    <div class="achievement-copy">
+                      <span class="tier-chip">{{ achievement.tier }}</span>
+                      <h3>{{ achievement.name }}</h3>
+                      <p>{{ achievement.description }}</p>
+                      <div class="chip-row">
+                        <span>{{ achievement.points }} pts</span>
+                        <span>{{ achievementRequirement(achievement) }}</span>
+                        <span>{{ achievement.unlockedCount }} ganados</span>
+                        <span>Activo</span>
+                      </div>
+                    </div>
+                    <div class="card-actions">
+                      <button mat-icon-button type="button" matTooltip="Editar" (click)="editAchievement(achievement)"><mat-icon>edit</mat-icon></button>
+                      <button mat-icon-button type="button" matTooltip="Duplicar" (click)="duplicateAchievement(achievement)"><mat-icon>content_copy</mat-icon></button>
+                      <button mat-icon-button type="button" matTooltip="Desactivar" (click)="deleteAchievement(achievement)"><mat-icon>delete</mat-icon></button>
+                    </div>
+                  </article>
+                } @empty {
+                  <div class="inline-empty">Todavia no hay logros configurados.</div>
+                }
+              </div>
+            </section>
+          </mat-tab>
+
+          <mat-tab label="Habitos">
+            <section class="gamification-section">
+              <div class="habit-warning">
+                <mat-icon>info</mat-icon>
+                <span>Los habitos son autodeclarados. Se recomienda asignar pocos puntos para mantener el ranking justo.</span>
+              </div>
+              <div class="section-toolbar">
+                <div>
+                  <h3>Habitos saludables</h3>
+                  <small>Reglas autodeclaradas con limites diarios y semanales.</small>
+                </div>
+                <div class="toolbar-actions">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Buscar habito</mat-label>
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput [formControl]="habitSearch">
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" type="button" (click)="openHabitDrawer()">
+                    <mat-icon>add</mat-icon>
+                    Nuevo habito
+                  </button>
+                </div>
+              </div>
+
+              <div class="habit-grid">
+                @for (habit of filteredHabits(); track habit.id) {
+                  <article class="habit-tile" [class.inactive]="!habit.isActive">
+                    <span class="habit-icon"><mat-icon>self_improvement</mat-icon></span>
+                    <div>
+                      <span class="self-chip">Autodeclarado</span>
+                      <h3>{{ habit.name }}</h3>
+                      <p>{{ habit.description }}</p>
+                      <div class="chip-row">
+                        <span>{{ habitCategoryLabel(habit.category) }}</span>
+                        <span>{{ habit.frequency }}</span>
+                        <span>{{ habit.pointsPerEntry }} pts</span>
+                        <span>{{ habit.weeklyLimit }} pts/sem</span>
+                        <span>{{ habit.isActive ? 'Activo' : 'Inactivo' }}</span>
+                      </div>
+                    </div>
+                    <div class="card-actions">
+                      <button mat-icon-button type="button" matTooltip="Editar" (click)="editHabit(habit)"><mat-icon>edit</mat-icon></button>
+                      <button mat-icon-button type="button" matTooltip="Desactivar" (click)="deleteHabit(habit)"><mat-icon>delete</mat-icon></button>
+                    </div>
+                  </article>
+                } @empty {
+                  <div class="inline-empty">Todavia no hay habitos configurados.</div>
+                }
+              </div>
+            </section>
+          </mat-tab>
+
+          <mat-tab label="Ranking mensual">
+            <section class="gamification-section">
+              <div class="section-toolbar">
+                <div>
+                  <h3>Ranking mensual</h3>
+                  <small>Podio visual con desglose entre puntos verificados y autodeclarados.</small>
+                </div>
+                <div class="ranking-toolbar">
+                  <mat-form-field appearance="outline" class="ranking-month-field">
+                    <mat-label>Mes</mat-label>
+                    <input matInput readonly [matDatepicker]="rankingMonthPicker" [formControl]="rankingMonthDate">
+                    <mat-datepicker-toggle matIconSuffix [for]="rankingMonthPicker"></mat-datepicker-toggle>
+                    <mat-datepicker
+                      #rankingMonthPicker
+                      startView="multi-year"
+                      (monthSelected)="chooseRankingMonth($event, rankingMonthPicker)"
+                      panelClass="ranking-month-picker">
+                    </mat-datepicker>
+                  </mat-form-field>
+                  <button mat-stroked-button type="button" (click)="loadRanking('attendance')">Asistencia</button>
+                  <button mat-stroked-button type="button" (click)="loadRanking('achievements')">Logros</button>
+                  <button mat-stroked-button type="button" (click)="loadRanking('habits')">Habitos</button>
+                  <button mat-flat-button color="primary" type="button" (click)="loadRanking('total')">Total</button>
+                </div>
+              </div>
+
+              <div class="podium">
+                @for (item of rankingPodium(); track item.clientId) {
+                  <article [class.first-place]="item.position === 1">
+                    <span class="podium-rank">#{{ item.position }}</span>
+                    <span class="avatar-bubble">{{ item.nombre[0] }}{{ item.apellido[0] }}</span>
+                    <h3>{{ item.nombre }} {{ item.apellido }}</h3>
+                    <strong>{{ item.score }} pts</strong>
+                    <small>{{ item.achievementCount }} logros | {{ item.attendanceCount }} asistencias | {{ item.habitCount }} habitos</small>
+                  </article>
+                }
+              </div>
+
+              <div class="ranking-list">
+                @for (item of rankingList(); track item.clientId) {
+                  <div class="ranking-row">
+                    <strong>#{{ item.position }}</strong>
+                    <span>{{ item.apellido }}, {{ item.nombre }}</span>
+                    <small>Verificados {{ item.verifiedPoints }} | Habitos {{ item.habitPoints }}</small>
+                    <b>{{ item.totalPoints || item.score }} pts</b>
+                  </div>
+                }
+              </div>
+            </section>
+          </mat-tab>
+
+          <mat-tab label="Reglas de puntos">
+            <section class="gamification-section rules-grid">
+              @for (rule of pointRules(); track rule.id) {
+                <article class="rule-card editable-rule" [class.inactive]="!rule.isActive">
+                  <div class="rule-heading"><mat-icon>{{ rule.code.includes('ATTENDANCE') ? 'how_to_reg' : rule.code.includes('WORKOUT') ? 'fitness_center' : rule.code.includes('MONTHLY') ? 'military_tech' : 'local_fire_department' }}</mat-icon><button type="button" class="rule-toggle" [class.active]="rule.isActive" (click)="togglePointRule(rule)">{{ rule.isActive ? 'Activa' : 'Inactiva' }}</button></div>
+                  <h3>{{ rule.name }}</h3>
+                  <p>{{ rule.description }}</p>
+                  <label><span>Puntos entregados</span><input type="number" min="0" [value]="rule.points" (input)="updatePointRuleValue(rule, $event)"></label>
+                  <small>{{ rule.isVerified ? 'Puntos verificados' : 'Puntos autodeclarados' }}</small>
+                  <button mat-stroked-button type="button" (click)="savePointRule(rule)"><mat-icon>save</mat-icon>Guardar regla</button>
+                </article>
+              } @empty {
+                <div class="inline-empty"><mat-icon>tune</mat-icon><span>Las reglas apareceran cuando el backend tenga aplicado el script de Fase 2.</span></div>
+              }
+            </section>
+          </mat-tab>
+        </mat-tab-group>
+
+        @if (achievementDrawerOpen()) {
+          <aside class="side-drawer">
+            <form [formGroup]="achievementForm" class="drawer-form">
+              <header>
+                <div>
+                  <span class="eyebrow">Logro</span>
+                  <h3>{{ achievementForm.controls.id.value ? 'Editar logro' : 'Nuevo logro' }}</h3>
+                </div>
+                <button mat-icon-button type="button" (click)="closeAchievementDrawer()"><mat-icon>close</mat-icon></button>
+              </header>
+              <div class="badge-upload">
+                <div class="badge-frame large">
+                  @if (badgePreviewUrl()) {
+                    <img [src]="badgePreviewUrl()!" alt="Preview badge">
+                  } @else {
+                    <mat-icon>{{ achievementForm.controls.icon.value || 'emoji_events' }}</mat-icon>
+                  }
+                </div>
+                <input #badgeInput type="file" accept="image/png" hidden (change)="onBadgeSelected($event)">
+                <button mat-stroked-button type="button" (click)="badgeInput.click()" [disabled]="isUploadingBadge()">
+                  <mat-icon>upload</mat-icon>
+                  {{ isUploadingBadge() ? 'Subiendo...' : 'Subir PNG' }}
+                </button>
+                <button mat-button type="button" (click)="removeBadgeImage()">Quitar imagen</button>
+              </div>
+              <div class="form-grid">
+                <mat-form-field appearance="outline"><mat-label>Codigo</mat-label><input matInput formControlName="code"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="name"></mat-form-field>
+                <mat-form-field appearance="outline" class="wide"><mat-label>Descripcion</mat-label><textarea matInput rows="3" formControlName="description"></textarea></mat-form-field>
+                <label class="select-field"><span>Nivel</span><select formControlName="tier"><option>Bronze</option><option>Silver</option><option>Gold</option><option>Platinum</option></select></label>
+                <label class="select-field"><span>Tipo</span><select formControlName="triggerType"><option value="Attendance">Asistencia</option><option value="WorkoutCompletions">Workout</option><option value="CompletedWorkouts">Workouts totales</option><option value="Streak">Racha</option><option value="Habit">Habito</option><option value="Manual">Manual</option></select></label>
+                @if (achievementForm.controls.triggerType.value === 'WorkoutCompletions') {
+                  <label class="select-field wide"><span>Workout asociado</span><select formControlName="routineId"><option [value]="0">Seleccionar workout</option>@for (routine of routineTemplates(); track routine.id) { <option [value]="routine.id">{{ routine.name }} - {{ routine.goal }}</option> }</select></label>
+                }
+                <mat-form-field appearance="outline"><mat-label>Cantidad</mat-label><input matInput type="number" formControlName="requiredCount"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Puntos</mat-label><input matInput type="number" formControlName="points"></mat-form-field>
+                <mat-form-field appearance="outline" class="wide"><mat-label>Icono fallback</mat-label><input matInput formControlName="icon"></mat-form-field>
+              </div>
+              <footer><button mat-stroked-button type="button" (click)="closeAchievementDrawer()">Cancelar</button><button mat-flat-button color="primary" type="button" (click)="saveAchievement()" [disabled]="isUploadingBadge()">Guardar logro</button></footer>
+            </form>
+          </aside>
+        }
+
+        @if (habitDrawerOpen()) {
+          <aside class="side-drawer">
+            <form [formGroup]="habitForm" class="drawer-form">
+              <header>
+                <div><span class="eyebrow">Habito</span><h3>{{ habitForm.controls.id.value ? 'Editar habito' : 'Nuevo habito' }}</h3></div>
+                <button mat-icon-button type="button" (click)="closeHabitDrawer()"><mat-icon>close</mat-icon></button>
+              </header>
+              <div class="habit-preview">
+                <span class="self-chip">Autodeclarado</span>
+                <h3>{{ habitForm.controls.name.value || 'Nombre del habito' }}</h3>
+                <p>{{ habitForm.controls.description.value || 'Asi lo vera el alumno al registrarlo.' }}</p>
+                @if (habitForm.controls.pointsPerEntry.value > 10) {
+                  <small class="warning-text">Este habito supera los 10 puntos recomendados.</small>
+                }
+              </div>
+              <div class="form-grid">
+                <mat-form-field appearance="outline"><mat-label>Codigo</mat-label><input matInput formControlName="code"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="name"></mat-form-field>
+                <mat-form-field appearance="outline" class="wide"><mat-label>Descripcion</mat-label><textarea matInput rows="3" formControlName="description"></textarea></mat-form-field>
+                <label class="select-field"><span>Categoria</span><select formControlName="category"><option value="Hydration">Hidratacion</option><option value="Nutrition">Alimentacion</option><option value="Sleep">Sueno</option><option value="Mobility">Movilidad</option><option value="Wellbeing">Bienestar</option><option value="Other">Otro</option></select></label>
+                <label class="select-field"><span>Frecuencia</span><select formControlName="frequency"><option value="Daily">Diaria</option><option value="Weekly">Semanal</option><option value="Custom">Personalizada</option></select></label>
+                <mat-form-field appearance="outline"><mat-label>Puntos por registro</mat-label><input matInput type="number" formControlName="pointsPerEntry"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Limite diario</mat-label><input matInput type="number" formControlName="dailyLimit"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Limite semanal</mat-label><input matInput type="number" formControlName="weeklyLimit"></mat-form-field>
+                <label class="check-row"><input type="checkbox" formControlName="countsForStreak"> Cuenta para racha</label>
+                <label class="check-row"><input type="checkbox" formControlName="addsToRanking"> Suma al ranking</label>
+                <label class="check-row"><input type="checkbox" formControlName="isActive"> Activo</label>
+              </div>
+              <footer><button mat-stroked-button type="button" (click)="closeHabitDrawer()">Cancelar</button><button mat-flat-button color="primary" type="button" (click)="saveHabitDefinition()">Guardar habito</button></footer>
+            </form>
+          </aside>
+        }
+      </section>
+    </mat-tab>
+
+    <mat-tab label="Asistencia QR">
+      <section class="attendance-admin-page">
+        <header class="attendance-admin-hero">
+          <div><span class="eyebrow">CHECK-IN DE ALUMNOS</span><h2>Asistencia por QR y ubicacion</h2><p>Configura el punto geografico de cada sede y prepara el codigo que veran los alumnos.</p></div>
+          <span class="status-chip"><mat-icon>verified_user</mat-icon>QR fijo + radio seguro</span>
+        </header>
+        <div class="attendance-admin-layout">
+          <aside class="branch-list">
+            <h3>Sedes</h3>
+            @for (branch of branchAttendanceSettings(); track branch.id) {
+              <button type="button" [class.selected]="selectedAttendanceBranchId() === branch.id" (click)="selectAttendanceBranch(branch)"><mat-icon>location_on</mat-icon><span><strong>{{ branch.nombre }}</strong><small>{{ branch.direccion || 'Sin direccion' }}</small></span><mat-icon>chevron_right</mat-icon></button>
+            } @empty { <p class="muted">No hay sedes activas.</p> }
+          </aside>
+          @if (selectedAttendanceBranch(); as branch) {
+            <form class="attendance-settings-form" [formGroup]="branchAttendanceForm" (ngSubmit)="saveAttendanceBranch()">
+              <div class="section-title"><div><span class="eyebrow">{{ branch.nombre }}</span><h3>Ubicacion habilitada</h3></div><mat-icon>my_location</mat-icon></div>
+              <p>Usa las coordenadas del acceso o recepcion. El alumno debe estar dentro del radio para obtener puntos verificados.</p>
+              <div class="form-grid">
+                <mat-form-field appearance="outline"><mat-label>Latitud</mat-label><input matInput type="number" step="0.0000001" formControlName="latitude"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Longitud</mat-label><input matInput type="number" step="0.0000001" formControlName="longitude"></mat-form-field>
+                <mat-form-field appearance="outline" class="wide"><mat-label>Radio permitido</mat-label><input matInput type="number" formControlName="radiusMeters"><span matTextSuffix>metros</span></mat-form-field>
+              </div>
+              <button mat-flat-button color="primary" type="submit"><mat-icon>save</mat-icon>Guardar configuracion</button>
+            </form>
+            <article class="attendance-qr-preview">
+              <span class="eyebrow">LISTO PARA MOSTRAR O IMPRIMIR</span><h3>Registra tu asistencia</h3><img [src]="attendanceQrImage(branch)" [alt]="'QR de asistencia de ' + branch.nombre"><strong>{{ branch.nombre }}</strong><small>Abre la app, habilita ubicacion y confirma tu visita.</small>
+              <a mat-stroked-button [href]="attendanceQrImage(branch)" target="_blank" rel="noreferrer"><mat-icon>download</mat-icon>Abrir QR para imprimir</a>
+              <code>{{ attendanceQrDestination(branch) }}</code>
+            </article>
+          }
+        </div>
+      </section>
     </mat-tab>
   </mat-tab-group>
 </section>

@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: 'https://gymappmanagement-ckg5chcyctdacdf9.brazilsouth-01.azurewebsites.net',
+  studentAppUrl: 'https://alejandroibz.github.io/gym-management-student',
   auth0: {
     domain: 'simbiosisgymapp.us.auth0.com',
     clientId: 'sxYsO6V0lt851PnXYBV6JBmoMVF3bN5v',

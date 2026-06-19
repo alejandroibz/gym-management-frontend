@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'https://localhost:7113',
+  studentAppUrl: 'http://localhost:4301',
   auth0: {
     domain: 'simbiosisgymapp.us.auth0.com',
     clientId: 'sxYsO6V0lt851PnXYBV6JBmoMVF3bN5v',

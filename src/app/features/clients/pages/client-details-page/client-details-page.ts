@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
@@ -27,7 +28,7 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
 import { Payment, PaymentCreatePayload, PaymentUpdatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { ClientMembershipDialogComponent } from '../../components/client-membership-dialog/client-membership-dialog';
-import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload } from '../../models/client.model';
+import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload, StudentGoalAdmin, StudentMeasurementAdmin } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
 
 @Component({
@@ -46,6 +47,7 @@ import { ClientsService } from '../../services/clients.service';
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    MatProgressBarModule,
     MatSelectModule,
     DatePipe
   ],
@@ -77,6 +79,7 @@ export class ClientDetailsPageComponent {
   readonly isEditing = signal(false);
   readonly errorMessage = signal('');
   readonly observacionesMaxLength = 3000;
+  readonly today = new Date().toISOString().slice(0, 10);
 
   readonly form = this.formBuilder.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
@@ -84,7 +87,7 @@ export class ClientDetailsPageComponent {
     dni: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(8), Validators.pattern(/^\d{7,8}$/)]],
     fechaNacimiento: ['', [Validators.required]],
     telefono: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
-    email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
+    email: ['', [Validators.email, Validators.maxLength(120)]],
     direccion: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(160)]],
     tieneLesion: [false],
     observaciones: ['', [Validators.maxLength(this.observacionesMaxLength)]],
@@ -111,6 +114,18 @@ export class ClientDetailsPageComponent {
   readonly observacionesLength = signal(0);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
   readonly currentUserEmail = signal<string | null>(null);
+  readonly studentGoals = signal<StudentGoalAdmin[]>([]);
+  readonly latestProfessionalMeasurement = signal<StudentMeasurementAdmin | null>(null);
+  readonly showMeasurementForm = signal(false);
+  readonly showProfessionalGoalForm = signal(false);
+  readonly measurementForm = this.formBuilder.nonNullable.group({
+    weightKg: [70, [Validators.required, Validators.min(20), Validators.max(400)]],
+    measuredAt: [new Date().toISOString().slice(0, 10), Validators.required],
+    notes: ['']
+  });
+  readonly professionalGoalForm = this.formBuilder.nonNullable.group({
+    type: ['BodyWeight', Validators.required], title: ['', Validators.required], description: [''], startValue: [0], currentValue: [0], targetValue: [0], unit: ['kg', Validators.required], targetDate: ['']
+  });
 
   constructor() {
     this.form.disable({ emitEvent: false });
@@ -124,6 +139,11 @@ export class ClientDetailsPageComponent {
       .subscribe(() => {
         this.updateMembershipValidators();
       });
+    this.form.controls.membershipPlanId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.applySelectedMembershipPlan();
+      });
     this.auth.user$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(user => {
@@ -136,6 +156,12 @@ export class ClientDetailsPageComponent {
   }
 
   goBack(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl?.startsWith('/')) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
     this.router.navigate(['/clients']);
   }
 
@@ -165,18 +191,7 @@ export class ClientDetailsPageComponent {
   }
 
   onMembershipPlanChange(): void {
-    const plan = this.getSelectedPlan();
-
-    if (!plan) {
-      return;
-    }
-
-    const fechaInicio = this.form.controls.fechaInicio.value;
-
-    this.form.patchValue({
-      precioFinal: plan.precio,
-      fechaFin: this.addDays(fechaInicio, plan.duracionDias)
-    });
+    this.applySelectedMembershipPlan();
   }
 
   onFechaInicioChange(): void {
@@ -199,6 +214,7 @@ export class ClientDetailsPageComponent {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.errorMessage.set('Revisa los campos marcados antes de guardar.');
       return;
     }
 
@@ -849,6 +865,7 @@ export class ClientDetailsPageComponent {
         this.form.disable({ emitEvent: false });
         this.isEditing.set(false);
         this.isLoading.set(false);
+        this.loadStudentExperience(client.id);
       },
       error: () => {
         this.client.set(null);
@@ -927,6 +944,40 @@ export class ClientDetailsPageComponent {
 
   private getSelectedPlan(): MembershipPlan | undefined {
     return this.membershipPlans().find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
+  }
+
+  saveProfessionalMeasurement(): void {
+    const client = this.client(); if (!client || this.measurementForm.invalid) return;
+    const raw = this.measurementForm.getRawValue(); this.isSaving.set(true);
+    this.clientsService.saveProfessionalMeasurement(client.id, { weightKg: raw.weightKg, measuredAt: raw.measuredAt, notes: raw.notes || null }).subscribe({
+      next: measurement => { this.latestProfessionalMeasurement.set(measurement); this.showMeasurementForm.set(false); this.isSaving.set(false); },
+      error: () => { this.isSaving.set(false); this.errorMessage.set('No se pudo registrar la medicion profesional.'); }
+    });
+  }
+
+  saveProfessionalGoal(): void {
+    const client = this.client(); if (!client || this.professionalGoalForm.invalid) return;
+    const raw = this.professionalGoalForm.getRawValue(); this.isSaving.set(true);
+    this.clientsService.saveProfessionalGoal(client.id, { ...raw, description: raw.description || null, targetDate: raw.targetDate || null, exerciseId: null }).subscribe({
+      next: goal => { this.studentGoals.update(items => [goal, ...items]); this.showProfessionalGoalForm.set(false); this.isSaving.set(false); this.professionalGoalForm.reset({ type: 'BodyWeight', title: '', description: '', startValue: 0, currentValue: 0, targetValue: 0, unit: 'kg', targetDate: '' }); },
+      error: () => { this.isSaving.set(false); this.errorMessage.set('No se pudo crear el objetivo profesional.'); }
+    });
+  }
+
+  private loadStudentExperience(clientId: number): void {
+    this.clientsService.getStudentGoals(clientId).subscribe({ next: goals => this.studentGoals.set(goals), error: () => this.studentGoals.set([]) });
+  }
+
+  private applySelectedMembershipPlan(): void {
+    const plan = this.getSelectedPlan();
+    if (!plan || !this.form.controls.hasMembership.value) return;
+
+    const fechaInicio = this.form.controls.fechaInicio.value || this.today;
+    this.form.patchValue({
+      fechaInicio,
+      precioFinal: plan.precio,
+      fechaFin: this.addDays(fechaInicio, plan.duracionDias)
+    }, { emitEvent: false });
   }
 
   private buildUpdatePayload(id: number, branchId: number): ClientUpdatePayload {

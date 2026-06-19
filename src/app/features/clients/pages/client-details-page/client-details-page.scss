@@ -3,6 +3,11 @@
   gap: 1.5rem;
 }
 
+.professional-measurement-form { align-items: start; background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 8px; display: grid; gap: .75rem; grid-template-columns: repeat(3,minmax(0,1fr)) auto; margin: 1rem 0; padding: 1rem; }
+.professional-goal-form { align-items: start; background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 8px; display: grid; gap: .75rem; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 1rem 0; padding: 1rem; }.progress-admin-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.measurement-success { align-items: center; background: #eaf8ef; border-radius: 8px; color: #16794a; display: flex; gap: .65rem; margin: .75rem 0; padding: .75rem; }.measurement-success strong,.measurement-success small { display: block; }.admin-goal-grid { display: grid; gap: .75rem; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 1rem; }.admin-goal-grid article { border: 1px solid var(--app-border); border-radius: 8px; padding: .85rem; }.admin-goal-grid article>div,.admin-goal-grid footer { align-items: center; display: flex; justify-content: space-between; }.admin-goal-grid article>div>mat-icon { color: var(--app-accent); }.admin-goal-grid h3 { margin: .7rem 0 .2rem; }.admin-goal-grid p,.admin-goal-grid small { color: var(--app-text-muted); }.admin-goal-grid footer { margin-top: .45rem; }
+@media (max-width: 900px) { .professional-measurement-form,.professional-goal-form,.admin-goal-grid { grid-template-columns: 1fr; } }
+
 .page-topbar {
   display: flex;
   justify-content: space-between;

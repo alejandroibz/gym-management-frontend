@@ -1,0 +1,169 @@
+<section class="training-plan-detail-page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/student-platform" [queryParams]="{ tab: 'planes' }">Planes de entrenamiento</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>{{ plan()?.name || 'Detalle de plan' }}</span>
+  </nav>
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (plan(); as currentPlan) {
+    <header class="page-header">
+      <div>
+        <span class="eyebrow">Plan de entrenamiento</span>
+        <h1>{{ currentPlan.name }}</h1>
+        <p>{{ currentPlan.description || 'Sin descripcion cargada.' }}</p>
+      </div>
+      <div class="header-actions">
+        @if (editingSchedule()) { <button mat-stroked-button type="button" (click)="editingSchedule.set(false)">Cancelar</button><button mat-flat-button type="button" (click)="saveSchedule()"><mat-icon>save</mat-icon>Guardar agenda</button> } @else { <button mat-stroked-button type="button" (click)="startScheduleEditing()"><mat-icon>edit_calendar</mat-icon>Editar agenda</button> }
+        <button mat-stroked-button type="button" routerLink="/student-platform" [queryParams]="{ tab: 'planes' }">
+          <mat-icon>arrow_back</mat-icon>
+          Volver
+        </button>
+      </div>
+    </header>
+
+    <section class="metric-grid">
+      <article>
+        <span>Workouts</span>
+        <strong>{{ currentPlan.workoutCount }}</strong>
+      </article>
+      <article>
+        <span>Ejercicios</span>
+        <strong>{{ totalExercises() }}</strong>
+      </article>
+      <article>
+        <span>Asignados</span>
+        <strong>{{ currentPlan.assignmentCount || assignments().length }}</strong>
+      </article>
+    </section>
+
+    <main class="detail-layout">
+      <section class="workouts-panel">
+        <div class="section-heading">
+          <mat-icon>format_list_numbered</mat-icon>
+          <div>
+            <h2>Workouts del plan</h2>
+            <span>{{ currentPlan.goal }} | {{ currentPlan.level }}</span>
+          </div>
+        </div>
+
+        <div class="workout-list">
+          @for (workout of currentPlan.workouts; track workout.id) {
+            <article class="workout-card" [class.is-expanded]="isWorkoutExpanded(workout.id)">
+              <div class="workout-order">{{ workout.sortOrder }}</div>
+              <div class="workout-content">
+                <button class="workout-summary" type="button" [attr.aria-expanded]="isWorkoutExpanded(workout.id)" [attr.aria-controls]="'plan-workout-' + workout.id" (click)="toggleWorkout(workout.id)">
+                  <div>
+                    <h3>{{ workout.dayLabel || workout.routineName }}</h3>
+                    @if (workout.suggestedDayOfWeek !== null && workout.suggestedDayOfWeek !== undefined) { <small>Dia sugerido: {{ ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'][workout.suggestedDayOfWeek] }}</small> }
+                    <span>{{ workout.routineName }}</span>
+                  </div>
+                  <div class="workout-meta">
+                    <div class="workout-tags">
+                      <span>{{ workout.exerciseCount }} ejercicios</span>
+                      <span>{{ workout.goal }}</span>
+                      <span>{{ workout.level }}</span>
+                      <mat-icon>{{ isWorkoutExpanded(workout.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </div>
+                  </div>
+                </button>
+
+                @if (editingSchedule()) {
+                  <label class="schedule-editor"><span>Dia sugerido para el alumno</span><select [value]="scheduleDraft()[workout.id]" (change)="updateSuggestedDay(workout.id, $event)"><option value="-1">Sin dia fijo</option><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miercoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sabado</option><option value="0">Domingo</option></select></label>
+                }
+
+                <a class="workout-link" mat-stroked-button [routerLink]="['/student-platform/routines', workout.routineId]">
+                  <mat-icon>open_in_new</mat-icon>
+                  Ver mas
+                </a>
+
+                @if (isWorkoutExpanded(workout.id)) {
+                  <div class="workout-details" [id]="'plan-workout-' + workout.id">
+                    @if (workout.notes) {
+                      <p>{{ workout.notes }}</p>
+                    }
+
+                    @if (workoutRoutine(workout); as routine) {
+                      <div class="exercise-list">
+                        @for (exercise of routine.exercises; track exercise.id) {
+                          <div class="exercise-row">
+                            <strong>{{ exercise.sortOrder }}</strong>
+                            <div>
+                              <b>{{ exercise.exerciseName }}</b>
+                              <small>{{ exercise.muscleGroup }}</small>
+                              @if (exercise.notes) {
+                                <small>{{ exercise.notes }}</small>
+                              }
+                            </div>
+                            <span>{{ exercise.sets || '-' }} series</span>
+                            <span>{{ exercise.reps || '-' }} reps</span>
+                            <span>{{ exercise.weight || 0 }} kg</span>
+                            <span>{{ exercise.restSeconds || 0 }} seg</span>
+                            <a mat-icon-button matTooltip="Abrir ejercicio" [routerLink]="['/student-platform']" [queryParams]="{ tab: 'ejercicios', exerciseId: exercise.exerciseId }">
+                              <mat-icon>open_in_new</mat-icon>
+                            </a>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </article>
+          } @empty {
+            <div class="inline-empty">
+              Este plan todavia no tiene workouts cargados.
+            </div>
+          }
+        </div>
+      </section>
+
+      <aside class="assignments-panel">
+        <div class="section-heading">
+          <mat-icon>group</mat-icon>
+          <div>
+            <h2>Alumnos asignados</h2>
+            <span>{{ assignments().length }} asignaciones para este plan.</span>
+          </div>
+        </div>
+
+        @if (assignments().length) {
+          <div class="assignment-list">
+            @for (assignment of assignments(); track assignment.id) {
+              <a class="assignment-row" [routerLink]="['/clients', assignment.clientId]" [queryParams]="{ returnUrl: planReturnUrl() }">
+                @if (assignment.clientAvatarUrl) {
+                  <img [src]="assignment.clientAvatarUrl" [alt]="assignment.clientApellido + ', ' + assignment.clientNombre">
+                } @else {
+                  <span class="avatar-fallback">{{ initials(assignment) }}</span>
+                }
+                <div>
+                  <strong>{{ assignment.clientApellido }}, {{ assignment.clientNombre }}</strong>
+                  <small>DNI {{ assignment.clientDni || '-' }}</small>
+                  <small>Asignado {{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
+                </div>
+                <span class="status-chip">{{ assignment.status }}</span>
+                <mat-icon class="row-open-icon">chevron_right</mat-icon>
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="inline-empty">
+            Este plan todavia no fue asignado a ningun alumno.
+          </div>
+        }
+      </aside>
+    </main>
+  } @else if (!isLoading()) {
+    <div class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <h2>No encontramos el plan</h2>
+      <p>Puede haber sido eliminado o no estar disponible.</p>
+      <button mat-flat-button color="primary" type="button" routerLink="/student-platform" [queryParams]="{ tab: 'planes' }">
+        Volver a planes
+      </button>
+    </div>
+  }
+</section>

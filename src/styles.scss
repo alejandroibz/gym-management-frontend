@@ -55,6 +55,193 @@ body {
   height: 100%;
 }
 
+body.dark-theme {
+  color-scheme: dark;
+  --app-bg: #111111;
+  --app-surface: #1b1b1d;
+  --app-surface-muted: #242426;
+  --app-surface-strong: #f5f2ed;
+  --app-surface-strong-2: #e8e1d8;
+  --app-text: #f5f2ed;
+  --app-text-muted: #c9c2b8;
+  --app-text-soft: #9f978d;
+  --app-border: #343235;
+  --app-border-strong: #514c48;
+  --app-accent: #e5483f;
+  --app-accent-strong: #ff7a70;
+  --app-accent-soft: rgba(229, 72, 63, .13);
+  --app-accent-soft-2: rgba(229, 72, 63, .22);
+  --app-accent-shadow: rgba(229, 72, 63, .24);
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+body.dark-theme .app-content {
+  background:
+    radial-gradient(circle at top right, rgba(229, 72, 63, .12), transparent 24%),
+    linear-gradient(180deg, #111111 0%, #181719 100%);
+}
+
+body.dark-theme .app-toolbar,
+body.dark-theme .panel,
+body.dark-theme .card,
+body.dark-theme mat-card,
+body.dark-theme .mat-mdc-card,
+body.dark-theme .form-section,
+body.dark-theme .plan-preview,
+body.dark-theme .workouts-panel,
+body.dark-theme .assignments-panel,
+body.dark-theme .routine-card,
+body.dark-theme .tracking-card,
+body.dark-theme .dense-table,
+body.dark-theme .table-header,
+body.dark-theme .table-row,
+body.dark-theme table,
+body.dark-theme thead,
+body.dark-theme tbody,
+body.dark-theme tr,
+body.dark-theme .mat-mdc-table,
+body.dark-theme .mat-mdc-header-row,
+body.dark-theme .mat-mdc-row,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .assignment-row,
+body.dark-theme .workout-card,
+body.dark-theme .exercise-row,
+body.dark-theme .metric-grid article,
+body.dark-theme .hero-card,
+body.dark-theme .details-card,
+body.dark-theme .list-card,
+body.dark-theme .empty-state,
+body.dark-theme .inline-empty {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .page-header,
+body.dark-theme .catalog-hero {
+  background: linear-gradient(135deg, rgba(229, 72, 63, .14), var(--app-surface)) !important;
+  border-color: var(--app-border) !important;
+  border-radius: 12px !important;
+  padding: 1.15rem !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme strong,
+body.dark-theme b,
+body.dark-theme .toolbar-title,
+body.dark-theme .routine-title strong,
+body.dark-theme .section-heading h2 {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme p,
+body.dark-theme small,
+body.dark-theme .subtitle,
+body.dark-theme .section-heading span,
+body.dark-theme .workout-card span,
+body.dark-theme .workout-card small,
+body.dark-theme .assignment-row small,
+body.dark-theme .table-row small,
+body.dark-theme .table-header,
+body.dark-theme .description-cell,
+body.dark-theme .metrics-strip span,
+body.dark-theme .builder-row span,
+body.dark-theme .mat-mdc-header-cell,
+body.dark-theme .muted,
+body.dark-theme .plan-description {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .mat-mdc-text-field-wrapper,
+body.dark-theme .mat-mdc-select-panel,
+body.dark-theme .mat-mdc-menu-panel,
+body.dark-theme .mat-datepicker-content,
+body.dark-theme .mat-mdc-dialog-surface,
+body.dark-theme .mat-mdc-option,
+body.dark-theme .mat-mdc-autocomplete-panel {
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select,
+body.dark-theme .mat-mdc-input-element,
+body.dark-theme .mat-mdc-select-value,
+body.dark-theme .mat-mdc-tab,
+body.dark-theme .mat-mdc-table,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .mat-mdc-cell,
+body.dark-theme .mat-mdc-header-cell,
+body.dark-theme td,
+body.dark-theme th,
+body.dark-theme .name-cell,
+body.dark-theme .name-cell strong,
+body.dark-theme .table-row strong,
+body.dark-theme .mat-mdc-option .mdc-list-item__primary-text {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-menu-item,
+body.dark-theme .mat-mdc-menu-item .mat-icon,
+body.dark-theme .mat-mdc-menu-item .mdc-list-item__primary-text {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-form-field-label,
+body.dark-theme .mat-mdc-floating-label,
+body.dark-theme .mat-mdc-select-arrow,
+body.dark-theme .mat-mdc-tab .mdc-tab__text-label {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .stat-pill,
+body.dark-theme .soft-tag,
+body.dark-theme .hero-pill,
+body.dark-theme .status-chip,
+body.dark-theme .workout-tags span {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .table-header,
+body.dark-theme .dense-table .table-header {
+  background: #151517 !important;
+  border-bottom-color: var(--app-border) !important;
+}
+
+body.dark-theme .table-row,
+body.dark-theme .dense-table .table-row,
+body.dark-theme .mat-mdc-row {
+  border-bottom-color: var(--app-border) !important;
+}
+
+body.dark-theme .routine-icon,
+body.dark-theme .section-heading mat-icon,
+body.dark-theme .workout-order,
+body.dark-theme .avatar-fallback,
+body.dark-theme .thumb-placeholder {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent-strong) !important;
+}
+
+body.dark-theme .profile-avatar-button,
+body.dark-theme .profile-avatar-button span {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-accent-strong);
+}
+
 .employee-category-dialog-backdrop {
   background: rgba(18, 18, 18, 0.4);
   backdrop-filter: blur(7px);
@@ -89,6 +276,12 @@ body {
   overflow-y: auto;
 }
 
+body.dark-theme .employee-dialog-panel .mat-mdc-dialog-surface,
+body.dark-theme .employee-category-dialog-panel .mat-mdc-dialog-surface {
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-unelevated-button.mat-primary,
 .mat-mdc-fab.mat-primary,
@@ -105,6 +298,19 @@ body {
 
 .filters-toolbar {
   display: none;
+}
+
+.app-toast-panel {
+  --mdc-snackbar-container-color: transparent;
+  --mat-snack-bar-button-color: inherit;
+  box-shadow: none;
+  margin-top: 1rem !important;
+}
+
+.app-toast-panel .mat-mdc-snackbar-surface {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 @media (max-width: 1024px) {
