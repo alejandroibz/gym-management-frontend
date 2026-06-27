@@ -6,7 +6,7 @@ export const environment = {
     clientId: 'sxYsO6V0lt851PnXYBV6JBmoMVF3bN5v',
     audience: 'https://gymmanagement-api',
     rolesClaim: 'https://gymmanagement-api/roles',
-    redirectUri: 'https://www.simbiosisgym.com.ar',
-    logoutReturnTo: 'https://www.simbiosisgym.com.ar'
+    redirectUri: 'https://admin.simbiosisgym.com.ar',
+    logoutReturnTo: 'https://admin.simbiosisgym.com.ar'
   }
 };
