@@ -164,6 +164,9 @@
                     <button mat-icon-button type="button" matTooltip="Asignar plan" (click)="selectPlanForAssignment(plan); openTemplate(planAssignmentDialog, '820px')">
                       <mat-icon>assignment_ind</mat-icon>
                     </button>
+                    <button mat-icon-button type="button" matTooltip="Duplicar plan" (click)="duplicateTrainingPlan(plan)">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
                     <button mat-icon-button type="button" matTooltip="Eliminar plan" (click)="deleteTrainingPlan(plan)">
                       <mat-icon>delete</mat-icon>
                     </button>
@@ -1087,6 +1090,9 @@
                       <a mat-icon-button matTooltip="Ver detalle" [routerLink]="['/student-platform/exercises', exercise.id]">
                         <mat-icon>visibility</mat-icon>
                       </a>
+                      <button mat-icon-button type="button" matTooltip="Duplicar" (click)="duplicateExercise(exercise)">
+                        <mat-icon>content_copy</mat-icon>
+                      </button>
                       <button mat-icon-button type="button" matTooltip="Eliminar" (click)="deleteExercise(exercise)">
                         <mat-icon>delete</mat-icon>
                       </button>

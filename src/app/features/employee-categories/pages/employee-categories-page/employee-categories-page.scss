@@ -10,6 +10,26 @@
   --employee-cat-green: #0f766e;
 }
 
+:host-context(body.dark-theme) .employee-categories-page {
+  --employee-cat-surface: var(--app-surface);
+  --employee-cat-surface-soft: var(--app-surface-muted);
+  --employee-cat-border: var(--app-border);
+  --employee-cat-shadow: none;
+  --employee-cat-ink: var(--app-text);
+}
+
+:host-context(body.dark-theme) .page-header,
+:host-context(body.dark-theme) .filter-block,
+:host-context(body.dark-theme) .category-item,
+:host-context(body.dark-theme) .empty-state {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: none;
+}
+
+:host-context(body.dark-theme) .highlight-chip,
+:host-context(body.dark-theme) .eyebrow-pill { background: var(--app-surface-muted); color: var(--app-text); }
+
 .page-topbar,
 .breadcrumb {
   display: flex;

@@ -64,6 +64,10 @@
           </div>
         </a>
 
+        <a *ngIf="isAdminOrSuperAdmin$ | async" mat-list-item routerLink="/contracts" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content"><mat-icon>description</mat-icon><span class="nav-text">Contratos</span></div>
+        </a>
+
         <a
           *ngIf="isAdminOrSuperAdmin$ | async"
           mat-list-item
@@ -159,6 +163,12 @@
       </div>
       <span class="toolbar-spacer"></span>
 
+      <button type="button" class="global-search-trigger" (click)="openCommandPalette()" aria-label="Abrir búsqueda global">
+        <mat-icon>search</mat-icon>
+        <span>Buscar en el sistema</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
       <button
         mat-icon-button
         type="button"
@@ -190,3 +200,40 @@
     </main>
   </mat-sidenav-content>
 </mat-sidenav-container>
+
+@if (commandOpen()) {
+  <div class="command-backdrop" (click)="closeCommandPalette()">
+    <section class="command-palette" role="dialog" aria-modal="true" aria-label="Búsqueda global" (click)="$event.stopPropagation()">
+      <header>
+        <mat-icon>search</mat-icon>
+        <input class="global-command-input" type="search" [formControl]="commandQuery" placeholder="Buscar alumnos, ejercicios, workouts o planes..." aria-label="Búsqueda global">
+        <button mat-icon-button type="button" (click)="closeCommandPalette()" aria-label="Cerrar búsqueda"><mat-icon>close</mat-icon></button>
+      </header>
+
+      <div class="command-content">
+        @if (!commandQuery.value.trim()) {
+          <div class="command-heading"><span>Acciones rápidas</span><small>Elegí una acción o empezá a escribir</small></div>
+          <div class="command-list">
+            @for (item of quickCommands; track item.route) {
+              <button type="button" (click)="runCommand(item)"><span class="command-icon"><mat-icon>{{ item.icon }}</mat-icon></span><span><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span><mat-icon>arrow_forward</mat-icon></button>
+            }
+          </div>
+        } @else if (commandQuery.value.trim().length < 2) {
+          <div class="command-empty"><mat-icon>keyboard</mat-icon><p>Escribí al menos dos caracteres.</p></div>
+        } @else if (commandSearching()) {
+          <div class="command-empty"><mat-icon class="spin">progress_activity</mat-icon><p>Buscando en el sistema...</p></div>
+        } @else if (commandResults().length) {
+          <div class="command-list results">
+            @for (item of commandResults(); track item.route) {
+              <button type="button" (click)="runCommand(item)"><span class="command-icon"><mat-icon>{{ item.icon }}</mat-icon></span><span><strong>{{ item.label }}</strong><small>{{ item.group }} · {{ item.description }}</small></span><mat-icon>arrow_forward</mat-icon></button>
+            }
+          </div>
+        } @else {
+          <div class="command-empty"><mat-icon>search_off</mat-icon><strong>Sin resultados</strong><p>Probá con nombre, apellido, DNI o título.</p></div>
+        }
+      </div>
+
+      <footer><span><kbd>Ctrl</kbd> <kbd>K</kbd> para abrir</span><span><kbd>Esc</kbd> para cerrar</span></footer>
+    </section>
+  </div>
+}

@@ -58,6 +58,7 @@ export class ClientsService {
     if (filters.clientStatus) {
       params = params.set('ClientStatus', filters.clientStatus);
     }
+    if (filters.contractStatus) params = params.set('ContractStatus', filters.contractStatus);
 
     return this.http
       .get<RawPagedResponse<Client> | Client[]>(this.apiUrl, { params })
@@ -108,6 +109,10 @@ export class ClientsService {
 
   saveProfessionalGoal(clientId: number, payload: { type: string; title: string; description?: string | null; startValue: number; targetValue: number; currentValue: number; unit: string; targetDate?: string | null; exerciseId?: number | null }): Observable<StudentGoalAdmin> {
     return this.http.post<StudentGoalAdmin>(`${environment.apiUrl}/api/admin/student-experience/clients/${clientId}/goals`, payload);
+  }
+
+  downloadTrainingPlan(clientId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/api/TrainingPlans/clients/${clientId}/pdf`, { responseType: 'blob' });
   }
 
   private normalizePagedResponse(

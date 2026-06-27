@@ -21,6 +21,8 @@ import {
   DashboardUpcomingExpiration
 } from '../../models/dashboard.model';
 import { DashboardService } from '../../services/dashboard.service';
+import { ClientsService } from '../../../clients/services/clients.service';
+import { ContractsService } from '../../../contracts/services/contracts.service';
 
 interface DashboardStatItem {
   label: string;
@@ -48,6 +50,7 @@ interface DashboardIncomeBreakdownItem {
 }
 
 interface DashboardViewModel {
+  operationalAlerts: Array<{ label: string; value: number; hint: string; icon: string; route: string; tone: 'danger' | 'warning' | 'info' }>;
   stats: DashboardStatItem[];
   incomeBreakdown: DashboardIncomeBreakdownItem[];
   incomeChartStyle: Record<string, string>;
@@ -76,6 +79,8 @@ export class DashboardPageComponent implements AfterViewInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dashboardService = inject(DashboardService);
+  private readonly clientsService = inject(ClientsService);
+  private readonly contractsService = inject(ContractsService);
 
   readonly isLoading = signal(true);
   readonly errorMessage = signal('');
@@ -120,7 +125,9 @@ export class DashboardPageComponent implements AfterViewInit {
 
     forkJoin({
       summary: this.dashboardService.getSummary(),
-      financialSummary: this.dashboardService.getFinancialSummary().pipe(catchError(() => of(null)))
+      financialSummary: this.dashboardService.getFinancialSummary().pipe(catchError(() => of(null))),
+      clientsWithoutContract: this.clientsService.getPaged(1, 1, { contractStatus: 'missing', clientStatus: 'active' }).pipe(catchError(() => of(null))),
+      contracts: this.contractsService.getContracts().pipe(catchError(() => of([])))
     })
       .pipe(
         catchError(() => {
@@ -137,7 +144,7 @@ export class DashboardPageComponent implements AfterViewInit {
             return;
           }
 
-          this.dashboard.set(this.buildViewModel(response.summary, response.financialSummary));
+          this.dashboard.set(this.buildViewModel(response.summary, response.financialSummary, response.clientsWithoutContract?.totalCount ?? 0, response.contracts.filter(item => item.status === 'PendingSignature').length));
           this.lastUpdated.set(new Date());
           this.isLoading.set(false);
           this.stabilizeLayout();
@@ -147,11 +154,19 @@ export class DashboardPageComponent implements AfterViewInit {
 
   private buildViewModel(
     summary: DashboardSummaryResponse,
-    financialSummary: DashboardFinancialSummaryResponse | null
+    financialSummary: DashboardFinancialSummaryResponse | null,
+    clientsWithoutContract: number,
+    pendingContracts: number
   ): DashboardViewModel {
     const incomeBreakdown = this.buildIncomeBreakdown(summary);
 
     return {
+      operationalAlerts: [
+        { label: 'Pagos pendientes', value: summary.pendingPayments, hint: 'Requieren seguimiento', icon: 'payments', route: '/clients?paymentStatus=pending', tone: 'danger' },
+        { label: 'Próximos vencimientos', value: summary.upcomingExpirations.length, hint: 'Membresías cercanas', icon: 'event_upcoming', route: '/clients', tone: 'warning' },
+        { label: 'Sin contrato vigente', value: clientsWithoutContract, hint: 'Alumnos activos', icon: 'contract_delete', route: '/clients?contractStatus=missing', tone: 'warning' },
+        { label: 'Firmas pendientes', value: pendingContracts, hint: 'Contratos emitidos', icon: 'draw', route: '/contracts', tone: 'info' }
+      ],
       stats: [
         {
           label: 'Total clientes historico',

@@ -13,13 +13,15 @@ html {
         primary: mat.$red-palette,
         tertiary: mat.$red-palette,
       ),
-      typography: Roboto,
+      typography: 'Source Sans 3',
       density: 0,
     )
   );
 }
 
 :root {
+  --app-font-body: 'Source Sans 3', Arial, sans-serif;
+  --app-font-display: 'Manrope', 'Source Sans 3', Arial, sans-serif;
   --app-bg: #f4f4f5;
   --app-surface: #ffffff;
   --app-surface-muted: #fafafa;
@@ -49,24 +51,55 @@ body {
   background-color: var(--app-bg);
   color: var(--app-text);
   font: var(--mat-sys-body-medium);
+  font-family: var(--app-font-body);
+  font-synthesis: none;
 
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.toolbar-title,
+.page-title,
+.mat-mdc-card-title {
+  font-family: var(--app-font-display);
+  letter-spacing: 0;
+}
+
+.metric-grid strong,
+.metrics-strip strong,
+.stat-pill strong,
+.hero-card strong {
+  font-family: var(--app-font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+input,
+textarea,
+select,
+table {
+  font-family: var(--app-font-body);
+}
+
 body.dark-theme {
   color-scheme: dark;
-  --app-bg: #111111;
-  --app-surface: #1b1b1d;
-  --app-surface-muted: #242426;
-  --app-surface-strong: #f5f2ed;
-  --app-surface-strong-2: #e8e1d8;
-  --app-text: #f5f2ed;
-  --app-text-muted: #c9c2b8;
-  --app-text-soft: #9f978d;
-  --app-border: #343235;
-  --app-border-strong: #514c48;
+  --app-bg: #101012;
+  --app-surface: #1a1a1d;
+  --app-surface-muted: #242428;
+  --app-surface-strong: #0c0c0e;
+  --app-surface-strong-2: #141417;
+  --app-text: #f4f4f5;
+  --app-text-muted: #b6b6bd;
+  --app-text-soft: #8f8f98;
+  --app-border: #35353b;
+  --app-border-strong: #4a4a52;
   --app-accent: #e5483f;
   --app-accent-strong: #ff7a70;
   --app-accent-soft: rgba(229, 72, 63, .13);
@@ -74,6 +107,16 @@ body.dark-theme {
   --app-accent-shadow: rgba(229, 72, 63, .24);
   background-color: var(--app-bg);
   color: var(--app-text);
+  --mat-sys-background: var(--app-bg);
+  --mat-sys-surface: var(--app-surface);
+  --mat-sys-surface-container: var(--app-surface);
+  --mat-sys-surface-container-low: var(--app-surface-muted);
+  --mat-sys-surface-container-high: #2b2b30;
+  --mat-sys-surface-container-highest: #303036;
+  --mat-sys-on-surface: var(--app-text);
+  --mat-sys-on-surface-variant: var(--app-text-muted);
+  --mat-sys-outline: var(--app-border-strong);
+  --mat-sys-outline-variant: var(--app-border);
 }
 
 body.dark-theme .app-content {
@@ -242,6 +285,104 @@ body.dark-theme .profile-avatar-button span {
   color: var(--app-accent-strong);
 }
 
+body.dark-theme .mat-drawer-container,
+body.dark-theme .mat-drawer-content,
+body.dark-theme .mat-sidenav-content,
+body.dark-theme .mat-drawer,
+body.dark-theme .mat-mdc-tab-body-wrapper,
+body.dark-theme .mat-mdc-tab-body,
+body.dark-theme .mat-mdc-tab-body-content {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-dialog-surface,
+body.dark-theme .mat-mdc-menu-panel,
+body.dark-theme .mat-mdc-select-panel,
+body.dark-theme .mat-mdc-autocomplete-panel,
+body.dark-theme .mat-datepicker-content,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .mat-mdc-tooltip-surface {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(
+  .content-card,
+  .summary-card,
+  .form-card,
+  .filter-card,
+  .filters-panel,
+  .table-container,
+  .table-wrapper,
+  .detail-panel,
+  .details-panel,
+  .editor-section,
+  .identity-panel,
+  .profile-editor,
+  .profile-note,
+  .crop-panel,
+  .dialog-shell,
+  .dialog-section,
+  .preview-card,
+  .list-panel,
+  .data-card,
+  .stats-card,
+  .metric-card,
+  .category-card,
+  .muscle-card,
+  .achievement-card,
+  .habit-card,
+  .ranking-card,
+  .rule-card
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(.subsection, .info-row, .detail-row, .summary-row, .filter-row, .preview-row, .readonly-section) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-form-field.mat-form-field-disabled,
+body.dark-theme .mat-mdc-text-field-wrapper.mdc-text-field--disabled {
+  opacity: .72;
+}
+
+body.dark-theme .mat-mdc-form-field-hint,
+body.dark-theme .mat-mdc-form-field-error,
+body.dark-theme .mat-mdc-checkbox label,
+body.dark-theme .mat-mdc-slide-toggle label,
+body.dark-theme .mat-mdc-paginator-page-size-label,
+body.dark-theme .mat-mdc-paginator-range-label {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+body.dark-theme .mat-mdc-menu-item:hover {
+  background: var(--app-surface-muted) !important;
+}
+
+body.dark-theme .legal-warning {
+  background: rgba(234, 179, 8, .12) !important;
+  border-color: rgba(250, 204, 21, .35) !important;
+  color: #f5d76e !important;
+}
+
+body.dark-theme .toast-card {
+  background: #26262b !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .toast-card .toast-icon {
+  background: var(--app-surface-muted) !important;
+}
+
 .employee-category-dialog-backdrop {
   background: rgba(18, 18, 18, 0.4);
   backdrop-filter: blur(7px);
@@ -356,3 +497,306 @@ body.dark-theme .employee-category-dialog-panel .mat-mdc-dialog-surface {
 }
 
 /* You can add global styles to this file, and also import other style files */
+
+/* Shared operational UX */
+.table-wrapper,
+.table-container,
+.dense-table {
+  max-width: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+table thead th,
+.mat-mdc-table .mat-mdc-header-cell,
+.table-header {
+  background: var(--app-surface-muted);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+table tbody tr,
+.mat-mdc-row,
+.table-row {
+  transition: background-color .15s ease;
+}
+
+table tbody tr:hover,
+.mat-mdc-row:hover,
+.table-row:hover {
+  background: color-mix(in srgb, var(--app-accent) 4%, var(--app-surface)) !important;
+}
+
+:is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.form-footer,
+.floating-edit-actions,
+.sticky-form-actions {
+  background: color-mix(in srgb, var(--app-surface) 94%, transparent) !important;
+  border: 1px solid var(--app-border) !important;
+  bottom: .75rem;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .14);
+  position: sticky;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+
+.feedback-banner,
+.loading-state,
+.empty-state {
+  scroll-margin-top: 90px;
+}
+
+@media (max-width: 700px) {
+  .form-footer,
+  .floating-edit-actions,
+  .sticky-form-actions {
+    bottom: .4rem;
+    margin-inline: -.25rem;
+  }
+}
+
+/* Dark mode module tokens */
+body.dark-theme .dashboard-page {
+  --dashboard-surface: var(--app-surface);
+  --dashboard-surface-soft: var(--app-surface-muted);
+  --dashboard-border: var(--app-border);
+  --dashboard-shadow: 0 16px 42px rgba(0, 0, 0, .28);
+  --dashboard-ink: var(--app-text);
+}
+
+body.dark-theme .clients-page {
+  --clients-surface: var(--app-surface);
+  --clients-surface-soft: var(--app-surface-muted);
+  --clients-border: var(--app-border);
+  --clients-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --clients-ink: var(--app-text);
+  --clients-muted: var(--app-text-muted);
+}
+
+body.dark-theme .employees-page {
+  --employees-surface: var(--app-surface);
+  --employees-border: var(--app-border);
+  --employees-border-soft: var(--app-border);
+  --employees-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --employees-ink: var(--app-text);
+  --employees-muted: var(--app-text-muted);
+}
+
+body.dark-theme .health-page {
+  --health-border: var(--app-border);
+  --health-muted: var(--app-text-muted);
+  --health-ink: var(--app-text);
+  --health-surface: var(--app-surface);
+  --health-soft: var(--app-surface-muted);
+}
+
+body.dark-theme .movements-page {
+  --mov-surface: var(--app-surface);
+  --mov-border: var(--app-border);
+  --mov-border-soft: var(--app-border);
+  --mov-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --mov-ink: var(--app-text);
+  --mov-muted: var(--app-text-muted);
+}
+
+/* Dashboard */
+body.dark-theme .dashboard-page :is(
+  .panel-card,
+  .stat-card,
+  .income-breakdown-item,
+  .income-donut-center,
+  .stack-item,
+  .heading-badge,
+  .highlight-chip,
+  .header-note
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .dashboard-page :is(.income-bar, .stat-icon-shell, .eyebrow-pill) {
+  background-color: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme .dashboard-page :is(.card-heading-copy p, .income-breakdown-item small, .stat-label, .stat-copy small, .header-note) {
+  color: var(--app-text-muted) !important;
+}
+
+/* Operational tables */
+body.dark-theme :is(
+  .clients-table,
+  .employees-table,
+  .records-table,
+  .health-table
+) :is(thead, tr, th, td) {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(
+  .clients-table,
+  .employees-table,
+  .records-table,
+  .health-table
+) th {
+  background-color: var(--app-surface-muted) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme :is(.clients-table, .employees-table, .records-table, .health-table) tbody tr:hover {
+  background-color: color-mix(in srgb, var(--app-accent) 6%, var(--app-surface)) !important;
+}
+
+/* Health calendar, professionals and services */
+body.dark-theme .health-page :is(
+  .tool-panel,
+  .list-panel,
+  .calendar-board,
+  .calendar-toolbar,
+  .calendar-weekdays,
+  .calendar-cell,
+  .appointment-row,
+  .specialty-card,
+  .specialty-detail,
+  .specialty-metrics>*,
+  .service-row,
+  .data-card,
+  .professional-card,
+  .detail-panel
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .health-page :is(.calendar-cell.other-month, .specialty-metrics>*, .calendar-empty) {
+  background: var(--app-surface-muted) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .health-page .calendar-cell.today {
+  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface)) !important;
+  border-color: var(--app-accent) !important;
+}
+
+/* Clients, employees and movements */
+body.dark-theme :is(.clients-page, .employees-page, .movements-page) :is(
+  .page-header,
+  .list-card,
+  .client-card,
+  .employee-card,
+  .records-panel,
+  .record-card,
+  .table-wrapper,
+  .filters-empty,
+  .empty-state
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(.clients-page, .employees-page, .movements-page) :is(
+  .search-field .mat-mdc-text-field-wrapper,
+  .record-grid,
+  .summary-stack,
+  .summary-values
+) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+}
+
+/* Anatomy and gamification */
+body.dark-theme .student-platform :is(
+  .anatomy-panel,
+  .muscle-group-card,
+  .empty-group,
+  .muscle-detail-panel,
+  .muscle-detail-row,
+  .achievement-card,
+  .achievement-tile,
+  .habit-tile,
+  .gamification-metrics article,
+  .anatomy-summary article,
+  .gamification-tabs,
+  .gamification-hero,
+  .rule-card,
+  .podium article,
+  .ranking-row,
+  .editable-rule,
+  .habit-preview,
+  .drawer-form,
+  .routine-plan-usage,
+  .routine-plan-list article,
+  .routine-exercise-row,
+  .tracking-summary article,
+  .plan-workout-list,
+  .plan-card-footer
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .group-actions,
+  .muscle-preview span,
+  .soft-tag,
+  .mini-chip-list span,
+  .stat-pill,
+  .chip-row span,
+  .rule-toggle,
+  .editable-rule input
+) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .anatomy-summary span,
+  .gamification-metrics span,
+  .gamification-hero p,
+  .achievement-copy p,
+  .rule-card p,
+  .editable-rule label span,
+  .editable-rule small
+) {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .student-platform :is(.anatomy-summary strong, .gamification-metrics strong) {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .exercise-search-input,
+  .select-field select,
+  .dropdown-results,
+  .search-results button,
+  .chip-list button,
+  .day-picker button,
+  .assignment-pagination button,
+  .tracking-client-options
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(.search-results button:hover, .routine-actions button:hover, .group-actions button:hover, .muscle-actions button:hover) {
+  background: var(--app-surface-muted) !important;
+}
+
+/* Keep machine-readable assets white. */
+body.dark-theme :is(.qr-code-frame, .attendance-qr-preview img, .signature-page canvas) {
+  background: #fff !important;
+}

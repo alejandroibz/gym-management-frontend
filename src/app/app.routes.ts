@@ -84,6 +84,14 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'clients/new',
+        loadComponent: () =>
+          import('./features/clients/pages/client-details-page/client-details-page')
+            .then(m => m.ClientDetailsPageComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin', 'Admin'] }
+      },
+      {
         path: 'clients/:id',
         loadComponent: () =>
           import('./features/clients/pages/client-details-page/client-details-page')
@@ -92,6 +100,16 @@ export const routes: Routes = [
         data: {
           roles: ['SuperAdmin', 'Admin']
         }
+      },
+      {
+        path: 'contracts',
+        loadComponent: () => import('./features/contracts/pages/contracts-page/contracts-page').then(m => m.ContractsPageComponent),
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
+      },
+      {
+        path: 'contracts/:id/sign',
+        loadComponent: () => import('./features/contracts/pages/contract-signature-page/contract-signature-page').then(m => m.ContractSignaturePageComponent),
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
       },
       {
         path: 'health/patients/:id',

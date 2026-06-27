@@ -247,8 +247,14 @@ export class EmployeeDetailsPageComponent {
       next: employee => {
         this.employee.set(employee);
         this.populateForm(employee);
-        this.form.disable({ emitEvent: false });
-        this.isEditing.set(false);
+        const editRequested = this.route.snapshot.queryParamMap.get('edit') === '1';
+        if (editRequested) {
+          this.form.enable({ emitEvent: false });
+          this.isEditing.set(true);
+        } else {
+          this.form.disable({ emitEvent: false });
+          this.isEditing.set(false);
+        }
         this.isLoading.set(false);
       },
       error: () => {

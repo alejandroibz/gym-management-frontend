@@ -28,8 +28,10 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
 import { Payment, PaymentCreatePayload, PaymentUpdatePayload } from '../../../payments/models/payment.model';
 import { PaymentsService } from '../../../payments/services/payments.service';
 import { ClientMembershipDialogComponent } from '../../components/client-membership-dialog/client-membership-dialog';
-import { Client, ClientMembership, ClientRelationRecord, ClientUpdatePayload, StudentGoalAdmin, StudentMeasurementAdmin } from '../../models/client.model';
+import { Client, ClientCreatePayload, ClientMembership, ClientRelationRecord, ClientUpdatePayload, StudentGoalAdmin, StudentMeasurementAdmin } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
+import { ClientContract } from '../../../contracts/models/contract.model';
+import { ContractsService } from '../../../contracts/services/contracts.service';
 
 @Component({
   selector: 'app-client-details-page',
@@ -68,6 +70,7 @@ export class ClientDetailsPageComponent {
   private readonly paymentsService = inject(PaymentsService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
+  private readonly contractsService = inject(ContractsService);
 
   readonly client = signal<Client | null>(null);
   readonly membershipPlans = signal<MembershipPlan[]>([]);
@@ -76,7 +79,9 @@ export class ClientDetailsPageComponent {
   readonly cashMovementCategories = signal<CashMovementCategory[]>([]);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
+  readonly isDownloadingPlan = signal(false);
   readonly isEditing = signal(false);
+  readonly isCreateMode = signal(this.route.snapshot.routeConfig?.path === 'clients/new');
   readonly errorMessage = signal('');
   readonly observacionesMaxLength = 3000;
   readonly today = new Date().toISOString().slice(0, 10);
@@ -116,6 +121,9 @@ export class ClientDetailsPageComponent {
   readonly currentUserEmail = signal<string | null>(null);
   readonly studentGoals = signal<StudentGoalAdmin[]>([]);
   readonly latestProfessionalMeasurement = signal<StudentMeasurementAdmin | null>(null);
+  readonly clientContracts = signal<ClientContract[]>([]);
+  readonly currentContract = computed(() => this.clientContracts().find(x => x.status === 'PendingSignature' || x.status === 'Signed') ?? null);
+  readonly isSavingContract = signal(false);
   readonly showMeasurementForm = signal(false);
   readonly showProfessionalGoalForm = signal(false);
   readonly measurementForm = this.formBuilder.nonNullable.group({
@@ -128,7 +136,14 @@ export class ClientDetailsPageComponent {
   });
 
   constructor() {
-    this.form.disable({ emitEvent: false });
+    if (this.isCreateMode()) {
+      this.client.set(this.createEmptyClient());
+      this.isEditing.set(true);
+      this.isLoading.set(false);
+      this.form.patchValue({ fechaInicio: this.today });
+    } else {
+      this.form.disable({ emitEvent: false });
+    }
     this.form.controls.observaciones.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(value => {
@@ -152,7 +167,7 @@ export class ClientDetailsPageComponent {
     this.updateMembershipValidators();
     this.loadMembershipPlans();
     this.loadPaymentLookups();
-    this.loadClient();
+    if (!this.isCreateMode()) this.loadClient();
   }
 
   goBack(): void {
@@ -171,6 +186,11 @@ export class ClientDetailsPageComponent {
   }
 
   cancelEditing(): void {
+    if (this.isCreateMode()) {
+      this.goBack();
+      return;
+    }
+
     const client = this.client();
     if (!client) {
       return;
@@ -215,6 +235,11 @@ export class ClientDetailsPageComponent {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.errorMessage.set('Revisa los campos marcados antes de guardar.');
+      return;
+    }
+
+    if (this.isCreateMode()) {
+      this.createClient();
       return;
     }
 
@@ -370,6 +395,36 @@ export class ClientDetailsPageComponent {
     if (!patientId) return;
     this.router.navigate(['/health', 'patients', patientId]);
   }
+
+  downloadTrainingPlan(): void {
+    const client = this.client();
+    if (!client || this.isDownloadingPlan()) return;
+
+    this.isDownloadingPlan.set(true);
+    this.errorMessage.set('');
+    this.clientsService.downloadTrainingPlan(client.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `plan-entrenamiento-${client.nombre}-${client.apellido}.pdf`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        this.isDownloadingPlan.set(false);
+      },
+      error: error => {
+        this.isDownloadingPlan.set(false);
+        this.errorMessage.set(error.status === 404
+          ? 'Este alumno no tiene un plan de entrenamiento activo para descargar.'
+          : 'No se pudo generar el plan de entrenamiento.');
+      }
+    });
+  }
+
+  issueContract(): void { const client=this.client();if(!client)return;this.isSavingContract.set(true);this.contractsService.issue(client.id).subscribe({next:()=>{this.isSavingContract.set(false);this.loadContracts(client.id)},error:e=>{this.isSavingContract.set(false);this.errorMessage.set(e.error?.error??'No se pudo emitir el contrato.')}}); }
+  downloadContract(contract:ClientContract):void{this.contractsService.download(this.contractsService.pdfUrl(contract.id)).subscribe(blob=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`contrato-${contract.clientName}.pdf`;a.click();URL.revokeObjectURL(url)})}
+  uploadPaperContract(contract:ClientContract,event:Event):void{const files=Array.from((event.target as HTMLInputElement).files??[]);if(!files.length)return;this.isSavingContract.set(true);this.contractsService.uploadPaper(contract.id,contract.clientName,contract.clientDni??'',files).subscribe({next:()=>{this.isSavingContract.set(false);this.loadContracts(contract.clientId)},error:e=>{this.isSavingContract.set(false);this.errorMessage.set(e.error?.error??'No se pudo subir el contrato firmado.')}})}
+  voidContract(contract:ClientContract):void{this.contractsService.void(contract.id).subscribe(()=>this.loadContracts(contract.clientId))}
 
   confirmPayment(payment: ClientRelationRecord): void {
     const paymentId = this.getPaymentId(payment);
@@ -862,10 +917,17 @@ export class ClientDetailsPageComponent {
       next: client => {
         this.client.set(client);
         this.populateForm(client);
-        this.form.disable({ emitEvent: false });
-        this.isEditing.set(false);
+        const editRequested = this.route.snapshot.queryParamMap.get('edit') === '1';
+        if (editRequested) {
+          this.form.enable({ emitEvent: false });
+          this.isEditing.set(true);
+        } else {
+          this.form.disable({ emitEvent: false });
+          this.isEditing.set(false);
+        }
         this.isLoading.set(false);
         this.loadStudentExperience(client.id);
+        this.loadContracts(client.id);
       },
       error: () => {
         this.client.set(null);
@@ -945,6 +1007,49 @@ export class ClientDetailsPageComponent {
   private getSelectedPlan(): MembershipPlan | undefined {
     return this.membershipPlans().find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
   }
+
+  private createClient(): void {
+    this.isSaving.set(true);
+    this.errorMessage.set('');
+    this.clientsService.create(this.buildCreatePayload()).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.router.navigate(['/clients']);
+      },
+      error: error => {
+        this.isSaving.set(false);
+        this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo crear el cliente. Revisa los datos e intenta nuevamente.'));
+      }
+    });
+  }
+
+  private buildCreatePayload(): ClientCreatePayload {
+    const raw = this.form.getRawValue();
+    return {
+      branchId: 2,
+      nombre: raw.nombre.trim(), apellido: raw.apellido.trim(), dni: raw.dni.trim(),
+      fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
+      telefono: raw.telefono.trim(), email: raw.email.trim(), direccion: raw.direccion.trim(),
+      tieneLesion: raw.tieneLesion, observaciones: raw.observaciones.trim(), appAccess: null,
+      membership: raw.hasMembership ? {
+        membershipPlanId: Number(raw.membershipPlanId),
+        fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
+        fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
+        precioFinal: Number(raw.precioFinal)
+      } : null,
+      initialPayment: null
+    };
+  }
+
+  private createEmptyClient(): Client {
+    return {
+      id: 0, branchId: 2, nombre: '', apellido: '', dni: '', fechaNacimiento: '', telefono: '',
+      email: '', direccion: '', tieneLesion: false, observaciones: '', activo: true,
+      membership: null, membershipsHistory: [], payments: [], debePago: false
+    };
+  }
+
+  private loadContracts(clientId:number):void{this.contractsService.getContracts(clientId).subscribe({next:items=>this.clientContracts.set(items),error:()=>this.clientContracts.set([])})}
 
   saveProfessionalMeasurement(): void {
     const client = this.client(); if (!client || this.measurementForm.invalid) return;

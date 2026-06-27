@@ -1037,6 +1037,27 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     });
   }
 
+  duplicateExercise(exercise: Exercise): void {
+    this.platformService.createExercise({
+      name: `${exercise.name} - copia`,
+      description: exercise.description,
+      muscleGroup: exercise.muscleGroup,
+      musclesInvolved: exercise.musclesInvolved,
+      primaryMuscleGroupId: exercise.primaryMuscleGroupId,
+      secondaryMuscleGroupId: exercise.secondaryMuscleGroupId,
+      muscleIds: exercise.muscles.map(muscle => muscle.id),
+      media: exercise.media.map(media => ({ ...media, id: undefined })),
+      photoUrl: exercise.photoUrl,
+      videoUrl: exercise.videoUrl
+    }).subscribe({
+      next: created => {
+        this.exercises.update(items => [...items, created]);
+        this.feedback.set('Ejercicio duplicado.');
+      },
+      error: () => this.feedback.set('No se pudo duplicar el ejercicio.')
+    });
+  }
+
   saveMuscleGroup(): void {
     if (this.muscleGroupForm.invalid) return;
     const raw = this.muscleGroupForm.getRawValue();
@@ -1317,6 +1338,28 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         },
         error: () => this.feedback.set('No se pudo eliminar el plan de entrenamiento.')
       });
+    });
+  }
+
+  duplicateTrainingPlan(plan: TrainingPlan): void {
+    this.platformService.createTrainingPlan({
+      name: `${plan.name} - copia`,
+      description: plan.description,
+      level: plan.level,
+      goal: plan.goal,
+      workouts: plan.workouts.map(workout => ({
+        routineId: workout.routineId,
+        sortOrder: workout.sortOrder,
+        dayLabel: workout.dayLabel,
+        notes: workout.notes,
+        suggestedDayOfWeek: workout.suggestedDayOfWeek
+      }))
+    }).subscribe({
+      next: () => {
+        this.feedback.set('Plan duplicado.');
+        this.refreshTrainingPlans();
+      },
+      error: () => this.feedback.set('No se pudo duplicar el plan.')
     });
   }
 

@@ -293,6 +293,10 @@
   gap: 0.4rem;
 }
 
+.client-identity { align-items: center; display: flex; gap: .75rem; min-width: 0; }
+.client-avatar { align-items: center; background: var(--app-accent-soft); border: 1px solid var(--app-border); border-radius: 50%; color: var(--app-accent); display: flex; flex: 0 0 42px; font-size: .78rem; font-weight: 800; height: 42px; justify-content: center; overflow: hidden; text-transform: uppercase; width: 42px; }
+.client-avatar img { height: 100%; object-fit: cover; width: 100%; }
+
 .client-cell strong {
   color: var(--clients-ink);
 }
@@ -534,3 +538,6 @@ mat-paginator {
     justify-self: start;
   }
 }
+:host-context(body.dark-theme) .icon-action-button { background: var(--app-surface-muted) !important; border: 1px solid var(--app-border) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) .icon-action-button:hover { background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface-muted)) !important; color: var(--app-accent-strong) !important; }
+:host-context(body.dark-theme) .icon-action-button .mat-icon { color: inherit !important; }

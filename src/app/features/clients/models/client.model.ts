@@ -40,6 +40,7 @@ export interface Client {
   telefono: string;
   email: string;
   direccion: string;
+  avatarUrl?: string | null;
   tieneLesion: boolean;
   observaciones?: string | null;
   fechaAlta?: string;
@@ -52,6 +53,7 @@ export interface Client {
   ultimoPagoFecha?: string | null;
   membresiaProximaAVencer?: boolean;
   membresiaVencimientoNotificado?: boolean;
+  hasValidContract?: boolean;
 }
 
 export interface ClientCreatePayload {
@@ -92,6 +94,7 @@ export interface ClientFilters {
   membershipPlanId?: number | null;
   paymentStatus?: 'pending' | 'upToDate' | null;
   clientStatus?: 'active' | 'archived' | 'all' | null;
+  contractStatus?: 'missing' | 'signed' | null;
 }
 
 export interface ClientImportError {

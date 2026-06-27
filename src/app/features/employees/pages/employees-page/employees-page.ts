@@ -119,7 +119,7 @@ export class EmployeesPageComponent {
   }
 
   editEmployee(employee: Employee): void {
-    this.openDialog(employee);
+    this.router.navigate(['/employees', employee.id], { queryParams: { edit: 1 } });
   }
 
   getCategoryName(categoryId: number): string {
