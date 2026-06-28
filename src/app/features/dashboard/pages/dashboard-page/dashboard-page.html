@@ -61,6 +61,15 @@
       <span>Cargando resumen del dashboard...</span>
     </div>
   } @else if (dashboard(); as snapshot) {
+    <section class="operational-strip" aria-label="Pendientes operativos">
+      @for (alert of snapshot.operationalAlerts; track alert.label) {
+        <a [routerLink]="alert.route" [class]="alert.tone">
+          <span class="operational-icon"><mat-icon>{{ alert.icon }}</mat-icon></span>
+          <span><small>{{ alert.label }}</small><strong>{{ alert.value }}</strong><em>{{ alert.hint }}</em></span>
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+      }
+    </section>
 <section class="content-grid">
       <section class="panel-card income-panel">
         <div class="card-heading">

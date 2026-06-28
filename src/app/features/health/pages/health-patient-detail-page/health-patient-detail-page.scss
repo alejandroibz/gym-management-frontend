@@ -4,6 +4,36 @@
   color: #0f172a;
 }
 
+:host-context(body.dark-theme) .patient-detail-page { color: var(--app-text); }
+:host-context(body.dark-theme) .detail-card,
+:host-context(body.dark-theme) .info-grid section,
+:host-context(body.dark-theme) .note-box,
+:host-context(body.dark-theme) .detail-grid section,
+:host-context(body.dark-theme) .trainer-note-composer {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .patient-hero p,
+:host-context(body.dark-theme) .section-heading span,
+:host-context(body.dark-theme) .info-grid span,
+:host-context(body.dark-theme) .breadcrumb { color: var(--app-text-muted); }
+
+:host-context(body.dark-theme) .appointment-row,
+:host-context(body.dark-theme) .subscription-row,
+:host-context(body.dark-theme) .payment-row { border-color: var(--app-border); }
+
+:host-context(body.dark-theme) .patient-tags span,
+:host-context(body.dark-theme) .subscription-meta span,
+:host-context(body.dark-theme) .subscription-meta strong,
+:host-context(body.dark-theme) .time-block,
+:host-context(body.dark-theme) .appointment-payment-muted { background: var(--app-surface-muted); color: var(--app-text-muted); }
+
+:host-context(body.dark-theme) ::ng-deep .patient-detail-page .mat-mdc-text-field-wrapper { background: var(--app-surface-muted) !important; }
+:host-context(body.dark-theme) ::ng-deep .patient-detail-page .mat-mdc-input-element,
+:host-context(body.dark-theme) ::ng-deep .patient-detail-page .mat-mdc-select-value { color: var(--app-text) !important; -webkit-text-fill-color: var(--app-text) !important; }
+
 .page-topbar,
 .patient-hero,
 .section-heading,

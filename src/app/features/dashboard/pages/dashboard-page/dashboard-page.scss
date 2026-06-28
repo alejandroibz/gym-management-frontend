@@ -1,4 +1,4 @@
-.dashboard-page {
+﻿.dashboard-page {
   display: grid;
   gap: 1.5rem;
   --dashboard-surface: #ffffff;
@@ -10,6 +10,11 @@
   --dashboard-green: #0f766e;
   --dashboard-red: #c1121f;
 }
+
+.operational-strip { display: grid; gap: .7rem; grid-template-columns: repeat(4,minmax(0,1fr)); margin-bottom: 1rem; }
+.operational-strip>a { align-items: center; background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 9px; color: inherit; display: grid; gap: .65rem; grid-template-columns: 42px 1fr auto; min-height: 88px; padding: .8rem; text-decoration: none; transition: border-color .18s ease,transform .18s ease; }
+.operational-strip>a:hover { border-color: var(--app-accent); transform: translateY(-1px); }.operational-icon { align-items:center;background:var(--app-surface-muted);border-radius:8px;display:flex;height:42px;justify-content:center;width:42px }.operational-strip>a>span:nth-child(2){min-width:0}.operational-strip small,.operational-strip strong,.operational-strip em{display:block}.operational-strip small{color:var(--app-text-muted);font-size:.72rem}.operational-strip strong{font-size:1.45rem}.operational-strip em{color:var(--app-text-soft);font-size:.7rem;font-style:normal}.operational-strip>a>mat-icon{color:var(--app-text-soft)}.operational-strip .danger .operational-icon{background:var(--app-accent-soft);color:var(--app-accent)}.operational-strip .warning .operational-icon{background:rgba(217,146,16,.13);color:#b97800}.operational-strip .info .operational-icon{background:rgba(37,99,235,.12);color:#2563eb}
+@media(max-width:1000px){.operational-strip{grid-template-columns:1fr 1fr}}@media(max-width:560px){.operational-strip{grid-template-columns:1fr}.operational-strip>a{min-height:76px}}
 
 .page-header {
   display: grid;
@@ -658,3 +663,7 @@
     width: min(100%, 3.5rem);
   }
 }
+
+:host-context(body.dark-theme) .dashboard-table :is(thead,tr,th,td) { background: var(--app-surface) !important; border-color: var(--app-border) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) .dashboard-table th { background: var(--app-surface-muted) !important; color: var(--app-text-muted) !important; }
+:host-context(body.dark-theme) .dashboard-table tbody tr:hover { background: color-mix(in srgb, var(--app-accent) 6%, var(--app-surface)) !important; }

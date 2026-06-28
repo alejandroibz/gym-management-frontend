@@ -1,0 +1,225 @@
+<section class="profile-page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/dashboard">Inicio</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>Mi perfil</span>
+  </nav>
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Cuenta</span>
+      <h1>Mi perfil</h1>
+      <p>Datos personales, contacto y foto visible dentro del sistema.</p>
+    </div>
+    <div class="header-actions">
+      @if (hasPendingChanges()) {
+        <span class="pending-pill">Cambios sin guardar</span>
+      }
+      <button mat-stroked-button type="button" (click)="loadProfile()" [disabled]="isLoading() || isSaving()">
+        <mat-icon>refresh</mat-icon>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (profile()) {
+    <form [formGroup]="form" (ngSubmit)="save()" class="profile-layout">
+      <aside class="identity-panel">
+        <div class="avatar-shell">
+          <div class="avatar-preview">
+            @if (cropImageUrl()) {
+              <img [src]="cropImageUrl()!" alt="">
+            } @else if (imagePreviewUrl()) {
+              <img [src]="imagePreviewUrl()!" alt="">
+            } @else {
+              <span>{{ getInitials() }}</span>
+            }
+          </div>
+          <span class="role-chip">{{ roleLabel }}</span>
+        </div>
+
+        <div class="identity-copy">
+          <h2>{{ fullName }}</h2>
+          @if (profile()!.email) {
+            <small>{{ profile()!.email }}</small>
+          }
+        </div>
+
+        <div class="avatar-actions">
+          <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarSelected($event)">
+          <button mat-flat-button color="primary" type="button" (click)="avatarInput.click()" [disabled]="isSaving()">
+            <mat-icon>photo_camera</mat-icon>
+            Cambiar foto
+          </button>
+          @if (imagePreviewUrl()) {
+            <button mat-stroked-button type="button" (click)="clearAvatar()" [disabled]="isSaving()">
+              <mat-icon>delete_outline</mat-icon>
+              Quitar foto
+            </button>
+          }
+        </div>
+
+        <div class="profile-note">
+          <mat-icon>info</mat-icon>
+          <p>Elegí una imagen clara y centrada. Se va a mostrar como tu foto en el sistema.</p>
+        </div>
+
+        @if (selectedAvatarName()) {
+          <div class="file-chip">
+            <mat-icon>image</mat-icon>
+            <span>{{ selectedAvatarName() }}</span>
+          </div>
+        }
+
+        @if (cropImageUrl()) {
+          <section class="crop-panel">
+            <div class="crop-heading">
+              <strong>Encuadrar foto</strong>
+              <span>Ajusta la cara dentro del circulo.</span>
+            </div>
+
+            <label class="range-field">
+              <span>Zoom</span>
+              <input type="range" min="1" max="3" step="0.05" [value]="cropZoom()" (input)="updateCropZoom($event)">
+            </label>
+
+            <label class="range-field">
+              <span>Horizontal</span>
+              <input type="range" min="0" max="100" step="1" [value]="cropX()" (input)="updateCropX($event)">
+            </label>
+
+            <label class="range-field">
+              <span>Vertical</span>
+              <input type="range" min="0" max="100" step="1" [value]="cropY()" (input)="updateCropY($event)">
+            </label>
+
+            <div class="crop-actions">
+              <button mat-stroked-button type="button" (click)="resetCrop()" [disabled]="isSaving()">Centrar</button>
+              <button mat-flat-button color="primary" type="button" (click)="applyCropPreview()" [disabled]="isSaving()">
+                <mat-icon>crop</mat-icon>
+                Aplicar
+              </button>
+            </div>
+          </section>
+        }
+      </aside>
+
+      <main class="profile-editor">
+        <section class="editor-section">
+          <div class="section-heading">
+            <mat-icon>badge</mat-icon>
+            <div>
+              <h2>Datos personales</h2>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="nombre">
+              @if (form.controls.nombre.hasError('required')) {
+                <mat-error>El nombre es obligatorio.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Apellido</mat-label>
+              <input matInput formControlName="apellido">
+              @if (form.controls.apellido.hasError('required')) {
+                <mat-error>El apellido es obligatorio.</mat-error>
+              }
+            </mat-form-field>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-heading">
+            <mat-icon>contact_mail</mat-icon>
+            <div>
+              <h2>Contacto</h2>
+              <span>Datos operativos para comunicacion interna.</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Telefono</mat-label>
+              <input matInput formControlName="telefono">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput [value]="profile()!.email || ''" disabled>
+              <mat-hint>El email se administra desde el acceso de usuario.</mat-hint>
+            </mat-form-field>
+
+            @if (isStudentProfile) {
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Direccion</mat-label>
+                <input matInput formControlName="direccion">
+              </mat-form-field>
+            }
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-heading">
+            <mat-icon>notes</mat-icon>
+            <div>
+              <h2>Presentacion</h2>
+              <span>Una nota breve para describir al usuario o dejar contexto util.</span>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>{{ isStudentProfile ? 'Bio del alumno' : 'Bio del administrador' }}</mat-label>
+            <textarea matInput rows="5" formControlName="bio"></textarea>
+            <mat-hint align="end">{{ form.controls.bio.value.length }}/1000</mat-hint>
+          </mat-form-field>
+        </section>
+
+        <section class="readonly-section">
+          <div>
+            <span>Datos protegidos</span>
+            <p>
+              Rol, DNI, categoria, salario y permisos se administran desde los modulos correspondientes para evitar cambios accidentales.
+            </p>
+          </div>
+          <mat-icon>lock</mat-icon>
+        </section>
+
+        <footer class="form-footer">
+          <div>
+            @if (isSaving()) {
+              <strong>Guardando perfil...</strong>
+              <span>Estamos subiendo la foto y actualizando los datos.</span>
+            } @else if (hasPendingChanges()) {
+              <strong>Hay cambios pendientes</strong>
+              <span>Guarda para que el perfil quede actualizado.</span>
+            } @else {
+              <strong>Perfil al dia</strong>
+              <span>No hay cambios sin guardar.</span>
+            }
+          </div>
+          <div class="footer-actions">
+            <button mat-stroked-button type="button" (click)="loadProfile()" [disabled]="isSaving() || !hasPendingChanges()">Descartar</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || isSaving() || !hasPendingChanges()">
+              <mat-icon>save</mat-icon>
+              Guardar perfil
+            </button>
+          </div>
+        </footer>
+      </main>
+    </form>
+  } @else if (!isLoading()) {
+    <div class="empty-state">
+      <mat-icon>person_off</mat-icon>
+      <h2>No encontramos un perfil asociado</h2>
+      <p>Revisa que tu usuario tenga un empleado o alumno vinculado con el mismo email.</p>
+    </div>
+  }
+</section>

@@ -131,3 +131,7 @@
     width: 100%;
   }
 }
+:host-context(body.dark-theme) :is(.dialog-shell,.dialog-form,.dialog-header) { background: var(--app-surface) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) :is(.access-section,.membership-section) { background: var(--app-surface-muted) !important; border-color: var(--app-border) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) .dialog-actions { background: linear-gradient(180deg,transparent,var(--app-surface) 28%) !important; border-color: var(--app-border) !important; }
+:host-context(body.dark-theme) :is(.dialog-subtitle,.access-section p,.membership-section p) { color: var(--app-text-muted) !important; }

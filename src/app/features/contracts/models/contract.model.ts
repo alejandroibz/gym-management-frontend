@@ -1,0 +1,5 @@
+export interface ContractClause { id?: number | null; sortOrder: number; title: string; body: string; }
+export interface ContractTemplate { id: number; version: number; name: string; status: string; acceptanceText: string; isLegalReviewed: boolean; activatedAt?: string | null; clauses: ContractClause[]; }
+export interface ContractSnapshot { clientName: string; clientDni: string; branchName: string; branchAddress: string; membershipName: string; membershipPeriod: string; issuedAt: string; clauses: ContractClause[]; }
+export interface ContractDocument { id: number; documentType: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; uploadedAt: string; }
+export interface ClientContract { id: number; clientId: number; clientName: string; clientDni?: string | null; templateVersion: number; templateName: string; status: string; signatureMethod?: string | null; issuedAt: string; signedAt?: string | null; signedByName?: string | null; evidenceHash?: string | null; acceptanceText: string; snapshot: ContractSnapshot; documents: ContractDocument[]; }

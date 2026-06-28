@@ -1,0 +1,419 @@
+<section class="workout-detail-page">
+  <ng-template #addToPlanDialog>
+    <section class="dialog-panel assignment-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Agregar a plan</span>
+          <h2>{{ workout()?.name || 'Workout' }}</h2>
+          <small>Selecciona el plan al que queres sumar este workout.</small>
+        </div>
+        <button mat-icon-button type="button" mat-dialog-close matTooltip="Cerrar" aria-label="Cerrar agregar a plan">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="planAssignmentForm" class="modal-form">
+        <div class="picker-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar plan</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input
+              matInput
+              [formControl]="planSearch"
+              (focus)="planPickerOpen.set(true)"
+              (click)="planPickerOpen.set(true)"
+              (blur)="closePlanPickerSoon()">
+            <button mat-icon-button matSuffix type="button" matTooltip="Mostrar planes" (mousedown)="$event.preventDefault()" (click)="planPickerOpen.update(open => !open)">
+              <mat-icon>{{ planPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </mat-form-field>
+          @if (planPickerOpen()) {
+            <div class="search-results dropdown-results">
+              @for (plan of filteredPlans(); track plan.id) {
+                <button type="button" [class.selected]="planAssignmentForm.controls.trainingPlanId.value === plan.id" (mousedown)="$event.preventDefault()" (click)="selectPlan(plan)">
+                  <strong>{{ plan.name }}</strong>
+                  <span>{{ plan.workoutCount }} workouts | {{ plan.goal }} | {{ plan.level }}</span>
+                </button>
+              } @empty {
+                <div class="search-empty">No encontramos planes disponibles con ese criterio.</div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
+          <button mat-flat-button color="primary" type="button" (click)="addToPlan()">
+            <mat-icon>playlist_add</mat-icon>
+            Agregar a plan
+          </button>
+        </div>
+      </form>
+    </section>
+  </ng-template>
+
+  <ng-template #directAssignmentDialog>
+    <section class="dialog-panel assignment-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Asignacion directa</span>
+          <h2>{{ workout()?.name || 'Workout' }}</h2>
+          <small>El workout queda asignado al alumno hasta que se desasigne.</small>
+        </div>
+        <button mat-icon-button type="button" mat-dialog-close matTooltip="Cerrar" aria-label="Cerrar asignacion directa">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="directAssignmentForm" class="modal-form">
+        <div class="picker-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar alumno</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input
+              matInput
+              [formControl]="clientSearch"
+              (focus)="clientPickerOpen.set(true)"
+              (click)="clientPickerOpen.set(true)"
+              (blur)="closeClientPickerSoon()">
+            <button mat-icon-button matSuffix type="button" matTooltip="Mostrar alumnos" (mousedown)="$event.preventDefault()" (click)="clientPickerOpen.update(open => !open)">
+              <mat-icon>{{ clientPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </mat-form-field>
+          @if (clientPickerOpen()) {
+            <div class="search-results dropdown-results">
+              @for (client of filteredClients(); track client.id) {
+                <button type="button" [class.selected]="directAssignmentForm.controls.clientId.value === client.id" (mousedown)="$event.preventDefault()" (click)="selectClient(client)">
+                  <strong>{{ client.apellido }}, {{ client.nombre }}</strong>
+                  <span>DNI {{ client.dni }}</span>
+                </button>
+              } @empty {
+                <div class="search-empty">No encontramos alumnos con ese criterio.</div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
+          <button mat-flat-button color="primary" type="button" (click)="assignToClient()">
+            <mat-icon>person_add</mat-icon>
+            Asignar a alumno
+          </button>
+        </div>
+      </form>
+    </section>
+  </ng-template>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/student-platform" [queryParams]="{ tab: 'workouts' }">Workouts</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>{{ workout()?.name || 'Detalle de workout' }}</span>
+  </nav>
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (workout(); as currentWorkout) {
+    <header class="page-header">
+      <div>
+        <span class="eyebrow">Workout</span>
+        <h1>{{ currentWorkout.name }}</h1>
+        <p>{{ currentWorkout.description || 'Sin descripcion cargada.' }}</p>
+      </div>
+      <div class="header-actions">
+        @if (isEditing()) {
+          <button mat-stroked-button type="button" (click)="cancelEditing()" [disabled]="isSaving()">Cancelar</button>
+          <button mat-flat-button color="primary" type="button" (click)="saveWorkoutChanges()" [disabled]="isSaving()">
+            <mat-icon>save</mat-icon>
+            Guardar cambios
+          </button>
+        } @else {
+          <button mat-stroked-button type="button" routerLink="/student-platform" [queryParams]="{ tab: 'workouts' }">
+            <mat-icon>arrow_back</mat-icon>
+            Volver
+          </button>
+          <button mat-stroked-button type="button" (click)="enableEditing()">
+            <mat-icon>edit</mat-icon>
+            Editar
+          </button>
+          <button mat-stroked-button type="button" class="danger-action" (click)="deleteWorkout()">
+            <mat-icon>delete</mat-icon>
+            Eliminar
+          </button>
+        }
+      </div>
+    </header>
+
+    @if (isEditing()) {
+      <section class="panel edit-panel">
+        <div class="section-heading">
+          <mat-icon>edit_note</mat-icon>
+          <div>
+            <h2>Editar workout</h2>
+            <span>Actualiza nombre, descripcion y ejercicios de esta plantilla.</span>
+          </div>
+        </div>
+
+        <form [formGroup]="workoutEditForm" class="edit-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="name">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Descripcion</mat-label>
+            <input matInput formControlName="description">
+          </mat-form-field>
+        </form>
+      </section>
+    }
+
+    <section class="metric-grid">
+      <article>
+        <span>Ejercicios</span>
+        <strong>{{ currentWorkout.exercises.length }}</strong>
+      </article>
+      <article>
+        <span>Planes</span>
+        <strong>{{ currentWorkout.planCount || 0 }}</strong>
+      </article>
+      <article>
+        <span>Directas</span>
+        <strong>{{ currentWorkout.assignmentCount }}</strong>
+      </article>
+    </section>
+
+    <main class="detail-grid">
+      <section class="panel">
+        <div class="section-heading">
+          <mat-icon>fitness_center</mat-icon>
+          <div>
+            <h2>Ejercicios</h2>
+            <span>{{ currentWorkout.goal }} | {{ currentWorkout.level }}</span>
+          </div>
+        </div>
+
+        <div class="dense-table exercises-table" [class.is-editing]="isEditing()">
+          <div class="table-header">
+            <span>#</span>
+            <span>Ejercicio</span>
+            <span>Series</span>
+            <span>Reps</span>
+            <span>Peso</span>
+            <span>Descanso</span>
+            @if (isEditing()) {
+              <span>Acciones</span>
+            }
+          </div>
+          @for (exercise of isEditing() ? editableExercises() : currentWorkout.exercises; track exercise.exerciseId; let i = $index) {
+            <div class="table-row">
+              <strong>{{ exercise.sortOrder }}</strong>
+              <div class="exercise-cell">
+                <b>{{ exercise.exerciseName }}</b>
+                <small class="muscle-group">{{ exercise.muscleGroup }}</small>
+                @if (exercise.notes) {
+                  <small class="exercise-notes">{{ exercise.notes }}</small>
+                }
+              </div>
+              <span>{{ exercise.sets || '-' }}</span>
+              <span>{{ exercise.reps || '-' }}</span>
+              <span>{{ exercise.weight || 0 }} kg</span>
+              <span>{{ exercise.restSeconds || '-' }}s</span>
+              @if (isEditing()) {
+                <button mat-icon-button type="button" matTooltip="Quitar ejercicio" (click)="removeWorkoutExercise(i)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        @if (isEditing()) {
+          <section class="exercise-add-panel">
+            <div class="section-heading compact-heading">
+              <mat-icon>playlist_add</mat-icon>
+              <div>
+                <h2>Agregar ejercicio</h2>
+                <span>Busca un ejercicio del catalogo y sumalo al workout.</span>
+              </div>
+            </div>
+
+            <form [formGroup]="routineExerciseForm" class="exercise-builder">
+              <div class="picker-field wide">
+                <mat-form-field appearance="outline">
+                  <mat-label>Buscar ejercicio</mat-label>
+                  <mat-icon matPrefix>search</mat-icon>
+                  <input
+                    matInput
+                    [formControl]="builderExerciseSearch"
+                    (focus)="exercisePickerOpen.set(true)"
+                    (click)="exercisePickerOpen.set(true)"
+                    (blur)="closeExercisePickerSoon()">
+                  <button mat-icon-button matSuffix type="button" matTooltip="Mostrar ejercicios" (mousedown)="$event.preventDefault()" (click)="exercisePickerOpen.update(open => !open)">
+                    <mat-icon>{{ exercisePickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </mat-form-field>
+                @if (exercisePickerOpen() && !selectedExercise()) {
+                  <div class="search-results dropdown-results">
+                    @for (exercise of filteredExercises(); track exercise.id) {
+                      <button type="button" (mousedown)="$event.preventDefault()" (click)="selectExercise(exercise)">
+                        <strong>{{ exercise.name }}</strong>
+                        <span>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</span>
+                      </button>
+                    } @empty {
+                      <div class="search-empty">No encontramos ejercicios disponibles con ese criterio.</div>
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (selectedExercise()) {
+                <div class="selected-exercise wide">
+                  <mat-icon>fitness_center</mat-icon>
+                  <div>
+                    <strong>{{ selectedExercise()?.name }}</strong>
+                    <span>{{ selectedExercise()?.primaryMuscleGroupName || selectedExercise()?.muscleGroup }}</span>
+                  </div>
+                  <button mat-stroked-button type="button" (click)="clearSelectedExercise()">Cambiar</button>
+                </div>
+              }
+
+              <mat-form-field appearance="outline">
+                <mat-label>Series</mat-label>
+                <input matInput type="number" formControlName="sets">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Reps</mat-label>
+                <input matInput type="number" formControlName="reps">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Peso</mat-label>
+                <input matInput type="number" formControlName="weight">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Descanso</mat-label>
+                <input matInput type="number" formControlName="restSeconds">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Notas</mat-label>
+                <input matInput formControlName="notes">
+              </mat-form-field>
+
+              <button mat-stroked-button type="button" class="wide" (click)="addExerciseToWorkout()">
+                <mat-icon>add</mat-icon>
+                Agregar ejercicio
+              </button>
+            </form>
+
+          </section>
+        }
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel">
+          <div class="section-heading">
+            <mat-icon>playlist_add</mat-icon>
+            <div>
+              <h2>Agregar a plan</h2>
+              <span>Vincula este workout a un plan existente.</span>
+            </div>
+          </div>
+          <button mat-flat-button color="primary" type="button" (click)="openTemplate(addToPlanDialog)">
+            <mat-icon>playlist_add</mat-icon>
+            Agregar a plan
+          </button>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <mat-icon>person_add</mat-icon>
+            <div>
+              <h2>Asignar directo</h2>
+              <span>Para casos puntuales fuera de un plan.</span>
+            </div>
+          </div>
+          <button mat-flat-button color="primary" type="button" (click)="openTemplate(directAssignmentDialog)">
+            <mat-icon>person_add</mat-icon>
+            Asignar a alumno
+          </button>
+        </section>
+      </aside>
+    </main>
+
+    <section class="panel">
+      <div class="section-heading">
+        <mat-icon>calendar_view_week</mat-icon>
+        <div>
+          <h2>Planes que usan este workout</h2>
+          <span>Resumen de planes y cantidad de alumnos asignados.</span>
+        </div>
+      </div>
+
+      @if (plansUsingWorkout().length) {
+        <div class="plan-list">
+          @for (plan of plansUsingWorkout(); track plan.id) {
+            <article class="plan-card">
+              <div>
+                <strong>{{ plan.name }}</strong>
+                <small>{{ plan.goal }} | {{ plan.level }}</small>
+              </div>
+              <span class="stat-pill">{{ assignmentsForPlan(plan.id).length }} alumnos</span>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="inline-empty">Este workout todavia no forma parte de ningun plan.</div>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <mat-icon>group</mat-icon>
+        <div>
+          <h2>Asignaciones directas</h2>
+          <span>Alumnos que tienen este workout fuera de un plan.</span>
+        </div>
+      </div>
+
+      @if (directAssignments().length) {
+        <div class="direct-list">
+          @for (assignment of directAssignments(); track assignment.id) {
+            <a class="assignment-row" [routerLink]="['/clients', assignment.clientId]" [queryParams]="{ returnUrl: '/student-platform/routines/' + currentWorkout.id }">
+              @if (assignment.clientAvatarUrl) {
+                <img [src]="assignment.clientAvatarUrl" [alt]="assignment.clientApellido + ', ' + assignment.clientNombre">
+              } @else {
+                <span class="avatar-fallback">{{ initials(assignment) }}</span>
+              }
+              <div>
+                <strong>{{ assignment.clientApellido }}, {{ assignment.clientNombre }}</strong>
+                <small>DNI {{ assignment.clientDni || '-' }} | {{ assignment.status }}</small>
+              </div>
+              <small>{{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="inline-empty">Este workout no tiene asignaciones directas.</div>
+      }
+    </section>
+
+    @if (isEditing()) {
+      <div class="floating-edit-actions">
+        <div>
+          <strong>Modo edicion</strong>
+          <span>Guarda o cancela los cambios del workout.</span>
+        </div>
+        <div class="floating-buttons">
+          <button mat-stroked-button type="button" (click)="cancelEditing()" [disabled]="isSaving()">Cancelar</button>
+          <button mat-flat-button color="primary" type="button" (click)="saveWorkoutChanges()" [disabled]="isSaving()">
+            <mat-icon>save</mat-icon>
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+    }
+  } @else if (!isLoading()) {
+    <div class="inline-empty">No encontramos el workout solicitado.</div>
+  }
+</section>

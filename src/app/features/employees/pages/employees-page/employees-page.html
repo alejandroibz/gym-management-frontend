@@ -117,9 +117,18 @@
             @for (employee of employees(); track employee.id) {
               <tr>
                 <td>
-                  <div class="employee-cell">
-                    <strong>{{ employee.nombre }} {{ employee.apellido }}</strong>
-                    <span>{{ employee.sueldo | currency: 'ARS':'symbol':'1.0-0' }}</span>
+                  <div class="employee-person">
+                    <div class="employee-avatar" [class.has-photo]="employee.avatarUrl">
+                      @if (employee.avatarUrl) {
+                        <img [src]="employee.avatarUrl" alt="">
+                      } @else {
+                        <span>{{ getEmployeeInitials(employee) }}</span>
+                      }
+                    </div>
+                    <div class="employee-cell">
+                      <strong>{{ employee.nombre }} {{ employee.apellido }}</strong>
+                      <span>{{ employee.sueldo | currency: 'ARS':'symbol':'1.0-0' }}</span>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -180,9 +189,18 @@
         @for (employee of employees(); track employee.id) {
           <article class="employee-card">
             <div class="employee-card-header">
-              <div>
-                <h2>{{ employee.nombre }} {{ employee.apellido }}</h2>
-                <span>DNI {{ employee.dni }}</span>
+              <div class="employee-card-identity">
+                <div class="employee-avatar large" [class.has-photo]="employee.avatarUrl">
+                  @if (employee.avatarUrl) {
+                    <img [src]="employee.avatarUrl" alt="">
+                  } @else {
+                    <span>{{ getEmployeeInitials(employee) }}</span>
+                  }
+                </div>
+                <div>
+                  <h2>{{ employee.nombre }} {{ employee.apellido }}</h2>
+                  <span>DNI {{ employee.dni }}</span>
+                </div>
               </div>
               <span class="category-chip">{{ getCategoryName(employee.employeeCategoryId) }}</span>
             </div>

@@ -13,13 +13,15 @@ html {
         primary: mat.$red-palette,
         tertiary: mat.$red-palette,
       ),
-      typography: Roboto,
+      typography: 'Source Sans 3',
       density: 0,
     )
   );
 }
 
 :root {
+  --app-font-body: 'Source Sans 3', Arial, sans-serif;
+  --app-font-display: 'Manrope', 'Source Sans 3', Arial, sans-serif;
   --app-bg: #f4f4f5;
   --app-surface: #ffffff;
   --app-surface-muted: #fafafa;
@@ -49,10 +51,336 @@ body {
   background-color: var(--app-bg);
   color: var(--app-text);
   font: var(--mat-sys-body-medium);
+  font-family: var(--app-font-body);
+  font-synthesis: none;
 
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.toolbar-title,
+.page-title,
+.mat-mdc-card-title {
+  font-family: var(--app-font-display);
+  letter-spacing: 0;
+}
+
+.metric-grid strong,
+.metrics-strip strong,
+.stat-pill strong,
+.hero-card strong {
+  font-family: var(--app-font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+input,
+textarea,
+select,
+table {
+  font-family: var(--app-font-body);
+}
+
+body.dark-theme {
+  color-scheme: dark;
+  --app-bg: #101012;
+  --app-surface: #1a1a1d;
+  --app-surface-muted: #242428;
+  --app-surface-strong: #0c0c0e;
+  --app-surface-strong-2: #141417;
+  --app-text: #f4f4f5;
+  --app-text-muted: #b6b6bd;
+  --app-text-soft: #8f8f98;
+  --app-border: #35353b;
+  --app-border-strong: #4a4a52;
+  --app-accent: #e5483f;
+  --app-accent-strong: #ff7a70;
+  --app-accent-soft: rgba(229, 72, 63, .13);
+  --app-accent-soft-2: rgba(229, 72, 63, .22);
+  --app-accent-shadow: rgba(229, 72, 63, .24);
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  --mat-sys-background: var(--app-bg);
+  --mat-sys-surface: var(--app-surface);
+  --mat-sys-surface-container: var(--app-surface);
+  --mat-sys-surface-container-low: var(--app-surface-muted);
+  --mat-sys-surface-container-high: #2b2b30;
+  --mat-sys-surface-container-highest: #303036;
+  --mat-sys-on-surface: var(--app-text);
+  --mat-sys-on-surface-variant: var(--app-text-muted);
+  --mat-sys-outline: var(--app-border-strong);
+  --mat-sys-outline-variant: var(--app-border);
+}
+
+body.dark-theme .app-content {
+  background:
+    radial-gradient(circle at top right, rgba(229, 72, 63, .12), transparent 24%),
+    linear-gradient(180deg, #111111 0%, #181719 100%);
+}
+
+body.dark-theme .app-toolbar,
+body.dark-theme .panel,
+body.dark-theme .card,
+body.dark-theme mat-card,
+body.dark-theme .mat-mdc-card,
+body.dark-theme .form-section,
+body.dark-theme .plan-preview,
+body.dark-theme .workouts-panel,
+body.dark-theme .assignments-panel,
+body.dark-theme .routine-card,
+body.dark-theme .tracking-card,
+body.dark-theme .dense-table,
+body.dark-theme .table-header,
+body.dark-theme .table-row,
+body.dark-theme table,
+body.dark-theme thead,
+body.dark-theme tbody,
+body.dark-theme tr,
+body.dark-theme .mat-mdc-table,
+body.dark-theme .mat-mdc-header-row,
+body.dark-theme .mat-mdc-row,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .assignment-row,
+body.dark-theme .workout-card,
+body.dark-theme .exercise-row,
+body.dark-theme .metric-grid article,
+body.dark-theme .hero-card,
+body.dark-theme .details-card,
+body.dark-theme .list-card,
+body.dark-theme .empty-state,
+body.dark-theme .inline-empty {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .page-header,
+body.dark-theme .catalog-hero {
+  background: linear-gradient(135deg, rgba(229, 72, 63, .14), var(--app-surface)) !important;
+  border-color: var(--app-border) !important;
+  border-radius: 12px !important;
+  padding: 1.15rem !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme strong,
+body.dark-theme b,
+body.dark-theme .toolbar-title,
+body.dark-theme .routine-title strong,
+body.dark-theme .section-heading h2 {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme p,
+body.dark-theme small,
+body.dark-theme .subtitle,
+body.dark-theme .section-heading span,
+body.dark-theme .workout-card span,
+body.dark-theme .workout-card small,
+body.dark-theme .assignment-row small,
+body.dark-theme .table-row small,
+body.dark-theme .table-header,
+body.dark-theme .description-cell,
+body.dark-theme .metrics-strip span,
+body.dark-theme .builder-row span,
+body.dark-theme .mat-mdc-header-cell,
+body.dark-theme .muted,
+body.dark-theme .plan-description {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .mat-mdc-text-field-wrapper,
+body.dark-theme .mat-mdc-select-panel,
+body.dark-theme .mat-mdc-menu-panel,
+body.dark-theme .mat-datepicker-content,
+body.dark-theme .mat-mdc-dialog-surface,
+body.dark-theme .mat-mdc-option,
+body.dark-theme .mat-mdc-autocomplete-panel {
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+body.dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select,
+body.dark-theme .mat-mdc-input-element,
+body.dark-theme .mat-mdc-select-value,
+body.dark-theme .mat-mdc-tab,
+body.dark-theme .mat-mdc-table,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .mat-mdc-cell,
+body.dark-theme .mat-mdc-header-cell,
+body.dark-theme td,
+body.dark-theme th,
+body.dark-theme .name-cell,
+body.dark-theme .name-cell strong,
+body.dark-theme .table-row strong,
+body.dark-theme .mat-mdc-option .mdc-list-item__primary-text {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-menu-item,
+body.dark-theme .mat-mdc-menu-item .mat-icon,
+body.dark-theme .mat-mdc-menu-item .mdc-list-item__primary-text {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-form-field-label,
+body.dark-theme .mat-mdc-floating-label,
+body.dark-theme .mat-mdc-select-arrow,
+body.dark-theme .mat-mdc-tab .mdc-tab__text-label {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .stat-pill,
+body.dark-theme .soft-tag,
+body.dark-theme .hero-pill,
+body.dark-theme .status-chip,
+body.dark-theme .workout-tags span {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .table-header,
+body.dark-theme .dense-table .table-header {
+  background: #151517 !important;
+  border-bottom-color: var(--app-border) !important;
+}
+
+body.dark-theme .table-row,
+body.dark-theme .dense-table .table-row,
+body.dark-theme .mat-mdc-row {
+  border-bottom-color: var(--app-border) !important;
+}
+
+body.dark-theme .routine-icon,
+body.dark-theme .section-heading mat-icon,
+body.dark-theme .workout-order,
+body.dark-theme .avatar-fallback,
+body.dark-theme .thumb-placeholder {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent-strong) !important;
+}
+
+body.dark-theme .profile-avatar-button,
+body.dark-theme .profile-avatar-button span {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-accent-strong);
+}
+
+body.dark-theme .mat-drawer-container,
+body.dark-theme .mat-drawer-content,
+body.dark-theme .mat-sidenav-content,
+body.dark-theme .mat-drawer,
+body.dark-theme .mat-mdc-tab-body-wrapper,
+body.dark-theme .mat-mdc-tab-body,
+body.dark-theme .mat-mdc-tab-body-content {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-dialog-surface,
+body.dark-theme .mat-mdc-menu-panel,
+body.dark-theme .mat-mdc-select-panel,
+body.dark-theme .mat-mdc-autocomplete-panel,
+body.dark-theme .mat-datepicker-content,
+body.dark-theme .mat-mdc-paginator,
+body.dark-theme .mat-mdc-tooltip-surface {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(
+  .content-card,
+  .summary-card,
+  .form-card,
+  .filter-card,
+  .filters-panel,
+  .table-container,
+  .table-wrapper,
+  .detail-panel,
+  .details-panel,
+  .editor-section,
+  .identity-panel,
+  .profile-editor,
+  .profile-note,
+  .crop-panel,
+  .dialog-shell,
+  .dialog-section,
+  .preview-card,
+  .list-panel,
+  .data-card,
+  .stats-card,
+  .metric-card,
+  .category-card,
+  .muscle-card,
+  .achievement-card,
+  .habit-card,
+  .ranking-card,
+  .rule-card
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(.subsection, .info-row, .detail-row, .summary-row, .filter-row, .preview-row, .readonly-section) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .mat-mdc-form-field.mat-form-field-disabled,
+body.dark-theme .mat-mdc-text-field-wrapper.mdc-text-field--disabled {
+  opacity: .72;
+}
+
+body.dark-theme .mat-mdc-form-field-hint,
+body.dark-theme .mat-mdc-form-field-error,
+body.dark-theme .mat-mdc-checkbox label,
+body.dark-theme .mat-mdc-slide-toggle label,
+body.dark-theme .mat-mdc-paginator-page-size-label,
+body.dark-theme .mat-mdc-paginator-range-label {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+body.dark-theme .mat-mdc-menu-item:hover {
+  background: var(--app-surface-muted) !important;
+}
+
+body.dark-theme .legal-warning {
+  background: rgba(234, 179, 8, .12) !important;
+  border-color: rgba(250, 204, 21, .35) !important;
+  color: #f5d76e !important;
+}
+
+body.dark-theme .toast-card {
+  background: #26262b !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .toast-card .toast-icon {
+  background: var(--app-surface-muted) !important;
 }
 
 .employee-category-dialog-backdrop {
@@ -89,6 +417,12 @@ body {
   overflow-y: auto;
 }
 
+body.dark-theme .employee-dialog-panel .mat-mdc-dialog-surface,
+body.dark-theme .employee-category-dialog-panel .mat-mdc-dialog-surface {
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-unelevated-button.mat-primary,
 .mat-mdc-fab.mat-primary,
@@ -105,6 +439,19 @@ body {
 
 .filters-toolbar {
   display: none;
+}
+
+.app-toast-panel {
+  --mdc-snackbar-container-color: transparent;
+  --mat-snack-bar-button-color: inherit;
+  box-shadow: none;
+  margin-top: 1rem !important;
+}
+
+.app-toast-panel .mat-mdc-snackbar-surface {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 @media (max-width: 1024px) {
@@ -150,3 +497,306 @@ body {
 }
 
 /* You can add global styles to this file, and also import other style files */
+
+/* Shared operational UX */
+.table-wrapper,
+.table-container,
+.dense-table {
+  max-width: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+table thead th,
+.mat-mdc-table .mat-mdc-header-cell,
+.table-header {
+  background: var(--app-surface-muted);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+table tbody tr,
+.mat-mdc-row,
+.table-row {
+  transition: background-color .15s ease;
+}
+
+table tbody tr:hover,
+.mat-mdc-row:hover,
+.table-row:hover {
+  background: color-mix(in srgb, var(--app-accent) 4%, var(--app-surface)) !important;
+}
+
+:is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.form-footer,
+.floating-edit-actions,
+.sticky-form-actions {
+  background: color-mix(in srgb, var(--app-surface) 94%, transparent) !important;
+  border: 1px solid var(--app-border) !important;
+  bottom: .75rem;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .14);
+  position: sticky;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+
+.feedback-banner,
+.loading-state,
+.empty-state {
+  scroll-margin-top: 90px;
+}
+
+@media (max-width: 700px) {
+  .form-footer,
+  .floating-edit-actions,
+  .sticky-form-actions {
+    bottom: .4rem;
+    margin-inline: -.25rem;
+  }
+}
+
+/* Dark mode module tokens */
+body.dark-theme .dashboard-page {
+  --dashboard-surface: var(--app-surface);
+  --dashboard-surface-soft: var(--app-surface-muted);
+  --dashboard-border: var(--app-border);
+  --dashboard-shadow: 0 16px 42px rgba(0, 0, 0, .28);
+  --dashboard-ink: var(--app-text);
+}
+
+body.dark-theme .clients-page {
+  --clients-surface: var(--app-surface);
+  --clients-surface-soft: var(--app-surface-muted);
+  --clients-border: var(--app-border);
+  --clients-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --clients-ink: var(--app-text);
+  --clients-muted: var(--app-text-muted);
+}
+
+body.dark-theme .employees-page {
+  --employees-surface: var(--app-surface);
+  --employees-border: var(--app-border);
+  --employees-border-soft: var(--app-border);
+  --employees-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --employees-ink: var(--app-text);
+  --employees-muted: var(--app-text-muted);
+}
+
+body.dark-theme .health-page {
+  --health-border: var(--app-border);
+  --health-muted: var(--app-text-muted);
+  --health-ink: var(--app-text);
+  --health-surface: var(--app-surface);
+  --health-soft: var(--app-surface-muted);
+}
+
+body.dark-theme .movements-page {
+  --mov-surface: var(--app-surface);
+  --mov-border: var(--app-border);
+  --mov-border-soft: var(--app-border);
+  --mov-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  --mov-ink: var(--app-text);
+  --mov-muted: var(--app-text-muted);
+}
+
+/* Dashboard */
+body.dark-theme .dashboard-page :is(
+  .panel-card,
+  .stat-card,
+  .income-breakdown-item,
+  .income-donut-center,
+  .stack-item,
+  .heading-badge,
+  .highlight-chip,
+  .header-note
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .dashboard-page :is(.income-bar, .stat-icon-shell, .eyebrow-pill) {
+  background-color: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme .dashboard-page :is(.card-heading-copy p, .income-breakdown-item small, .stat-label, .stat-copy small, .header-note) {
+  color: var(--app-text-muted) !important;
+}
+
+/* Operational tables */
+body.dark-theme :is(
+  .clients-table,
+  .employees-table,
+  .records-table,
+  .health-table
+) :is(thead, tr, th, td) {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(
+  .clients-table,
+  .employees-table,
+  .records-table,
+  .health-table
+) th {
+  background-color: var(--app-surface-muted) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme :is(.clients-table, .employees-table, .records-table, .health-table) tbody tr:hover {
+  background-color: color-mix(in srgb, var(--app-accent) 6%, var(--app-surface)) !important;
+}
+
+/* Health calendar, professionals and services */
+body.dark-theme .health-page :is(
+  .tool-panel,
+  .list-panel,
+  .calendar-board,
+  .calendar-toolbar,
+  .calendar-weekdays,
+  .calendar-cell,
+  .appointment-row,
+  .specialty-card,
+  .specialty-detail,
+  .specialty-metrics>*,
+  .service-row,
+  .data-card,
+  .professional-card,
+  .detail-panel
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .health-page :is(.calendar-cell.other-month, .specialty-metrics>*, .calendar-empty) {
+  background: var(--app-surface-muted) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .health-page .calendar-cell.today {
+  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface)) !important;
+  border-color: var(--app-accent) !important;
+}
+
+/* Clients, employees and movements */
+body.dark-theme :is(.clients-page, .employees-page, .movements-page) :is(
+  .page-header,
+  .list-card,
+  .client-card,
+  .employee-card,
+  .records-panel,
+  .record-card,
+  .table-wrapper,
+  .filters-empty,
+  .empty-state
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme :is(.clients-page, .employees-page, .movements-page) :is(
+  .search-field .mat-mdc-text-field-wrapper,
+  .record-grid,
+  .summary-stack,
+  .summary-values
+) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+}
+
+/* Anatomy and gamification */
+body.dark-theme .student-platform :is(
+  .anatomy-panel,
+  .muscle-group-card,
+  .empty-group,
+  .muscle-detail-panel,
+  .muscle-detail-row,
+  .achievement-card,
+  .achievement-tile,
+  .habit-tile,
+  .gamification-metrics article,
+  .anatomy-summary article,
+  .gamification-tabs,
+  .gamification-hero,
+  .rule-card,
+  .podium article,
+  .ranking-row,
+  .editable-rule,
+  .habit-preview,
+  .drawer-form,
+  .routine-plan-usage,
+  .routine-plan-list article,
+  .routine-exercise-row,
+  .tracking-summary article,
+  .plan-workout-list,
+  .plan-card-footer
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .group-actions,
+  .muscle-preview span,
+  .soft-tag,
+  .mini-chip-list span,
+  .stat-pill,
+  .chip-row span,
+  .rule-toggle,
+  .editable-rule input
+) {
+  background: var(--app-surface-muted) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .anatomy-summary span,
+  .gamification-metrics span,
+  .gamification-hero p,
+  .achievement-copy p,
+  .rule-card p,
+  .editable-rule label span,
+  .editable-rule small
+) {
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme .student-platform :is(.anatomy-summary strong, .gamification-metrics strong) {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(
+  .exercise-search-input,
+  .select-field select,
+  .dropdown-results,
+  .search-results button,
+  .chip-list button,
+  .day-picker button,
+  .assignment-pagination button,
+  .tracking-client-options
+) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .student-platform :is(.search-results button:hover, .routine-actions button:hover, .group-actions button:hover, .muscle-actions button:hover) {
+  background: var(--app-surface-muted) !important;
+}
+
+/* Keep machine-readable assets white. */
+body.dark-theme :is(.qr-code-frame, .attendance-qr-preview img, .signature-page canvas) {
+  background: #fff !important;
+}

@@ -38,6 +38,12 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/pages/profile-page/profile-page')
+            .then(m => m.ProfilePageComponent)
+      },
+      {
         path: 'employees',
         loadComponent: () =>
           import('./features/employees/pages/employees-page/employees-page')
@@ -78,6 +84,14 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'clients/new',
+        loadComponent: () =>
+          import('./features/clients/pages/client-details-page/client-details-page')
+            .then(m => m.ClientDetailsPageComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin', 'Admin'] }
+      },
+      {
         path: 'clients/:id',
         loadComponent: () =>
           import('./features/clients/pages/client-details-page/client-details-page')
@@ -86,6 +100,16 @@ export const routes: Routes = [
         data: {
           roles: ['SuperAdmin', 'Admin']
         }
+      },
+      {
+        path: 'contracts',
+        loadComponent: () => import('./features/contracts/pages/contracts-page/contracts-page').then(m => m.ContractsPageComponent),
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
+      },
+      {
+        path: 'contracts/:id/sign',
+        loadComponent: () => import('./features/contracts/pages/contract-signature-page/contract-signature-page').then(m => m.ContractSignaturePageComponent),
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
       },
       {
         path: 'health/patients/:id',
@@ -145,6 +169,76 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: {
           roles: ['SuperAdmin']
+        }
+      },
+      {
+        path: 'student-platform/routines/new',
+        loadComponent: () =>
+          import('./features/student-platform/pages/routine-create-page/routine-create-page')
+            .then(m => m.RoutineCreatePageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform/routines/:id',
+        loadComponent: () =>
+          import('./features/student-platform/pages/workout-detail-page/workout-detail-page')
+            .then(m => m.WorkoutDetailPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform/training-plans/new',
+        loadComponent: () =>
+          import('./features/student-platform/pages/training-plan-create-page/training-plan-create-page')
+            .then(m => m.TrainingPlanCreatePageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform/training-plans/:id',
+        loadComponent: () =>
+          import('./features/student-platform/pages/training-plan-detail-page/training-plan-detail-page')
+            .then(m => m.TrainingPlanDetailPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform/exercises/new',
+        loadComponent: () =>
+          import('./features/student-platform/pages/exercise-create-page/exercise-create-page')
+            .then(m => m.ExerciseCreatePageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform/exercises/:id',
+        loadComponent: () =>
+          import('./features/student-platform/pages/exercise-create-page/exercise-create-page')
+            .then(m => m.ExerciseCreatePageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
+        }
+      },
+      {
+        path: 'student-platform',
+        loadComponent: () =>
+          import('./features/student-platform/pages/student-platform-page/student-platform-page')
+            .then(m => m.StudentPlatformPageComponent),
+        canActivate: [roleGuard],
+        data: {
+          roles: ['SuperAdmin', 'Admin']
         }
       }
     ]

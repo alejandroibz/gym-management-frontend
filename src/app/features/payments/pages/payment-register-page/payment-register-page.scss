@@ -7,6 +7,30 @@
   --ink: #151517;
 }
 
+:host-context(body.dark-theme) .payment-register-page {
+  --surface: var(--app-surface);
+  --border: var(--app-border);
+  --muted: var(--app-text-muted);
+  --ink: var(--app-text);
+}
+
+:host-context(body.dark-theme) .return-actions button,
+:host-context(body.dark-theme) .loading-state,
+:host-context(body.dark-theme) .context-box,
+:host-context(body.dark-theme) .discount-box {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .page-header,
+:host-context(body.dark-theme) .form-card,
+:host-context(body.dark-theme) .summary-card { box-shadow: none; }
+
+:host-context(body.dark-theme) ::ng-deep .payment-register-page .mat-mdc-text-field-wrapper { background: var(--app-surface-muted) !important; }
+:host-context(body.dark-theme) ::ng-deep .payment-register-page .mat-mdc-input-element,
+:host-context(body.dark-theme) ::ng-deep .payment-register-page .mat-mdc-select-value { color: var(--app-text) !important; -webkit-text-fill-color: var(--app-text) !important; }
+
 .return-actions {
   display: flex;
   align-items: center;

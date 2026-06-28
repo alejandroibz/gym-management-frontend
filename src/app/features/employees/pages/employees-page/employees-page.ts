@@ -119,11 +119,18 @@ export class EmployeesPageComponent {
   }
 
   editEmployee(employee: Employee): void {
-    this.openDialog(employee);
+    this.router.navigate(['/employees', employee.id], { queryParams: { edit: 1 } });
   }
 
   getCategoryName(categoryId: number): string {
     return this.categories().find(category => category.id === categoryId)?.nombre ?? `ID ${categoryId}`;
+  }
+
+  getEmployeeInitials(employee: Employee): string {
+    const first = employee.nombre?.trim().charAt(0) ?? '';
+    const last = employee.apellido?.trim().charAt(0) ?? '';
+    const initials = `${first}${last}`.trim();
+    return initials ? initials.toUpperCase() : 'EM';
   }
 
   getWhatsAppLink(phone: string): string {

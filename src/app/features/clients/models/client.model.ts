@@ -40,6 +40,7 @@ export interface Client {
   telefono: string;
   email: string;
   direccion: string;
+  avatarUrl?: string | null;
   tieneLesion: boolean;
   observaciones?: string | null;
   fechaAlta?: string;
@@ -52,6 +53,7 @@ export interface Client {
   ultimoPagoFecha?: string | null;
   membresiaProximaAVencer?: boolean;
   membresiaVencimientoNotificado?: boolean;
+  hasValidContract?: boolean;
 }
 
 export interface ClientCreatePayload {
@@ -92,6 +94,7 @@ export interface ClientFilters {
   membershipPlanId?: number | null;
   paymentStatus?: 'pending' | 'upToDate' | null;
   clientStatus?: 'active' | 'archived' | 'all' | null;
+  contractStatus?: 'missing' | 'signed' | null;
 }
 
 export interface ClientImportError {
@@ -104,4 +107,12 @@ export interface ClientImportResult {
   importedCount: number;
   skippedCount: number;
   errors: ClientImportError[];
+}
+
+export interface StudentGoalAdmin {
+  id: number; type: string; title: string; description?: string | null; startValue: number; targetValue: number; currentValue: number; unit: string; targetDate?: string | null; createdByType: string; isVerified: boolean; status: string; progressPercent: number;
+}
+
+export interface StudentMeasurementAdmin {
+  id: number; weightKg: number; measuredAt: string; source: string; isVerified: boolean; notes?: string | null;
 }

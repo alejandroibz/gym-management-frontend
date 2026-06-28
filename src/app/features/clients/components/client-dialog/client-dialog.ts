@@ -3,7 +3,7 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,6 +15,7 @@ import { Employee } from '../../../employees/models/employee.model';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { Client, ClientAppAccessPayload, ClientMembership } from '../../models/client.model';
+import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 
 export interface ClientDialogData {
   client?: Client;
@@ -73,6 +74,7 @@ export class ClientDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<ClientDialogComponent, ClientDialogResult>);
+  private readonly dialog = inject(MatDialog);
   readonly data = inject<ClientDialogData>(MAT_DIALOG_DATA);
   readonly today = new Date().toISOString().slice(0, 10);
   readonly observacionesMaxLength = 3000;
@@ -145,6 +147,12 @@ export class ClientDialogComponent {
         this.updateInitialPaymentValidators();
       });
 
+    this.form.controls.membershipPlanId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.applySelectedMembershipPlan();
+      });
+
     this.form.controls.registerInitialPayment.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -175,7 +183,25 @@ export class ClientDialogComponent {
   }
 
   close(): void {
-    this.dialogRef.close();
+    if (!this.form.dirty) {
+      this.dialogRef.close();
+      return;
+    }
+
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '440px',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      data: {
+        title: 'Descartar cambios',
+        message: 'Hay información sin guardar. Si cerrás ahora, se perderán los cambios realizados.',
+        confirmLabel: 'Descartar',
+        cancelLabel: 'Seguir editando',
+        tone: 'danger'
+      }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) this.dialogRef.close();
+    });
   }
 
   onDniInput(): void {
@@ -188,20 +214,7 @@ export class ClientDialogComponent {
   }
 
   onMembershipPlanChange(): void {
-    const plan = this.getSelectedPlan();
-
-    if (!plan) {
-      return;
-    }
-
-    const fechaInicio = this.form.controls.fechaInicio.value || this.today;
-    const fechaFin = this.addDays(fechaInicio, plan.duracionDias);
-
-    this.form.patchValue({
-      precioFinal: plan.precio,
-      fechaFin,
-      initialPaymentAmount: plan.precio
-    });
+    this.applySelectedMembershipPlan();
   }
 
   onFechaInicioChange(): void {
@@ -282,6 +295,19 @@ export class ClientDialogComponent {
 
   private getSelectedPlan(): MembershipPlan | undefined {
     return this.data.membershipPlans.find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
+  }
+
+  private applySelectedMembershipPlan(): void {
+    const plan = this.getSelectedPlan();
+    if (!plan || !this.form.controls.hasMembership.value) return;
+
+    const fechaInicio = this.form.controls.fechaInicio.value || this.today;
+    this.form.patchValue({
+      fechaInicio,
+      precioFinal: plan.precio,
+      fechaFin: this.addDays(fechaInicio, plan.duracionDias),
+      initialPaymentAmount: plan.precio
+    }, { emitEvent: false });
   }
 
   private addDays(dateInput: string, days: number): string {

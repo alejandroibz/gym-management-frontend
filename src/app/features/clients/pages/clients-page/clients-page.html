@@ -30,6 +30,17 @@
         Planes
       </button>
 
+      <button mat-stroked-button type="button" class="secondary-action" [matMenuTriggerFor]="columnsMenu">
+        <mat-icon>view_column</mat-icon>
+        Columnas
+      </button>
+      <mat-menu #columnsMenu="matMenu">
+        <button mat-menu-item type="button" (click)="toggleColumn('dni')"><mat-icon>{{ visibleColumns().dni ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span>DNI</span></button>
+        <button mat-menu-item type="button" (click)="toggleColumn('membership')"><mat-icon>{{ visibleColumns().membership ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span>Membresía</span></button>
+        <button mat-menu-item type="button" (click)="toggleColumn('contact')"><mat-icon>{{ visibleColumns().contact ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span>Contacto</span></button>
+        <button mat-menu-item type="button" (click)="toggleColumn('status')"><mat-icon>{{ visibleColumns().status ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span>Estado</span></button>
+      </mat-menu>
+
       <input #clientsImportInput type="file" accept=".xlsx,.csv" hidden (change)="importClientsFromFile($event)">
       <button mat-stroked-button type="button" class="secondary-action" [disabled]="isSaving()" (click)="clientsImportInput.click()">
         <mat-icon>upload_file</mat-icon>
@@ -90,6 +101,8 @@
             }
           </mat-select>
         </mat-form-field>
+
+        <mat-form-field appearance="outline"><mat-label>Contrato</mat-label><mat-select formControlName="contractStatus"><mat-option value="all">Todos</mat-option><mat-option value="missing">Sin contrato firmado</mat-option><mat-option value="signed">Con contrato firmado</mat-option></mat-select></mat-form-field>
 
         <button mat-flat-button type="submit" class="search-button" [disabled]="isLoading()">
           <mat-icon>search</mat-icon>
@@ -170,10 +183,10 @@
           <thead>
             <tr>
               <th>Cliente</th>
-              <th>DNI</th>
-              <th>Membresía</th>
-              <th>Contacto</th>
-              <th>Estado</th>
+              @if (visibleColumns().dni) { <th>DNI</th> }
+              @if (visibleColumns().membership) { <th>Membresía</th> }
+              @if (visibleColumns().contact) { <th>Contacto</th> }
+              @if (visibleColumns().status) { <th>Estado</th> }
               <th>Acciones</th>
             </tr>
           </thead>
@@ -181,15 +194,21 @@
             @for (client of clients(); track client.id) {
               <tr>
                 <td>
-                  <div class="client-cell">
-                    <strong>{{ client.nombre }} {{ client.apellido }}</strong>
-                    <span>{{ client.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
+                  <div class="client-identity">
+                    <div class="client-avatar">
+                      @if (client.avatarUrl) { <img [src]="client.avatarUrl" [alt]="client.nombre + ' ' + client.apellido"> }
+                      @else { <span>{{ client.nombre.charAt(0) }}{{ client.apellido.charAt(0) }}</span> }
+                    </div>
+                    <div class="client-cell">
+                      <strong>{{ client.nombre }} {{ client.apellido }}</strong>
+                      <span>{{ client.fechaNacimiento | date: 'dd/MM/yyyy' }}</span>
+                    </div>
                   </div>
                 </td>
-                <td>
+                @if (visibleColumns().dni) { <td>
                   <span class="dni-pill">{{ client.dni }}</span>
-                </td>
-                <td>
+                </td> }
+                @if (visibleColumns().membership) { <td>
                   <div class="client-cell">
                     <strong>{{ getMembershipLabel(client) }}</strong>
                     <span>
@@ -205,8 +224,8 @@
                       </div>
                     }
                   </div>
-                </td>
-                <td>
+                </td> }
+                @if (visibleColumns().contact) { <td>
                   <div class="contact-cell">
                     <a class="contact-link" [href]="getWhatsAppLink(client.telefono)" target="_blank" rel="noopener noreferrer">
                       {{ client.telefono }}
@@ -215,15 +234,16 @@
                       {{ client.email }}
                     </a>
                   </div>
-                </td>
-                <td>
+                </td> }
+                @if (visibleColumns().status) { <td>
                   <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
                     {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
                   </span>
                   @if (client.tieneLesion) {
                     <span class="relation-pill relation-pill-warning">Con lesión</span>
                   }
-                </td>
+                  @if (!client.hasValidContract) { <span class="status-chip pending">Sin contrato</span> }
+                </td> }
                 <td>
                   <div class="action-buttons">
                     @if (isArchived(client)) {
@@ -252,9 +272,15 @@
         @for (client of clients(); track client.id) {
           <article class="client-card">
             <div class="client-card-header">
-              <div>
-                <h2>{{ client.nombre }} {{ client.apellido }}</h2>
-                <span>DNI {{ client.dni }}</span>
+              <div class="client-identity">
+                <div class="client-avatar">
+                  @if (client.avatarUrl) { <img [src]="client.avatarUrl" [alt]="client.nombre + ' ' + client.apellido"> }
+                  @else { <span>{{ client.nombre.charAt(0) }}{{ client.apellido.charAt(0) }}</span> }
+                </div>
+                <div>
+                  <h2>{{ client.nombre }} {{ client.apellido }}</h2>
+                  <span>DNI {{ client.dni }}</span>
+                </div>
               </div>
               <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
                 {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
@@ -262,6 +288,7 @@
               @if (client.tieneLesion) {
                 <span class="relation-pill relation-pill-warning">Con lesión</span>
               }
+              @if (!client.hasValidContract) { <span class="status-chip pending">Sin contrato</span> }
             </div>
 
             <div class="client-card-body">

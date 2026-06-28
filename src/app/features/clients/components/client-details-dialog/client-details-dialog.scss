@@ -167,3 +167,6 @@
     width: 100%;
   }
 }
+:host-context(body.dark-theme) :is(.dialog-shell,.dialog-header,.details-grid,.relations-grid,.contact-section,.relation-list) { background: var(--app-surface) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) :is(.detail-card,.relation-card,.contact-card,.relation-item) { background: var(--app-surface-muted) !important; border-color: var(--app-border) !important; color: var(--app-text) !important; }
+:host-context(body.dark-theme) :is(.dialog-subtitle,.detail-label,.contact-label,.relation-field span) { color: var(--app-text-muted) !important; }

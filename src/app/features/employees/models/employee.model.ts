@@ -14,6 +14,8 @@ export interface Employee {
   dni: string;
   telefono: string;
   email: string;
+  avatarUrl?: string | null;
+  profileBio?: string | null;
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;

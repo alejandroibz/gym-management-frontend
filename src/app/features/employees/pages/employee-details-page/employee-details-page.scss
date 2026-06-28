@@ -10,6 +10,24 @@
   --employee-detail-green: #0f766e;
 }
 
+:host-context(body.dark-theme) .employee-details-page {
+  --employee-detail-surface: var(--app-surface);
+  --employee-detail-soft: var(--app-surface-muted);
+  --employee-detail-border: var(--app-border);
+  --employee-detail-shadow: none;
+  --employee-detail-ink: var(--app-text);
+}
+
+:host-context(body.dark-theme) .hero-card,
+:host-context(body.dark-theme) .summary-item { background: var(--app-surface); border-color: var(--app-border); }
+:host-context(body.dark-theme) .summary-item { background: var(--app-surface-muted); }
+:host-context(body.dark-theme) .health-empty-value { background: var(--app-surface-muted); }
+:host-context(body.dark-theme) ::ng-deep .employee-details-page .mdc-text-field--outlined,
+:host-context(body.dark-theme) ::ng-deep .employee-details-page .mdc-text-field--outlined.mdc-text-field--disabled,
+:host-context(body.dark-theme) ::ng-deep .employee-details-page .mdc-text-field--outlined:not(.mdc-text-field--disabled) { background: var(--app-surface-muted); }
+:host-context(body.dark-theme) ::ng-deep .employee-details-page .mdc-text-field__input,
+:host-context(body.dark-theme) ::ng-deep .employee-details-page .mat-mdc-select-value { color: var(--app-text) !important; -webkit-text-fill-color: var(--app-text) !important; }
+
 .page-topbar,
 .breadcrumb,
 .hero-pills,

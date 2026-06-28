@@ -10,6 +10,26 @@
   --plans-green: #0f766e;
 }
 
+:host-context(body.dark-theme) .membership-plans-page {
+  --plans-surface: var(--app-surface);
+  --plans-surface-soft: var(--app-surface-muted);
+  --plans-border: var(--app-border);
+  --plans-shadow: none;
+  --plans-ink: var(--app-text);
+}
+
+:host-context(body.dark-theme) .page-header,
+:host-context(body.dark-theme) .filter-block,
+:host-context(body.dark-theme) .empty-state {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+:host-context(body.dark-theme) .highlight-chip,
+:host-context(body.dark-theme) .eyebrow-pill,
+:host-context(body.dark-theme) .plans-table th,
+:host-context(body.dark-theme) .duration-pill { background: var(--app-surface-muted); color: var(--app-text); }
+
 .page-topbar,
 .breadcrumb {
   display: flex;

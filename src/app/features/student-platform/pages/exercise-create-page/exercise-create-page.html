@@ -1,0 +1,290 @@
+<section class="exercise-create-page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/student-platform">Ejercicios</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>{{ isEditMode() ? currentExercise()?.name : 'Creacion de ejercicios' }}</span>
+  </nav>
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Biblioteca</span>
+      <h1>{{ isEditMode() ? currentExercise()?.name : 'Nuevo ejercicio' }}</h1>
+      <p>{{ isEditMode() ? 'Revisa y edita la ficha completa del ejercicio: musculos, imagenes, videos y datos visibles para el alumno.' : 'Completa la ficha que despues ve el alumno: anatomia, imagen, video y QR.' }}</p>
+    </div>
+    <div class="header-actions">
+      @if (!isEditMode()) {
+        <span class="session-count">{{ createdCount() }} creados en esta sesion</span>
+      }
+      <button mat-stroked-button type="button" routerLink="/student-platform">
+        <mat-icon>arrow_back</mat-icon>
+        Volver
+      </button>
+      @if (isEditMode()) {
+        <button mat-stroked-button type="button" class="danger-button" (click)="deleteExercise()" [disabled]="isLoading()">
+          <mat-icon>delete</mat-icon>
+          Eliminar
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise(true)" class="exercise-form">
+    <main class="form-main">
+      <section class="form-section">
+        <div class="section-heading">
+          <mat-icon>edit_note</mat-icon>
+          <div>
+            <h2>Datos principales</h2>
+            <span>Nombre visible y descripcion para que el alumno entienda como ejecutar el ejercicio.</span>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="name">
+            @if (exerciseForm.controls.name.hasError('required')) {
+              <mat-error>El nombre es obligatorio.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Descripcion</mat-label>
+            <textarea matInput rows="5" formControlName="description"></textarea>
+            @if (exerciseForm.controls.description.hasError('required')) {
+              <mat-error>La descripcion es obligatoria.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-heading">
+          <mat-icon>hub</mat-icon>
+          <div>
+            <h2>Grupos musculares / Musculos involucrados</h2>
+            <span>Elegi el foco principal, un apoyo secundario y despues agrega musculos concretos con el buscador.</span>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="select-field">
+            <span>Grupo principal</span>
+            <select formControlName="primaryMuscleGroupId">
+              <option [value]="0">Sin asignar</option>
+              @for (group of muscleGroups(); track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+            @if (muscleGroups().length && !exerciseForm.controls.primaryMuscleGroupId.value && exerciseForm.controls.primaryMuscleGroupId.touched) {
+              <small class="field-error">Selecciona un grupo principal.</small>
+            }
+          </label>
+
+          <label class="select-field">
+            <span>Grupo secundario</span>
+            <select formControlName="secondaryMuscleGroupId">
+              <option [value]="0">Sin asignar</option>
+              @for (group of muscleGroups(); track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+          </label>
+
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Buscar musculo</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [formControl]="muscleSearch" placeholder="Ej: biceps, pectoral, deltoides">
+          </mat-form-field>
+        </div>
+
+        @if (!muscleGroups().length) {
+          <div class="inline-empty">
+            <mat-icon>info</mat-icon>
+            <span>Todavia no hay grupos musculares. Puedes guardar el ejercicio igual y completar el catalogo despues.</span>
+          </div>
+        } @else {
+          <div class="muscle-selector">
+            <div class="selected-muscles">
+              <strong>Musculos seleccionados</strong>
+              @if (selectedMuscles().length) {
+                <div class="selected-chip-list">
+                  @for (muscle of selectedMuscles(); track muscle.id) {
+                    <button type="button" (click)="removeMuscle(muscle.id)" [title]="'Quitar ' + muscle.name">
+                      {{ muscle.name }}
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <small>Aun no seleccionaste musculos. Te mostramos sugerencias segun los grupos elegidos.</small>
+              }
+            </div>
+
+            <div class="suggestion-panel">
+              <div class="suggestion-heading">
+                <strong>{{ muscleSearch.value ? 'Resultados' : 'Sugeridos' }}</strong>
+                <small>Podés buscar cualquier musculo del catalogo, aunque no pertenezca al grupo principal o secundario.</small>
+              </div>
+              @if (suggestedMuscles().length) {
+                <div class="suggestion-list">
+                  @for (muscle of suggestedMuscles(); track muscle.id) {
+                    <button type="button" (click)="selectMuscle(muscle.id)">
+                      <span>
+                        <strong>{{ muscle.name }}</strong>
+                        <small>{{ muscle.muscleGroupName }}</small>
+                      </span>
+                      <mat-icon>add</mat-icon>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <div class="inline-empty compact-empty">
+                  <mat-icon>search_off</mat-icon>
+                  <span>No encontramos musculos con ese criterio.</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    </main>
+
+    <aside class="media-column">
+      <section class="media-card image-card">
+        <div class="section-heading">
+          <mat-icon>image</mat-icon>
+          <div>
+            <h2>Imagenes</h2>
+            <span>Se muestran al alumno en la ficha del ejercicio.</span>
+          </div>
+        </div>
+
+        <button class="image-dropzone" type="button" (click)="exerciseImageInput.click()">
+          <input #exerciseImageInput type="file" accept="image/*" multiple hidden (change)="onExerciseImagesSelected($event)">
+          <mat-icon>add_photo_alternate</mat-icon>
+          <strong>Subir imagenes</strong>
+          <span>PNG, JPG o WEBP</span>
+        </button>
+
+        <button mat-stroked-button type="button" (click)="exerciseImageInput.click()">
+          <mat-icon>upload</mat-icon>
+          Elegir archivos
+        </button>
+
+        @if (existingExerciseImages().length) {
+          <div class="media-list">
+            @for (image of existingExerciseImages(); track image.id || image.url; let i = $index) {
+              <div class="media-item">
+                <img [src]="image.url" alt="">
+                <span>
+                  <strong>Imagen actual {{ i + 1 }}</strong>
+                  <small>{{ image.title || image.url }}</small>
+                </span>
+                <button mat-icon-button type="button" matTooltip="Quitar imagen" (click)="removeExistingExerciseImage(i)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        @if (selectedExerciseImages().length) {
+          <div class="media-list">
+            @for (image of selectedExerciseImages(); track image.previewUrl; let i = $index) {
+              <div class="media-item">
+                <img [src]="image.previewUrl" alt="">
+                <span>
+                  <strong>Imagen {{ i + 1 }}</strong>
+                  <small>{{ image.name }}</small>
+                </span>
+                <button mat-icon-button type="button" matTooltip="Quitar imagen" (click)="removeExerciseImage(i)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="media-card">
+        <div class="section-heading">
+          <mat-icon>smart_display</mat-icon>
+          <div>
+            <h2>Videos</h2>
+            <span>URLs de YouTube o links externos.</span>
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Video YouTube / URL</mat-label>
+          <input matInput [formControl]="videoUrlInput">
+          @if (!isExerciseVideoValid()) {
+            <mat-error>Usa una URL valida que empiece con http o https.</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-stroked-button type="button" (click)="addExerciseVideo()" [disabled]="!videoUrlInput.value.trim() || !isExerciseVideoValid()">
+          <mat-icon>add_link</mat-icon>
+          Agregar video
+        </button>
+
+        @if (exerciseVideoUrls().length) {
+          <div class="media-list">
+            @for (video of exerciseVideoUrls(); track video; let i = $index) {
+              <div class="media-item video-item">
+                <mat-icon>smart_display</mat-icon>
+                <span>
+                  <strong>Video {{ i + 1 }}</strong>
+                  <small>{{ video }}</small>
+                </span>
+                <button mat-icon-button type="button" matTooltip="Quitar video" (click)="removeExerciseVideo(i)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="helper-card">
+        <mat-icon>qr_code_2</mat-icon>
+        <div>
+          <strong>QR automatico</strong>
+          <span>Al guardar, el sistema genera el destino del QR para que el alumno abra el ejercicio en su plataforma.</span>
+        </div>
+      </section>
+    </aside>
+
+    <footer class="form-actions">
+      @if (isEditMode()) {
+        <button mat-stroked-button type="button" (click)="resetExerciseForm()" [disabled]="isLoading()">
+          <mat-icon>undo</mat-icon>
+          Cancelar cambios
+        </button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!canSaveExercise()">
+          <mat-icon>save</mat-icon>
+          Guardar cambios
+        </button>
+      } @else {
+        <button mat-stroked-button type="button" routerLink="/student-platform">Cancelar</button>
+        <button mat-stroked-button type="button" (click)="resetExerciseForm()" [disabled]="isLoading()">
+          <mat-icon>restart_alt</mat-icon>
+          Limpiar
+        </button>
+        <button mat-stroked-button type="button" (click)="saveExercise(false)" [disabled]="!canSaveExercise()">
+          <mat-icon>save</mat-icon>
+          Guardar y volver
+        </button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!canSaveExercise()">
+          <mat-icon>add</mat-icon>
+          Guardar y cargar otro
+        </button>
+      }
+    </footer>
+  </form>
+</section>

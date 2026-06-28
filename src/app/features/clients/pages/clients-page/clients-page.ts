@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -9,9 +9,10 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
@@ -40,6 +41,7 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatMenuModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     AppPaginatorComponent,
@@ -53,6 +55,7 @@ export class ClientsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
   private readonly roleService = inject(RoleService);
   private readonly clientsService = inject(ClientsService);
@@ -77,12 +80,16 @@ export class ClientsPageComponent {
   readonly clientsWithMembershipCount = signal(0);
   readonly pendingPaymentsTotalCount = signal(0);
   private clientStatsRequestId = 0;
+  private readonly filterStorageKey = 'admin-clients-view-state';
+  private readonly columnStorageKey = 'admin-clients-columns';
+  readonly visibleColumns = signal(this.restoreColumns());
 
   readonly filtersForm = this.formBuilder.nonNullable.group({
     search: [''],
     dni: [''],
     paymentStatus: ['all'],
     clientStatus: ['active'],
+    contractStatus: ['all'],
     membershipPlanId: [null as number | null]
   });
 
@@ -99,6 +106,7 @@ export class ClientsPageComponent {
       raw.dni.trim(),
       raw.paymentStatus !== 'all' ? raw.paymentStatus : '',
       raw.clientStatus !== 'active' ? raw.clientStatus : '',
+      raw.contractStatus !== 'all' ? raw.contractStatus : '',
       raw.membershipPlanId ? String(raw.membershipPlanId) : ''
     ].filter(Boolean).length;
   });
@@ -120,6 +128,7 @@ export class ClientsPageComponent {
     if (raw.dni.trim()) chips.push({ label: 'DNI', value: raw.dni.trim() });
     if (raw.paymentStatus !== 'all') chips.push({ label: 'Estado', value: raw.paymentStatus === 'pending' ? 'Pendiente' : 'Al dia' });
     if (raw.clientStatus !== 'active') chips.push({ label: 'Ficha', value: raw.clientStatus === 'archived' ? 'Archivados' : 'Todos' });
+    if (raw.contractStatus !== 'all') chips.push({ label: 'Contrato', value: raw.contractStatus === 'missing' ? 'Sin firmar' : 'Firmado' });
     if (raw.membershipPlanId) {
       const plan = this.membershipPlans().find(item => item.id === raw.membershipPlanId);
       chips.push({ label: 'Membresia', value: plan?.nombre ?? `Plan #${raw.membershipPlanId}` });
@@ -129,23 +138,39 @@ export class ClientsPageComponent {
   });
 
   constructor() {
+    this.restoreViewState();
+    const requestedPaymentStatus = this.route.snapshot.queryParamMap.get('paymentStatus');
+    const requestedContractStatus = this.route.snapshot.queryParamMap.get('contractStatus');
+    if (requestedPaymentStatus === 'pending' || requestedPaymentStatus === 'upToDate') this.filtersForm.controls.paymentStatus.setValue(requestedPaymentStatus);
+    if (requestedContractStatus === 'missing' || requestedContractStatus === 'signed') this.filtersForm.controls.contractStatus.setValue(requestedContractStatus);
     this.auth.user$.subscribe(user => {
       this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
     });
     this.loadMembershipPlans();
     this.loadPaymentLookups();
     this.loadClients();
+    if (this.route.snapshot.queryParamMap.get('create') === '1') {
+      window.setTimeout(() => void this.router.navigate(['/clients/new'], { replaceUrl: true }));
+    }
   }
 
   handlePageChange(event: AppPageEvent): void {
     this.pageNumber.set(event.pageNumber);
     this.pageSize.set(event.pageSize);
+    this.persistViewState();
     this.loadClients();
+    if (this.route.snapshot.queryParamMap.get('create') === '1') {
+      window.setTimeout(() => void this.router.navigate(['/clients/new'], { replaceUrl: true }));
+    }
   }
 
   applyFilters(): void {
     this.pageNumber.set(1);
+    this.persistViewState();
     this.loadClients();
+    if (this.route.snapshot.queryParamMap.get('create') === '1') {
+      window.setTimeout(() => void this.router.navigate(['/clients/new'], { replaceUrl: true }));
+    }
   }
 
   resetFilters(): void {
@@ -154,10 +179,57 @@ export class ClientsPageComponent {
       dni: '',
       paymentStatus: 'all',
       clientStatus: 'active',
+      contractStatus: 'all',
       membershipPlanId: null
     });
     this.pageNumber.set(1);
+    this.persistViewState();
     this.loadClients();
+    if (this.route.snapshot.queryParamMap.get('create') === '1') {
+      window.setTimeout(() => void this.router.navigate(['/clients/new'], { replaceUrl: true }));
+    }
+  }
+
+  toggleColumn(column: 'dni' | 'membership' | 'contact' | 'status'): void {
+    this.visibleColumns.update(current => {
+      const next = { ...current, [column]: !current[column] };
+      localStorage.setItem(this.columnStorageKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  private restoreColumns(): Record<'dni' | 'membership' | 'contact' | 'status', boolean> {
+    const defaults = { dni: true, membership: true, contact: true, status: true };
+    try {
+      return { ...defaults, ...JSON.parse(localStorage.getItem(this.columnStorageKey) ?? '{}') };
+    } catch {
+      return defaults;
+    }
+  }
+
+  private persistViewState(): void {
+    localStorage.setItem(this.filterStorageKey, JSON.stringify({
+      filters: this.filtersForm.getRawValue(),
+      pageNumber: this.pageNumber(),
+      pageSize: this.pageSize()
+    }));
+  }
+
+  private restoreViewState(): void {
+    try {
+      const raw = localStorage.getItem(this.filterStorageKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        filters?: Partial<{ search: string; dni: string; paymentStatus: string; clientStatus: string; contractStatus: string; membershipPlanId: number | null }>;
+        pageNumber?: number;
+        pageSize?: number;
+      };
+      if (saved.filters) this.filtersForm.patchValue(saved.filters, { emitEvent: false });
+      if (saved.pageNumber && saved.pageNumber > 0) this.pageNumber.set(saved.pageNumber);
+      if (saved.pageSize && saved.pageSize > 0) this.pageSize.set(saved.pageSize);
+    } catch {
+      localStorage.removeItem(this.filterStorageKey);
+    }
   }
 
   openCreateModal(): void {
@@ -206,7 +278,7 @@ export class ClientsPageComponent {
       return;
     }
 
-    this.openDialog(client);
+    this.router.navigate(['/clients', client.id], { queryParams: { edit: 1 } });
   }
 
   reactivateClient(client: Client): void {
@@ -479,6 +551,10 @@ export class ClientsPageComponent {
 
     if (raw.clientStatus !== 'active') {
       filters.clientStatus = raw.clientStatus as 'archived' | 'all';
+    }
+
+    if (raw.contractStatus !== 'all') {
+      filters.contractStatus = raw.contractStatus as 'missing' | 'signed';
     }
 
     if (raw.membershipPlanId) {
