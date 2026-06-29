@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -62,14 +62,17 @@ export class AppShell {
   readonly commandOpen = signal(false);
   readonly commandSearching = signal(false);
   readonly commandResults = signal<GlobalCommandItem[]>([]);
-  readonly quickCommands: GlobalCommandItem[] = [
+  readonly isSuperAdmin = signal(false);
+  readonly quickCommands = computed<GlobalCommandItem[]>(() => [
     { icon: 'person_add', label: 'Nuevo alumno', description: 'Abrir alta de alumnos', route: '/clients/new', group: 'Acciones' },
-    { icon: 'payments', label: 'Registrar pago', description: 'Cargar un nuevo cobro', route: '/movements/payments/new', group: 'Acciones' },
-    { icon: 'add_circle', label: 'Nuevo ejercicio', description: 'Crear ejercicio del gimnasio', route: '/student-platform/exercises/new', group: 'Acciones' },
-    { icon: 'fitness_center', label: 'Nuevo workout', description: 'Armar una rutina reutilizable', route: '/student-platform/routines/new', group: 'Acciones' },
-    { icon: 'assignment_add', label: 'Nuevo plan', description: 'Crear un plan de entrenamiento', route: '/student-platform/training-plans/new', group: 'Acciones' },
-    { icon: 'description', label: 'Contratos pendientes', description: 'Revisar seguimiento contractual', route: '/contracts', group: 'Acciones' }
-  ];
+    ...(this.isSuperAdmin() ? [
+      { icon: 'payments', label: 'Registrar pago', description: 'Cargar un nuevo cobro', route: '/movements/payments/new', group: 'Acciones' } as GlobalCommandItem,
+      { icon: 'add_circle', label: 'Nuevo ejercicio', description: 'Crear ejercicio del gimnasio', route: '/student-platform/exercises/new', group: 'Acciones' } as GlobalCommandItem,
+      { icon: 'fitness_center', label: 'Nuevo workout', description: 'Armar una rutina reutilizable', route: '/student-platform/routines/new', group: 'Acciones' } as GlobalCommandItem,
+      { icon: 'assignment_add', label: 'Nuevo plan', description: 'Crear un plan de entrenamiento', route: '/student-platform/training-plans/new', group: 'Acciones' } as GlobalCommandItem,
+      { icon: 'description', label: 'Contratos pendientes', description: 'Revisar seguimiento contractual', route: '/contracts', group: 'Acciones' } as GlobalCommandItem
+    ] : [])
+  ]);
   isCollapsed = true;
   isMobile = false;
   isMobileSidebarOpen = false;
@@ -81,6 +84,7 @@ export class AppShell {
   constructor() {
     this.initTheme();
     this.initCommandSearch();
+    this.isSuperAdmin$.subscribe(isSuperAdmin => this.isSuperAdmin.set(isSuperAdmin));
 
     this.breakpointObserver.observe('(max-width: 1024px)').subscribe(({ matches }) => {
       this.isMobile = matches;
@@ -293,8 +297,13 @@ export class AppShell {
 
         this.commandSearching.set(true);
         const normalized = term.toLocaleLowerCase('es');
+        const clients$ = this.clientsService.getPaged(1, 6, { search: term }).pipe(catchError(() => of({ items: [], pageNumber: 1, pageSize: 6, totalCount: 0, totalPages: 0 })));
+        if (!this.isSuperAdmin()) {
+          return clients$.pipe(map(data => data.items.slice(0, 6).map(item => ({ icon: 'person', label: `${item.nombre} ${item.apellido}`, description: `DNI ${item.dni}`, route: `/clients/${item.id}`, group: 'Alumnos' as const }))));
+        }
+
         return forkJoin({
-          clients: this.clientsService.getPaged(1, 6, { search: term }).pipe(catchError(() => of({ items: [], pageNumber: 1, pageSize: 6, totalCount: 0, totalPages: 0 }))),
+          clients: clients$,
           exercises: this.platformService.getExercises(term).pipe(catchError(() => of([]))),
           routines: this.platformService.getRoutineTemplates().pipe(catchError(() => of([]))),
           plans: this.platformService.getTrainingPlans().pipe(catchError(() => of([])))

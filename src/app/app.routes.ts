@@ -104,12 +104,12 @@ export const routes: Routes = [
       {
         path: 'contracts',
         loadComponent: () => import('./features/contracts/pages/contracts-page/contracts-page').then(m => m.ContractsPageComponent),
-        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin'] }
       },
       {
         path: 'contracts/:id/sign',
         loadComponent: () => import('./features/contracts/pages/contract-signature-page/contract-signature-page').then(m => m.ContractSignaturePageComponent),
-        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin'] }
       },
       {
         path: 'health/patients/:id',
@@ -178,7 +178,7 @@ export const routes: Routes = [
             .then(m => m.RoutineCreatePageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -188,7 +188,7 @@ export const routes: Routes = [
             .then(m => m.WorkoutDetailPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -198,7 +198,7 @@ export const routes: Routes = [
             .then(m => m.TrainingPlanCreatePageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -208,7 +208,7 @@ export const routes: Routes = [
             .then(m => m.TrainingPlanDetailPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -218,7 +218,7 @@ export const routes: Routes = [
             .then(m => m.ExerciseCreatePageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -228,7 +228,7 @@ export const routes: Routes = [
             .then(m => m.ExerciseCreatePageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       },
       {
@@ -238,7 +238,7 @@ export const routes: Routes = [
             .then(m => m.StudentPlatformPageComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SuperAdmin', 'Admin']
+          roles: ['SuperAdmin']
         }
       }
     ]

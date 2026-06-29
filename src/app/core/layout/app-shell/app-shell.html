@@ -64,7 +64,7 @@
           </div>
         </a>
 
-        <a *ngIf="isAdminOrSuperAdmin$ | async" mat-list-item routerLink="/contracts" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
+        <a *ngIf="isSuperAdmin$ | async" mat-list-item routerLink="/contracts" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
           <div class="nav-item-content"><mat-icon>description</mat-icon><span class="nav-text">Contratos</span></div>
         </a>
 
@@ -93,7 +93,7 @@
         </a>
 
         <a
-          *ngIf="isAdminOrSuperAdmin$ | async"
+          *ngIf="isSuperAdmin$ | async"
           mat-list-item
           routerLink="/student-platform"
           routerLinkActive="active-link"
@@ -206,7 +206,7 @@
     <section class="command-palette" role="dialog" aria-modal="true" aria-label="Búsqueda global" (click)="$event.stopPropagation()">
       <header>
         <mat-icon>search</mat-icon>
-        <input class="global-command-input" type="search" [formControl]="commandQuery" placeholder="Buscar alumnos, ejercicios, workouts o planes..." aria-label="Búsqueda global">
+        <input class="global-command-input" type="search" [formControl]="commandQuery" placeholder="Buscar en el sistema..." aria-label="Búsqueda global">
         <button mat-icon-button type="button" (click)="closeCommandPalette()" aria-label="Cerrar búsqueda"><mat-icon>close</mat-icon></button>
       </header>
 
@@ -214,7 +214,7 @@
         @if (!commandQuery.value.trim()) {
           <div class="command-heading"><span>Acciones rápidas</span><small>Elegí una acción o empezá a escribir</small></div>
           <div class="command-list">
-            @for (item of quickCommands; track item.route) {
+            @for (item of quickCommands(); track item.route) {
               <button type="button" (click)="runCommand(item)"><span class="command-icon"><mat-icon>{{ item.icon }}</mat-icon></span><span><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span><mat-icon>arrow_forward</mat-icon></button>
             }
           </div>
