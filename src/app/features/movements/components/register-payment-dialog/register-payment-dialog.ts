@@ -65,7 +65,7 @@ export class RegisterPaymentDialogComponent {
 
   readonly form = this.formBuilder.group(
     {
-      clientId: [this.data.payment?.clientId ?? (null as number | null), [Validators.required]],
+      clientId: [this.data.payment?.clientId ?? this.getInitialClient()?.id ?? (null as number | null), [Validators.required]],
       clientMembershipId: [this.data.payment?.clientMembershipId ?? 0, [Validators.required, Validators.min(1)]],
       fechaPago: [this.toDateInputValue(this.data.payment?.fechaPago ?? this.data.defaultDate), [Validators.required]],
       monto: [this.data.payment?.monto ?? 0, [Validators.required, Validators.min(0)]],
@@ -78,7 +78,9 @@ export class RegisterPaymentDialogComponent {
       cashMovementCategoryId: [this.data.payment?.cashMovementCategoryId ?? this.data.incomeCategories[0]?.id ?? null, [Validators.required]],
       periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, [Validators.required, Validators.min(2000)]],
       periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, [Validators.required, Validators.min(1), Validators.max(12)]],
-      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
+      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]],
+      membershipStartDate: [this.data.payment?.membershipStartDate ? this.toDateInputValue(this.data.payment.membershipStartDate) : ''],
+      membershipEndDate: [this.data.payment?.membershipEndDate ? this.toDateInputValue(this.data.payment.membershipEndDate) : '']
     },
     { validators: [this.discountValidator] }
   );
@@ -96,6 +98,8 @@ export class RegisterPaymentDialogComponent {
   readonly displayClient = (value: Client | string): string => typeof value === 'string' ? value : this.getClientLabel(value);
 
   constructor() {
+    this.initializeSelectedClient();
+
     this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
       if (!this.isEditing && typeof user?.email === 'string') {
         this.applyDefaultEmployeeEmail(user.email);
@@ -103,6 +107,17 @@ export class RegisterPaymentDialogComponent {
     });
   }
 
+  private initializeSelectedClient(): void {
+    const client = this.getInitialClient();
+    if (!client) {
+      return;
+    }
+
+    this.selectedClient.set(client);
+    this.clientSearchControl.setValue(client, { emitEvent: false });
+    this.form.controls.clientId.setValue(client.id, { emitEvent: false });
+    this.applyMembership(this.getEffectiveMembership(client));
+  }
   close(): void {
     this.dialogRef.close();
   }
@@ -168,7 +183,9 @@ export class RegisterPaymentDialogComponent {
       cashMovementCategoryId: Number(raw.cashMovementCategoryId),
       periodYear: Number(raw.periodYear),
       periodMonth: Number(raw.periodMonth),
-      collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? ''
+      collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? '',
+      membershipStartDate: raw.membershipStartDate ? this.toLocalDateIso(raw.membershipStartDate) : null,
+      membershipEndDate: raw.membershipEndDate ? this.toLocalDateIso(raw.membershipEndDate) : null
     });
   }
 
@@ -209,6 +226,15 @@ export class RegisterPaymentDialogComponent {
     return this.hasPaymentForSelectedPeriod();
   }
 
+  onMembershipStartDateChange(): void {
+    const membership = this.getEffectiveMembership(this.selectedClient());
+    const startDate = this.getDateFromInput(this.form.controls.membershipStartDate.value);
+    if (!membership || !startDate) {
+      return;
+    }
+
+    this.form.controls.membershipEndDate.setValue(this.getMembershipEndInputValue(startDate, membership), { emitEvent: false });
+  }
   hasDiscount(): boolean {
     return this.isDiscountApplied() && Number(this.form.controls.descuentoMonto.value ?? 0) > 0;
   }
@@ -288,7 +314,12 @@ export class RegisterPaymentDialogComponent {
 
   private getInitialClient(): Client | null {
     const clientId = this.data.payment?.clientId;
-    return clientId ? this.data.clients.find(item => item.id === clientId) ?? null : null;
+
+    if (clientId) {
+      return this.data.clients.find(item => item.id === clientId) ?? null;
+    }
+
+    return this.data.clients.length === 1 ? this.data.clients[0] : null;
   }
 
   private loadSelectedClientDetails(clientId: number): void {
@@ -329,10 +360,14 @@ export class RegisterPaymentDialogComponent {
       return false;
     }
 
+    const shouldSuggestRenewal = this.isMembershipExpired(membership);
+
     this.form.patchValue({
       clientMembershipId: membership.id,
       monto: membership.precioFinal,
-      montoOriginal: this.data.payment?.montoOriginal ?? membership.precioFinal
+      montoOriginal: this.data.payment?.montoOriginal ?? membership.precioFinal,
+      membershipStartDate: shouldSuggestRenewal ? this.getSuggestedMembershipStartInputValue(membership) : '',
+      membershipEndDate: shouldSuggestRenewal ? this.getSuggestedMembershipEndInputValue(membership) : ''
     });
 
     return true;
@@ -342,10 +377,52 @@ export class RegisterPaymentDialogComponent {
     this.form.patchValue({
       clientMembershipId: 0,
       monto: 0,
-      montoOriginal: null
+      montoOriginal: null,
+      membershipStartDate: '',
+      membershipEndDate: ''
     });
   }
 
+  private isMembershipExpired(membership: ClientMembership): boolean {
+    const endDate = this.getDateFromInput(membership.fechaFin);
+    if (!endDate) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    return endDate < today;
+  }
+  private getSuggestedMembershipStartInputValue(membership: ClientMembership): string {
+    const endDate = this.getDateFromInput(membership.fechaFin);
+    if (!endDate) {
+      return '';
+    }
+
+    endDate.setDate(endDate.getDate() + 1);
+    return this.toDateInputValue(endDate.toISOString());
+  }
+
+  private getSuggestedMembershipEndInputValue(membership: ClientMembership): string {
+    const startDate = this.getDateFromInput(this.getSuggestedMembershipStartInputValue(membership));
+    if (!startDate) {
+      return '';
+    }
+
+    return this.getMembershipEndInputValue(startDate, membership);
+  }
+
+  private getMembershipEndInputValue(startDate: Date, membership: ClientMembership): string {
+    const durationDays = Number(membership.plan?.duracionDias ?? 0);
+    if (durationDays <= 0) {
+      return '';
+    }
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays);
+    return this.toDateInputValue(endDate.toISOString());
+  }
   private hasPaymentForSelectedPeriod(): boolean {
     if (this.isEditing) return false;
     const client = this.selectedClient();

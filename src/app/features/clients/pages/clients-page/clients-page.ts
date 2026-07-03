@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -28,6 +28,8 @@ import { MembershipPlansService } from '../../../membership-plans/services/membe
 import { ClientMembership } from '../../models/client.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
+
+type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'paused';
 
 @Component({
   selector: 'app-clients-page',
@@ -490,14 +492,69 @@ export class ClientsPageComponent {
     return this.getEffectiveMembership(client)?.fechaFin ?? null;
   }
 
-  getPaymentStatusLabel(client: Client): string {
-    return client.debePago ? 'Pendiente' : 'Al día';
+  getMembershipEndLabel(client: Client): string {
+    const endDate = this.getMembershipEndDate(client);
+    if (!endDate) {
+      return 'Sin vencimiento informado';
+    }
+
+    const prefix = this.isMembershipExpired(this.getEffectiveMembership(client)) ? 'Vencida el ' : 'Vence ';
+    return `${prefix}${new Intl.DateTimeFormat('es-AR').format(new Date(endDate))}`;
+  }
+
+  getOperationalStatus(client: Client): ClientOperationalStatus {
+    if (this.isArchived(client)) {
+      return 'archived';
+    }
+
+    const membership = this.getEffectiveMembership(client);
+    if (!membership) {
+      return 'noMembership';
+    }
+
+    if (this.isMembershipPaused(membership)) {
+      return 'paused';
+    }
+
+    if (client.debePago || this.isMembershipExpired(membership)) {
+      return 'pendingPayment';
+    }
+
+    if (client.membresiaProximaAVencer) {
+      return 'nearExpiration';
+    }
+
+    return 'upToDate';
+  }
+
+  getOperationalStatusLabel(client: Client): string {
+    const labels: Record<ClientOperationalStatus, string> = {
+      archived: 'Archivado',
+      noMembership: 'Sin membresia',
+      upToDate: 'Al dia',
+      nearExpiration: 'Proximo a vencer',
+      pendingPayment: 'Vencida - pendiente de pago',
+      paused: 'En pausa'
+    };
+
+    return labels[this.getOperationalStatus(client)];
   }
 
   isPaymentPending(client: Client): boolean {
-    return client.activo && client.debePago;
+    return this.getOperationalStatus(client) === 'pendingPayment';
   }
 
+  isNearExpiration(client: Client): boolean {
+    return this.getOperationalStatus(client) === 'nearExpiration';
+  }
+
+  isPaused(client: Client): boolean {
+    return this.getOperationalStatus(client) === 'paused';
+  }
+
+  isNoMembership(client: Client): boolean {
+    return this.getOperationalStatus(client) === 'noMembership';
+  }
   isArchived(client: Client): boolean {
     return !client.activo;
   }
@@ -616,7 +673,7 @@ export class ClientsPageComponent {
     }
 
     if (totalCount === this.clients().length) {
-      this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(client.membership)).length);
+      this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(this.getEffectiveMembership(client))).length);
       this.pendingPaymentsTotalCount.set(this.clients().filter(client => client.debePago).length);
       return;
     }
@@ -627,7 +684,7 @@ export class ClientsPageComponent {
           return;
         }
 
-        this.clientsWithMembershipCount.set(response.items.filter(client => Boolean(client.membership)).length);
+        this.clientsWithMembershipCount.set(response.items.filter(client => Boolean(this.getEffectiveMembership(client))).length);
         this.pendingPaymentsTotalCount.set(response.items.filter(client => client.debePago).length);
       },
       error: () => {
@@ -635,13 +692,55 @@ export class ClientsPageComponent {
           return;
         }
 
-        this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(client.membership)).length);
+        this.clientsWithMembershipCount.set(this.clients().filter(client => Boolean(this.getEffectiveMembership(client))).length);
         this.pendingPaymentsTotalCount.set(this.clients().filter(client => client.debePago).length);
       }
     });
   }
 
   private getEffectiveMembership(client: Client): ClientMembership | null {
-    return client.membership ?? null;
+    if (client.membership) {
+      return client.membership;
+    }
+
+    return this.getLatestMembership(client);
   }
-}
+
+  private getLatestMembership(client: Client): ClientMembership | null {
+    const history = client.membershipsHistory?.filter(membership => membership.activo !== false) ?? [];
+    if (history.length === 0) {
+      return null;
+    }
+
+    return [...history].sort((left, right) => {
+      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
+      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
+      return rightDate - leftDate;
+    })[0] ?? null;
+  }
+
+  private isMembershipExpired(membership: ClientMembership | null): boolean {
+    if (!membership?.fechaFin) {
+      return false;
+    }
+
+    const endDate = new Date(membership.fechaFin);
+    const today = new Date();
+    endDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return endDate < today;
+  }
+
+  private isMembershipPaused(membership: ClientMembership | null): boolean {
+    if (!membership?.fechaFin || !this.isMembershipExpired(membership)) {
+      return false;
+    }
+
+    const pauseThreshold = new Date(membership.fechaFin);
+    pauseThreshold.setHours(0, 0, 0, 0);
+    pauseThreshold.setMonth(pauseThreshold.getMonth() + 2);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return pauseThreshold < today;
+  }}

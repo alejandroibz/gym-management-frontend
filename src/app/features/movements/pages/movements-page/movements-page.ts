@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -40,6 +41,7 @@ import { CashMovementsService } from '../../services/cash-movements.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -99,6 +101,8 @@ export class MovementsPageComponent {
   readonly movementPageSize = signal(10);
   readonly movementTotalCount = signal(0);
   readonly movementFiltersExpanded = signal(this.getInitialFiltersExpanded());
+
+  readonly paymentClientSearchControl = new FormControl<Client | string>('', { nonNullable: true });
 
   readonly paymentFiltersForm = this.formBuilder.nonNullable.group({
     clientId: [''],
@@ -176,6 +180,7 @@ export class MovementsPageComponent {
   }
 
   applyPaymentFilters(): void {
+    this.syncPaymentClientSearchBeforeApply();
     this.paymentPageNumber.set(1);
     this.loadPayments();
     this.collapseSectionOnMobile(this.paymentFiltersExpanded);
@@ -188,6 +193,7 @@ export class MovementsPageComponent {
       periodYear: this.currentYear,
       periodMonth: this.currentMonth
     });
+    this.paymentClientSearchControl.setValue('', { emitEvent: false });
     this.paymentPageNumber.set(1);
     this.loadPayments();
     this.collapseSectionOnMobile(this.paymentFiltersExpanded);
@@ -469,6 +475,38 @@ export class MovementsPageComponent {
     return `${client.nombre} ${client.apellido}`;
   }
 
+  readonly displayPaymentClient = (value: Client | string): string =>
+    typeof value === 'string' ? value : this.getClientLabel(value);
+
+  filteredPaymentClients(): Client[] {
+    const rawValue = this.paymentClientSearchControl.value;
+    const value = typeof rawValue === 'string'
+      ? rawValue.trim().toLowerCase()
+      : this.getClientLabel(rawValue).toLowerCase();
+
+    if (!value) {
+      return this.clients().slice(0, 25);
+    }
+
+    return this.clients()
+      .filter(client => {
+        const label = this.getClientLabel(client).toLowerCase();
+        return label.includes(value)
+          || client.dni?.toLowerCase().includes(value)
+          || client.telefono?.toLowerCase().includes(value);
+      })
+      .slice(0, 25);
+  }
+
+  onPaymentClientSearchInput(): void {
+    this.paymentFiltersForm.controls.clientId.setValue('');
+  }
+
+  selectPaymentClient(client: Client): void {
+    this.paymentFiltersForm.controls.clientId.setValue(String(client.id));
+    this.paymentClientSearchControl.setValue(client, { emitEvent: false });
+  }
+
   getPaymentMethodLabel(method: PaymentMethod): string {
     return method.nombre ?? method.descripcion ?? `Método #${method.id}`;
   }
@@ -622,6 +660,19 @@ export class MovementsPageComponent {
         this.errorMessage.set('No se pudieron cargar los clientes.');
       }
     });
+  }
+
+  private syncPaymentClientSearchBeforeApply(): void {
+    const rawValue = this.paymentClientSearchControl.value;
+
+    if (typeof rawValue !== 'string') {
+      this.paymentFiltersForm.controls.clientId.setValue(String(rawValue.id));
+      return;
+    }
+
+    if (!rawValue.trim()) {
+      this.paymentFiltersForm.controls.clientId.setValue('');
+    }
   }
 
   private loadPayments(): void {

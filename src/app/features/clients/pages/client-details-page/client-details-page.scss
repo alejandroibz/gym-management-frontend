@@ -486,3 +486,76 @@
 :host-context(body.dark-theme) ::ng-deep .client-details-page .mdc-notched-outline__trailing {
   border-color: var(--app-border-strong) !important;
 }
+
+.payments-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+}
+
+.payments-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.payments-table th,
+.payments-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--app-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.payments-table th {
+  color: var(--app-text-muted);
+  background: var(--app-surface-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.payments-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.payments-table td > span,
+.payments-table td > strong,
+.payments-table td:nth-child(2) span,
+.payments-table td:nth-child(2) strong {
+  display: block;
+}
+
+.payments-table td:nth-child(2) span {
+  margin-top: 0.2rem;
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
+}
+
+.payment-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.payments-table .status-chip + .status-chip {
+  margin-top: 0.35rem;
+}
+
+:host-context(body.dark-theme) .payments-table-wrapper,
+:host-context(body.dark-theme) .payments-table th,
+:host-context(body.dark-theme) .payments-table td {
+  border-color: var(--app-border);
+}
+
+:host-context(body.dark-theme) .payments-table-wrapper {
+  background: var(--app-surface);
+}
+
+:host-context(body.dark-theme) .payments-table th {
+  background: var(--app-surface-muted);
+  color: var(--app-text-muted);
+}

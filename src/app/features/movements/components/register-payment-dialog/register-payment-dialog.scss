@@ -58,6 +58,26 @@
   border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.renewal-box {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.renewal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.renewal-box small {
+  color: #475569;
+  font-weight: 700;
+}
+
 .discount-box {
   display: grid;
   gap: 0.9rem;
@@ -176,4 +196,34 @@
   .dialog-actions {
     grid-auto-flow: row;
   }
+}
+:host-context(body.dark-theme) .dialog-shell {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) :is(.context-box, .renewal-box) {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) :is(.context-box strong, .renewal-box strong) {
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) :is(.context-box small, .renewal-box small) {
+  color: var(--app-text-muted);
+}
+
+:host-context(body.dark-theme) .context-box .warning-line {
+  color: #fca5a5;
+}
+
+:host-context(body.dark-theme) .dialog-actions {
+  background: linear-gradient(180deg, rgba(17, 18, 24, 0), var(--app-surface) 26%);
+}
+
+:host-context(body.dark-theme) ::ng-deep .mdc-text-field--outlined {
+  background: var(--app-surface-muted);
 }

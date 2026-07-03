@@ -20,6 +20,8 @@ export interface Payment {
   collectedByEmployeeId?: number | null;
   collectedByEmployeeEmail?: string | null;
   collectedByEmployeeNombre?: string | null;
+  membershipStartDate?: string | null;
+  membershipEndDate?: string | null;
 }
 
 export interface PaymentFilters {
@@ -43,6 +45,8 @@ export interface PaymentCreatePayload {
   periodYear: number;
   periodMonth: number;
   collectedByEmployeeEmail: string;
+  membershipStartDate?: string | null;
+  membershipEndDate?: string | null;
 }
 
 export interface PaymentUpdatePayload extends PaymentCreatePayload {

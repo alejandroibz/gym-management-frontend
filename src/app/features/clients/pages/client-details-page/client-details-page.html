@@ -1,4 +1,4 @@
-﻿<section class="client-details-page" [class.create-mode]="isCreateMode()">
+<section class="client-details-page" [class.create-mode]="isCreateMode()">
   <div class="page-topbar">
     <nav class="breadcrumb">
       <a routerLink="/clients">Clientes</a>
@@ -43,7 +43,7 @@
           <div class="hero-pills">
             <span class="hero-pill">{{ getMembershipLabel() }}</span>
             @if (currentClient.tieneLesion) {
-              <span class="hero-pill hero-pill-warning">Con lesiÃ³n</span>
+              <span class="hero-pill hero-pill-warning">Con lesión</span>
             }
             @for (chip of getMembershipAlertChips(currentClient); track chip.label) {
               <span class="hero-pill" [class.hero-pill-warning]="chip.tone === 'warning'" [class.hero-pill-info]="chip.tone === 'info'" [class.hero-pill-success]="chip.tone === 'success'">
@@ -104,7 +104,7 @@
       <mat-card class="content-card" [class.create-form-card]="isCreateMode()">
         <div class="card-heading">
           <div>
-            <h2>InformaciÃ³n del cliente</h2>
+            <h2>Información del cliente</h2>
             <p>{{ isCreateMode() ? 'Los campos marcados con * son obligatorios.' : 'Datos principales y comerciales del registro seleccionado.' }}</p>
           </div>
         </div>
@@ -112,27 +112,27 @@
         <form class="details-form" [formGroup]="form">
           <div class="form-grid">
             <mat-form-field appearance="outline">
-              <mat-label>Nombre <span class="required-marker">*</span></mat-label>
+              <mat-label>Nombre</mat-label>
               <input matInput formControlName="nombre" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Apellido <span class="required-marker">*</span></mat-label>
+              <mat-label>Apellido</mat-label>
               <input matInput formControlName="apellido" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>DNI <span class="required-marker">*</span></mat-label>
+              <mat-label>DNI</mat-label>
               <input matInput formControlName="dni" maxlength="8" inputmode="numeric" (input)="onDniInput()" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Fecha de nacimiento <span class="required-marker">*</span></mat-label>
+              <mat-label>Fecha de nacimiento</mat-label>
               <input matInput type="date" formControlName="fechaNacimiento" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Telefono <span class="required-marker">*</span></mat-label>
+              <mat-label>Telefono</mat-label>
               <input matInput formControlName="telefono" />
             </mat-form-field>
 
@@ -143,12 +143,12 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="span-2">
-              <mat-label>Direccion <span class="required-marker">*</span></mat-label>
+              <mat-label>Direccion</mat-label>
               <input matInput formControlName="direccion" />
             </mat-form-field>
 
             <div class="membership-box span-2">
-              <mat-checkbox formControlName="tieneLesion">Tiene lesiÃ³n</mat-checkbox>
+              <mat-checkbox formControlName="tieneLesion">Tiene lesión</mat-checkbox>
             </div>
 
             <mat-form-field appearance="outline" class="span-2">
@@ -165,7 +165,7 @@
             </mat-form-field>
 
             <div class="membership-box span-2">
-              <mat-checkbox formControlName="hasMembership">Asignar membresÃ­a</mat-checkbox>
+              <mat-checkbox formControlName="hasMembership">Asignar membresía</mat-checkbox>
               @if (currentMembership() && !form.controls.hasMembership.value) {
                 <p class="membership-warning">Al guardar se dara de baja la membresia activa. Los cobros anteriores se conservan.</p>
               }
@@ -174,14 +174,14 @@
             @if (form.controls.hasMembership.value) {
             <div class="membership-box span-2">
               <div class="membership-copy">
-                <p class="membership-eyebrow">MembresÃ­a</p>
+                <p class="membership-eyebrow">Membresía</p>
                 <h3>Datos del plan vigente</h3>
                 <p>Cuando edites, puedes cambiar plan, fechas y precio final.</p>
               </div>
 
               <div class="membership-grid">
                 <mat-form-field appearance="outline" class="span-2">
-                  <mat-label>Plan de membresia <span class="required-marker">*</span></mat-label>
+                  <mat-label>Plan de membresia</mat-label>
                   <mat-select formControlName="membershipPlanId" (selectionChange)="onMembershipPlanChange()">
                     @for (plan of membershipPlans(); track plan.id) {
                       <mat-option [value]="plan.id">
@@ -192,17 +192,17 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Fecha de inicio <span class="required-marker">*</span></mat-label>
+                  <mat-label>Fecha de inicio</mat-label>
                   <input matInput type="date" formControlName="fechaInicio" (change)="onFechaInicioChange()" />
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Fecha de fin <span class="required-marker">*</span></mat-label>
+                  <mat-label>Fecha de fin</mat-label>
                   <input matInput type="date" formControlName="fechaFin" />
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Precio final <span class="required-marker">*</span></mat-label>
+                  <mat-label>Precio final</mat-label>
                   <input matInput type="number" min="0" step="0.01" formControlName="precioFinal" />
                 </mat-form-field>
               </div>
@@ -216,7 +216,7 @@
         <div class="card-heading">
           <div>
             <h2>Resumen rapido</h2>
-            <p>Indicadores Ãºtiles del cliente y su membresÃ­a actual.</p>
+            <p>Indicadores útiles del cliente y su membresía actual.</p>
           </div>
         </div>
 
@@ -226,7 +226,7 @@
             <strong>{{ getMembershipLabel() }}</strong>
           </article>
           <article class="summary-item">
-            <span>Estado membresÃ­a</span>
+            <span>Estado membresía</span>
             <strong>{{ getMembershipStateLabel(currentMembership()?.estado) }}</strong>
           </article>
           <article class="summary-item">
@@ -246,7 +246,7 @@
             <strong>${{ currentMembership()?.precioFinal ?? 0 }}</strong>
           </article>
           <article class="summary-item">
-            <span>PrÃ³xima a vencer</span>
+            <span>Próxima a vencer</span>
             <strong>{{ currentClient.membresiaProximaAVencer ? 'Si' : 'No' }}</strong>
           </article>
           <article class="summary-item">
@@ -254,7 +254,7 @@
             <strong>{{ currentClient.membresiaVencimientoNotificado ? 'Si' : 'No' }}</strong>
           </article>
           <article class="summary-item">
-            <span>Tiene lesiÃ³n</span>
+            <span>Tiene lesión</span>
             <strong>{{ currentClient.tieneLesion ? 'Si' : 'No' }}</strong>
           </article>
         </div>
@@ -264,7 +264,7 @@
         <div class="card-heading">
           <div>
             <h2>Indicacion para profesores</h2>
-            <p>Nota operativa de salud visible para la gestiÃ³n del entrenamiento.</p>
+            <p>Nota operativa de salud visible para la gestión del entrenamiento.</p>
           </div>
           @if (currentClient.healthProfile?.patient) {
             <a mat-stroked-button routerLink="/health" [queryParams]="{ patientId: currentClient.healthProfile?.patient?.id }">
@@ -335,9 +335,9 @@
       </mat-card>
 
       <mat-card class="content-card span-full contract-admin-card existing-client-card">
-        <div class="card-heading"><div><h2>Contrato de deslinde</h2><p>EmisiÃ³n, impresiÃ³n, firma y documentaciÃ³n privada del alumno.</p></div><button mat-flat-button type="button" [disabled]="isSavingContract()" (click)="issueContract()"><mat-icon>post_add</mat-icon>{{currentContract()?'Emitir nueva versiÃ³n':'Emitir contrato'}}</button></div>
-        @if(currentContract();as contract){<div class="contract-current"><span class="status-chip">{{contract.status==='Signed'?'Firmado':'Pendiente de firma'}}</span><div><strong>{{contract.templateName}}</strong><small>VersiÃ³n {{contract.templateVersion}} Â· Emitido {{contract.issuedAt|date:'dd/MM/yyyy'}}</small></div><button mat-stroked-button type="button" (click)="downloadContract(contract)"><mat-icon>download</mat-icon>PDF</button>@if(contract.status==='PendingSignature'){<a mat-flat-button [routerLink]="['/contracts',contract.id,'sign']"><mat-icon>draw</mat-icon>Firmar en recepciÃ³n</a><label class="paper-upload"><mat-icon>upload_file</mat-icon>Subir firmado<input hidden type="file" multiple accept="application/pdf,image/png,image/jpeg" (change)="uploadPaperContract(contract,$event)"></label>}</div>}
-        <div class="contract-history">@for(contract of clientContracts();track contract.id){<article><mat-icon>{{contract.status==='Signed'?'verified':'description'}}</mat-icon><span><strong>v{{contract.templateVersion}} Â· {{contract.status}}</strong><small>{{contract.issuedAt|date:'dd/MM/yyyy'}}{{contract.signedAt?' Â· Firmado':''}}</small></span><button mat-icon-button type="button" (click)="downloadContract(contract)"><mat-icon>download</mat-icon></button>@if(contract.status==='PendingSignature'){<button mat-icon-button type="button" (click)="voidContract(contract)"><mat-icon>block</mat-icon></button>}</article>}@empty{<div class="empty-state compact"><mat-icon>description</mat-icon><p>No hay contratos emitidos.</p></div>}</div>
+        <div class="card-heading"><div><h2>Contrato de deslinde</h2><p>Emisión, impresión, firma y documentación privada del alumno.</p></div><button mat-flat-button type="button" [disabled]="isSavingContract()" (click)="issueContract()"><mat-icon>post_add</mat-icon>{{currentContract()?'Emitir nueva versión':'Emitir contrato'}}</button></div>
+        @if(currentContract();as contract){<div class="contract-current"><span class="status-chip">{{contract.status==='Signed'?'Firmado':'Pendiente de firma'}}</span><div><strong>{{contract.templateName}}</strong><small>Versión {{contract.templateVersion}} · Emitido {{contract.issuedAt|date:'dd/MM/yyyy'}}</small></div><button mat-stroked-button type="button" (click)="downloadContract(contract)"><mat-icon>download</mat-icon>PDF</button>@if(contract.status==='PendingSignature'){<a mat-flat-button [routerLink]="['/contracts',contract.id,'sign']"><mat-icon>draw</mat-icon>Firmar en recepción</a><label class="paper-upload"><mat-icon>upload_file</mat-icon>Subir firmado<input hidden type="file" multiple accept="application/pdf,image/png,image/jpeg" (change)="uploadPaperContract(contract,$event)"></label>}</div>}
+        <div class="contract-history">@for(contract of clientContracts();track contract.id){<article><mat-icon>{{contract.status==='Signed'?'verified':'description'}}</mat-icon><span><strong>v{{contract.templateVersion}} · {{contract.status}}</strong><small>{{contract.issuedAt|date:'dd/MM/yyyy'}}{{contract.signedAt?' · Firmado':''}}</small></span><button mat-icon-button type="button" (click)="downloadContract(contract)"><mat-icon>download</mat-icon></button>@if(contract.status==='PendingSignature'){<button mat-icon-button type="button" (click)="voidContract(contract)"><mat-icon>block</mat-icon></button>}</article>}@empty{<div class="empty-state compact"><mat-icon>description</mat-icon><p>No hay contratos emitidos.</p></div>}</div>
       </mat-card>
 
       <mat-card class="content-card span-full existing-client-card">
@@ -360,7 +360,7 @@
                 <div class="payment-card-header">
                   <div class="payment-card-copy">
                     <strong>{{ membership.plan?.nombre || ('Plan #' + membership.membershipPlanId) }}</strong>
-                    <span>{{ getMembershipStateLabel(membership.estado) }}</span>
+                    <span>{{ getMembershipStateLabel(membership) }}</span>
                   </div>
                   <div class="membership-actions">
                     <button mat-icon-button type="button" aria-label="Editar membresia" [disabled]="isSaving()" (click)="editMembership(membership)">
@@ -395,8 +395,8 @@
       <mat-card class="content-card span-full existing-client-card">
         <div class="card-heading">
           <div>
-            <h2>Cobros registrados.</h2>
-            <p>Historial de cobros asociado al cliente.</p>
+            <h2>Cobros registrados</h2>
+            <p>Historial de cobros asociado al cliente, con los más recientes primero.</p>
           </div>
         </div>
 
@@ -406,45 +406,63 @@
             <p>No hay cobros registrados para este cliente.</p>
           </div>
         } @else {
-          <div class="payments-grid">
-            @for (payment of payments(); track $index) {
-              <article class="payment-card">
-                <div class="payment-card-header">
-                  <div class="payment-card-copy">
-                    <strong>Cobro registrado</strong>
-                    <span>{{ getPaymentStateLabel(payment) }}</span>
-                  </div>
-
-                  <div class="payment-card-actions">
-                    @if (hasPaymentDiscount(payment)) {
-                      <span class="status-chip discount">Con descuento</span>
-                    }
-                    @if (isPendingPayment(payment)) {
-                      <span class="status-chip pending">Pendiente</span>
-                      <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="confirmPayment(payment)">
-                        Confirmar cobro
-                      </button>
-                    }
-                    <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="editPayment(payment)">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="deletePayment(payment)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="payment-fields-grid">
-                  @for (field of getVisiblePaymentFields(payment); track field.label) {
-                    <div class="payment-field">
-                      <span>{{ field.label }}</span>
-                      <strong>{{ field.value }}</strong>
-                    </div>
-                  }
-                </div>
-              </article>
-            }
+          <div class="payments-table-wrapper">
+            <table class="payments-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Cobro</th>
+                  <th>Membresía</th>
+                  <th>Método</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (payment of pagedPayments(); track $index) {
+                  <tr>
+                    <td>{{ getPaymentDateLabel(payment) }}</td>
+                    <td>
+                      <strong>{{ getPaymentCategoryLabel(payment) }}</strong>
+                      <span>{{ getPaymentSupportingText(payment) }}</span>
+                    </td>
+                    <td>{{ getPaymentMembershipLabel(payment) }}</td>
+                    <td>{{ getPaymentMethodLabel(payment) }}</td>
+                    <td><strong>{{ getPaymentAmountLabel(payment) }}</strong></td>
+                    <td>
+                      <span class="status-chip" [class.pending]="isPendingPayment(payment)">{{ getPaymentStateLabel(payment) }}</span>
+                      @if (hasPaymentDiscount(payment)) {
+                        <span class="status-chip discount">Con descuento</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="payment-row-actions">
+                        @if (isPendingPayment(payment)) {
+                          <button mat-stroked-button type="button" [disabled]="isSaving()" (click)="confirmPayment(payment)">
+                            Confirmar
+                          </button>
+                        }
+                        <button mat-icon-button type="button" aria-label="Editar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="editPayment(payment)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button type="button" class="danger-icon-button" aria-label="Eliminar pago" [disabled]="isSaving() || !isSuperAdmin()" (click)="deletePayment(payment)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
+
+          <app-paginator
+            [length]="sortedPayments().length"
+            [pageNumber]="paymentPageNumber()"
+            [pageSize]="paymentPageSize()"
+            [pageSizeOptions]="[5, 10, 20, 50]"
+            (pageChange)="handlePaymentPageChange($event)" />
         }
       </mat-card>
     </div>

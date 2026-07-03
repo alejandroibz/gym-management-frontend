@@ -212,17 +212,8 @@
                   <div class="client-cell">
                     <strong>{{ getMembershipLabel(client) }}</strong>
                     <span>
-                      {{ getMembershipEndDate(client) ? ('Vence ' + (getMembershipEndDate(client) | date: 'dd/MM/yyyy')) : 'Sin vencimiento informado' }}
+                      {{ getMembershipEndLabel(client) }}
                     </span>
-                    @if (getMembershipNotificationChips(client).length > 0) {
-                      <div class="chip-row">
-                        @for (chip of getMembershipNotificationChips(client); track chip.label) {
-                          <span class="relation-pill" [class.relation-pill-warning]="chip.tone === 'warning'" [class.relation-pill-info]="chip.tone === 'info'" [class.relation-pill-notified]="chip.tone === 'success'">
-                            {{ chip.label }}
-                          </span>
-                        }
-                      </div>
-                    }
                   </div>
                 </td> }
                 @if (visibleColumns().contact) { <td>
@@ -236,13 +227,12 @@
                   </div>
                 </td> }
                 @if (visibleColumns().status) { <td>
-                  <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
-                    {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
+                  <span class="relation-pill" [class.relation-pill-archived]="isArchived(client) || isNoMembership(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="getOperationalStatus(client) === 'upToDate'" [class.relation-pill-warning]="isNearExpiration(client)" [class.relation-pill-paused]="isPaused(client)">
+                    {{ getOperationalStatusLabel(client) }}
                   </span>
                   @if (client.tieneLesion) {
                     <span class="relation-pill relation-pill-warning">Con lesión</span>
                   }
-                  @if (!client.hasValidContract) { <span class="status-chip pending">Sin contrato</span> }
                 </td> }
                 <td>
                   <div class="action-buttons">
@@ -282,13 +272,12 @@
                   <span>DNI {{ client.dni }}</span>
                 </div>
               </div>
-              <span class="relation-pill" [class.relation-pill-archived]="isArchived(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="!isPaymentPending(client) && !isArchived(client)">
-                {{ isArchived(client) ? 'Archivado' : getPaymentStatusLabel(client) }}
+              <span class="relation-pill" [class.relation-pill-archived]="isArchived(client) || isNoMembership(client)" [class.relation-pill-pending]="isPaymentPending(client)" [class.relation-pill-paid]="getOperationalStatus(client) === 'upToDate'" [class.relation-pill-warning]="isNearExpiration(client)" [class.relation-pill-paused]="isPaused(client)">
+                {{ getOperationalStatusLabel(client) }}
               </span>
               @if (client.tieneLesion) {
                 <span class="relation-pill relation-pill-warning">Con lesión</span>
               }
-              @if (!client.hasValidContract) { <span class="status-chip pending">Sin contrato</span> }
             </div>
 
             <div class="client-card-body">
@@ -299,7 +288,7 @@
               <div>
                 <mat-icon>event</mat-icon>
                 <span>
-                  {{ getMembershipEndDate(client) ? ('Vence ' + (getMembershipEndDate(client) | date: 'dd/MM/yyyy')) : 'Sin vencimiento informado' }}
+                  {{ getMembershipEndLabel(client) }}
                 </span>
               </div>
               <div>
@@ -311,16 +300,6 @@
                 <a [href]="getMailLink(client.email)">{{ client.email }}</a>
               </div>
             </div>
-
-            @if (getMembershipNotificationChips(client).length > 0) {
-              <div class="chip-row">
-                @for (chip of getMembershipNotificationChips(client); track chip.label) {
-                  <span class="relation-pill" [class.relation-pill-warning]="chip.tone === 'warning'" [class.relation-pill-info]="chip.tone === 'info'" [class.relation-pill-notified]="chip.tone === 'success'">
-                    {{ chip.label }}
-                  </span>
-                }
-              </div>
-            }
 
             <div class="client-card-actions">
               @if (isArchived(client)) {

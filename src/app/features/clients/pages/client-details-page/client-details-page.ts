@@ -1,4 +1,4 @@
-﻿import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -16,6 +16,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
+import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -52,6 +53,7 @@ import { ContractsService } from '../../../contracts/services/contracts.service'
     MatProgressSpinnerModule,
     MatProgressBarModule,
     MatSelectModule,
+    AppPaginatorComponent,
     DatePipe
   ],
   templateUrl: './client-details-page.html',
@@ -114,6 +116,22 @@ export class ClientDetailsPageComponent {
   readonly hasHealthProfile = computed(() => !!this.client()?.healthProfile?.patient);
   readonly membershipsHistory = computed(() => this.getMembershipsHistory(this.client()));
   readonly payments = computed(() => this.client()?.payments ?? []);
+  readonly paymentPageNumber = signal(1);
+  readonly paymentPageSize = signal(10);
+  readonly sortedPayments = computed(() => [...this.payments()].sort((left, right) => {
+    const leftDate = this.getPaymentTimestamp(left);
+    const rightDate = this.getPaymentTimestamp(right);
+
+    if (rightDate !== leftDate) {
+      return rightDate - leftDate;
+    }
+
+    return (this.getPaymentId(right) ?? 0) - (this.getPaymentId(left) ?? 0);
+  }));
+  readonly pagedPayments = computed(() => {
+    const startIndex = (this.paymentPageNumber() - 1) * this.paymentPageSize();
+    return this.sortedPayments().slice(startIndex, startIndex + this.paymentPageSize());
+  });
   readonly latestPaymentDate = computed(() => this.client()?.ultimoPagoFecha ?? this.getLatestPaymentDateFromHistory());
   readonly trainerNote = computed(() => this.client()?.healthProfile?.trainerNotes?.[0] ?? null);
   readonly canRegisterPayment = computed(() => !!this.client() && !this.isEditing() && this.isAdminOrSuperAdmin());
@@ -288,7 +306,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Archivar cliente',
-        message: `Se archivarÃ¡ a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarÃ¡n y la ficha de salud, si existe, seguirÃ¡ disponible desde Salud.`,
+        message: `Se archivará a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarán y la ficha de salud, si existe, seguirá disponible desde Salud.`,
         confirmLabel: 'Archivar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -479,7 +497,7 @@ export class ClientDetailsPageComponent {
     const cashMovementCategoryId = this.getPaymentCashMovementCategoryId(payment);
 
     if (!paymentId || !cashMovementCategoryId) {
-      this.errorMessage.set('No se pudo identificar la categorÃ­a del movimiento para confirmar el cobro.');
+      this.errorMessage.set('No se pudo identificar la categoría del movimiento para confirmar el cobro.');
       return;
     }
 
@@ -489,7 +507,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Confirmar cobro',
-        message: 'Se marcarÃ¡ este cobro como confirmado.',
+        message: 'Se marcará este cobro como confirmado.',
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -598,7 +616,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar pago',
-        message: `Se eliminarÃ¡ ${amountLabel}. Esta acciÃ³n no se puede deshacer.`,
+        message: `Se eliminará ${amountLabel}. Esta acción no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -678,7 +696,7 @@ export class ClientDetailsPageComponent {
     const periodYear = this.getNumericPaymentField(payment, ['periodyear']);
 
     if (periodMonth !== null && periodYear !== null) {
-      return `PerÃ­odo ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
+      return `Período ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
     }
 
     const paymentDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
@@ -690,6 +708,37 @@ export class ClientDetailsPageComponent {
     return this.getPaymentStateLabel(payment);
   }
 
+  handlePaymentPageChange(event: AppPageEvent): void {
+    this.paymentPageNumber.set(event.pageNumber);
+    this.paymentPageSize.set(event.pageSize);
+  }
+
+  getPaymentDateLabel(payment: ClientRelationRecord): string {
+    const date = this.getPaymentDate(payment);
+    return date ? new Intl.DateTimeFormat('es-AR').format(new Date(date)) : 'Sin fecha';
+  }
+
+  getPaymentAmountLabel(payment: ClientRelationRecord): string {
+    const amount = this.getPaymentAmount(payment);
+    return amount !== null
+      ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
+      : 'Sin monto';
+  }
+
+  getPaymentMethodLabel(payment: ClientRelationRecord): string {
+    const method = this.getPaymentField(payment, ['paymentmethodnombre', 'paymentmethodname', 'paymentmethod']);
+    return typeof method === 'string' && method.trim() ? method : 'Sin dato';
+  }
+
+  getPaymentCategoryLabel(payment: ClientRelationRecord): string {
+    const category = this.getPaymentField(payment, ['cashmovementcategorynombre', 'cashmovementcategoryname']);
+    return typeof category === 'string' && category.trim() ? category : 'Cobro registrado';
+  }
+
+  getPaymentMembershipLabel(payment: ClientRelationRecord): string {
+    const membership = this.getPaymentField(payment, ['membershipplannombre', 'membershipplanname', 'clientmembership', 'membershipplan']);
+    return typeof membership === 'string' && membership.trim() ? membership : 'Sin membresia asociada';
+  }
   isPendingPayment(payment: ClientRelationRecord): boolean {
     const normalizedState = this.getPaymentRawState(payment)?.trim().toLowerCase();
     return normalizedState === 'pending' || normalizedState === 'pendiente';
@@ -703,10 +752,15 @@ export class ClientDetailsPageComponent {
 
   getMembershipLabel(): string {
     const membership = this.currentMembership();
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresÃ­a');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía');
   }
 
-  getMembershipStateLabel(state?: string | null): string {
+  getMembershipStateLabel(stateOrMembership?: string | ClientMembership | null): string {
+    if (stateOrMembership && typeof stateOrMembership !== 'string' && this.isMembershipExpired(stateOrMembership)) {
+      return 'Vencida';
+    }
+
+    const state = typeof stateOrMembership === 'string' ? stateOrMembership : stateOrMembership?.estado;
     if (!state) {
       return 'Sin estado';
     }
@@ -736,7 +790,7 @@ export class ClientDetailsPageComponent {
     const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
 
     if (client.membresiaProximaAVencer) {
-      chips.push({ label: 'PrÃ³xima a vencer', tone: 'warning' });
+      chips.push({ label: 'Próxima a vencer', tone: 'warning' });
 
       if (!client.membresiaVencimientoNotificado) {
         chips.push({ label: 'Sin notificar', tone: 'info' });
@@ -803,6 +857,11 @@ export class ClientDetailsPageComponent {
     const rawDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
     return typeof rawDate === 'string' && rawDate.trim() ? rawDate : null;
   }
+  private getPaymentTimestamp(payment: ClientRelationRecord): number {
+    const date = this.getPaymentDate(payment);
+    const timestamp = date ? new Date(date).getTime() : Number.NaN;
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
 
   private getLatestPaymentDateFromHistory(): string | null {
     return this.payments()
@@ -865,24 +924,24 @@ export class ClientDetailsPageComponent {
       case 'estado':
         return 'Estado';
       case 'periodyear':
-        return 'AÃ±o';
+        return 'Año';
       case 'periodmonth':
         return 'Mes';
       case 'paymentmethod':
-        return 'MÃ©todo de cobro';
+        return 'Método de cobro';
       case 'paymentmethodname':
-        return 'MÃ©todo de cobro';
+        return 'Método de cobro';
       case 'paymentmethodnombre':
-        return 'MÃ©todo de cobro';
+        return 'Método de cobro';
       case 'cashmovementcategorynombre':
       case 'cashmovementcategoryname':
-        return 'CategorÃ­a movimiento';
+        return 'Categoría movimiento';
       case 'clientmembership':
-        return 'MembresÃ­a';
+        return 'Membresía';
       case 'membershipplan':
       case 'membershipplannombre':
       case 'membershipplanname':
-        return 'MembresÃ­a';
+        return 'Membresía';
       default:
         return key
           .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -988,7 +1047,7 @@ export class ClientDetailsPageComponent {
       error: () => {
         this.client.set(null);
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo cargar la informaciÃ³n del cliente.');
+        this.errorMessage.set('No se pudo cargar la información del cliente.');
       }
     });
   }
@@ -1246,7 +1305,23 @@ export class ClientDetailsPageComponent {
       return null;
     }
 
-    return client.membership ?? null;
+    if (client.membership) {
+      return client.membership;
+    }
+
+    return this.getMembershipsHistory(client)[0] ?? null;
+  }
+
+  private isMembershipExpired(membership: ClientMembership): boolean {
+    if (!membership.fechaFin) {
+      return false;
+    }
+
+    const endDate = new Date(membership.fechaFin);
+    const today = new Date();
+    endDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return endDate < today;
   }
 
   private getMembershipsHistory(client: Client | null): ClientMembership[] {
