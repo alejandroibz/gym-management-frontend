@@ -1,4 +1,4 @@
-<div class="dialog-shell">
+﻿<div class="dialog-shell">
   <div class="dialog-header">
     <div>
       <p class="dialog-eyebrow">Cobro</p>
@@ -20,7 +20,7 @@
           type="text"
           [formControl]="clientSearchControl"
           [matAutocomplete]="clientAutocomplete"
-          placeholder="Escribir nombre, DNI o telefono"
+          placeholder="Escribir nombre, DNI o teléfono"
           (input)="onClientSearchInput()" />
         <mat-autocomplete #clientAutocomplete="matAutocomplete" [displayWith]="displayClient" (optionSelected)="selectClient($event.option.value)">
           @for (client of filteredClients(); track client.id) {
@@ -127,27 +127,27 @@
       }
 
       <mat-form-field appearance="outline">
-        <mat-label>Mes</mat-label>
+        <mat-label>Mes abonado</mat-label>
         <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Año</mat-label>
+        <mat-label>Año abonado</mat-label>
         <input matInput type="number" min="2000" formControlName="periodYear" />
       </mat-form-field>
 
       <div class="renewal-box span-2">
-        <span class="context-label">Vigencia Renovada.</span>
-        <small>Sin pausa, manten las fechas sugeridas para continuar la membresia. Con pausa, ajusta el inicio antes de registrar el cobro.</small>
+        <span class="context-label">Vigencia renovada</span>
+        <small>El sistema continúa la membresía automáticamente desde el vencimiento anterior. Ajusta estas fechas solo si el cliente retoma después de una pausa.</small>
         <div class="renewal-grid">
           <mat-form-field appearance="outline">
-            <mat-label>Inicio de membresia</mat-label>
+            <mat-label>Inicio de membresía</mat-label>
             <input matInput type="date" formControlName="membershipStartDate" (change)="onMembershipStartDateChange()" />
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Fin de membresia</mat-label>
-            <input matInput type="date" formControlName="membershipEndDate" />
+            <mat-label>Fin de membresía</mat-label>
+            <input matInput type="date" formControlName="membershipEndDate" (change)="onMembershipEndDateChange()" />
           </mat-form-field>
         </div>
       </div>
@@ -159,3 +159,4 @@
     </div>
   </form>
 </div>
+

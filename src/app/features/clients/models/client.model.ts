@@ -1,4 +1,4 @@
-import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
+﻿import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
 import { HealthPatientDetail } from '../../health/models/health.model';
 
 export interface ClientRelationRecord {
@@ -10,6 +10,8 @@ export interface ClientMembership {
   membershipPlanId: number;
   fechaInicio: string;
   fechaFin: string;
+  periodYear?: number | null;
+  periodMonth?: number | null;
   estado?: string;
   precioFinal: number;
   activo?: boolean;
@@ -116,3 +118,7 @@ export interface StudentGoalAdmin {
 export interface StudentMeasurementAdmin {
   id: number; weightKg: number; measuredAt: string; source: string; isVerified: boolean; notes?: string | null;
 }
+
+
+
+

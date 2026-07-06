@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -117,7 +117,7 @@ export class ClientsPageComponent {
     const chips: Array<{ label: string; value: string }> = [];
 
     if (raw.search.trim()) {
-      chips.push({ label: 'Búsqueda', value: raw.search.trim() });
+      chips.push({ label: 'BÃºsqueda', value: raw.search.trim() });
     }
 
     return chips;
@@ -128,7 +128,7 @@ export class ClientsPageComponent {
 
     if (raw.search.trim()) chips.push({ label: 'Nombre', value: raw.search.trim() });
     if (raw.dni.trim()) chips.push({ label: 'DNI', value: raw.dni.trim() });
-    if (raw.paymentStatus !== 'all') chips.push({ label: 'Estado', value: raw.paymentStatus === 'pending' ? 'Pendiente' : 'Al dia' });
+    if (raw.paymentStatus !== 'all') chips.push({ label: 'Estado', value: raw.paymentStatus === 'pending' ? 'Pendiente' : 'Al día' });
     if (raw.clientStatus !== 'active') chips.push({ label: 'Ficha', value: raw.clientStatus === 'archived' ? 'Archivados' : 'Todos' });
     if (raw.contractStatus !== 'all') chips.push({ label: 'Contrato', value: raw.contractStatus === 'missing' ? 'Sin firmar' : 'Firmado' });
     if (raw.membershipPlanId) {
@@ -333,7 +333,7 @@ export class ClientsPageComponent {
       backdropClass: 'employee-category-dialog-backdrop',
       data: {
         title: 'Archivar cliente',
-        message: `Se archivará a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarán y la ficha de salud, si existe, seguirá disponible desde Salud.`,
+        message: `Se archivarÃ¡ a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarÃ¡n y la ficha de salud, si existe, seguirÃ¡ disponible desde Salud.`,
         confirmLabel: 'Archivar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -439,9 +439,9 @@ export class ClientsPageComponent {
       maxWidth: 'calc(100vw - 1rem)',
       autoFocus: false,
       data: {
-        title: 'Primero crea una membresía',
+        title: 'Primero crea una membresÃ­a',
         message:
-          'Para registrar un cliente necesitas tener al menos una membresía disponible. Crea un plan y luego vuelve para completar el alta.',
+          'Para registrar un cliente necesitas tener al menos una membresÃ­a disponible. Crea un plan y luego vuelve para completar el alta.',
         confirmLabel: 'Ir a membresias',
         cancelLabel: 'Ahora no',
         tone: 'primary'
@@ -530,9 +530,9 @@ export class ClientsPageComponent {
   getOperationalStatusLabel(client: Client): string {
     const labels: Record<ClientOperationalStatus, string> = {
       archived: 'Archivado',
-      noMembership: 'Sin membresia',
-      upToDate: 'Al dia',
-      nearExpiration: 'Proximo a vencer',
+      noMembership: 'Sin membresía',
+      upToDate: 'Al día',
+      nearExpiration: 'Próximo a vencer',
       pendingPayment: 'Vencida - pendiente de pago',
       paused: 'En pausa'
     };
@@ -717,6 +717,17 @@ export class ClientsPageComponent {
       const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
       return rightDate - leftDate;
     })[0] ?? null;
+  }
+
+  private getMembershipSortValue(membership: ClientMembership): number {
+    const periodYear = Number(membership.periodYear ?? 0);
+    const periodMonth = Number(membership.periodMonth ?? 0);
+
+    if (periodYear > 0 && periodMonth > 0) {
+      return periodYear * 100 + periodMonth;
+    }
+
+    return new Date(membership.fechaFin ?? membership.fechaInicio).getTime();
   }
 
   private isMembershipExpired(membership: ClientMembership | null): boolean {

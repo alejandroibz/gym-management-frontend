@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe } from '@angular/common';
+﻿import { CommonModule, DatePipe } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -306,7 +306,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Archivar cliente',
-        message: `Se archivará a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarán y la ficha de salud, si existe, seguirá disponible desde Salud.`,
+        message: `Se archivarÃ¡ a ${client.nombre} ${client.apellido}. Los cobros realizados se conservarÃ¡n y la ficha de salud, si existe, seguirÃ¡ disponible desde Salud.`,
         confirmLabel: 'Archivar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -497,7 +497,7 @@ export class ClientDetailsPageComponent {
     const cashMovementCategoryId = this.getPaymentCashMovementCategoryId(payment);
 
     if (!paymentId || !cashMovementCategoryId) {
-      this.errorMessage.set('No se pudo identificar la categoría del movimiento para confirmar el cobro.');
+      this.errorMessage.set('No se pudo identificar la categorÃ­a del movimiento para confirmar el cobro.');
       return;
     }
 
@@ -507,7 +507,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Confirmar cobro',
-        message: 'Se marcará este cobro como confirmado.',
+        message: 'Se marcarÃ¡ este cobro como confirmado.',
         confirmLabel: 'Confirmar',
         cancelLabel: 'Cancelar',
         tone: 'primary'
@@ -616,7 +616,7 @@ export class ClientDetailsPageComponent {
       autoFocus: false,
       data: {
         title: 'Eliminar pago',
-        message: `Se eliminará ${amountLabel}. Esta acción no se puede deshacer.`,
+        message: `Se eliminarÃ¡ ${amountLabel}. Esta acciÃ³n no se puede deshacer.`,
         confirmLabel: 'Eliminar',
         cancelLabel: 'Cancelar',
         tone: 'danger'
@@ -696,7 +696,7 @@ export class ClientDetailsPageComponent {
     const periodYear = this.getNumericPaymentField(payment, ['periodyear']);
 
     if (periodMonth !== null && periodYear !== null) {
-      return `Período ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
+      return `PerÃ­odo ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
     }
 
     const paymentDate = this.getPaymentField(payment, ['fechapago', 'paymentdate']);
@@ -752,7 +752,7 @@ export class ClientDetailsPageComponent {
 
   getMembershipLabel(): string {
     const membership = this.currentMembership();
-    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresía');
+    return membership?.plan?.nombre ?? (membership ? `Plan #${membership.membershipPlanId}` : 'Sin membresÃ­a');
   }
 
   getMembershipStateLabel(stateOrMembership?: string | ClientMembership | null): string {
@@ -786,11 +786,32 @@ export class ClientDetailsPageComponent {
     }
   }
 
+  getOperationalMembershipStateLabel(client: Client): string {
+    const membership = this.getEffectiveMembership(client);
+
+    if (!membership) {
+      return 'Sin membresía';
+    }
+
+    if (this.isMembershipPaused(membership)) {
+      return 'En pausa';
+    }
+
+    if (client.debePago || this.isMembershipExpired(membership)) {
+      return 'Vencida - pendiente de pago';
+    }
+
+    if (client.membresiaProximaAVencer) {
+      return 'Próximo a vencer';
+    }
+
+    return 'Al día';
+  }
   getMembershipAlertChips(client: Client): Array<{ label: string; tone: 'warning' | 'info' | 'success' }> {
     const chips: Array<{ label: string; tone: 'warning' | 'info' | 'success' }> = [];
 
     if (client.membresiaProximaAVencer) {
-      chips.push({ label: 'Próxima a vencer', tone: 'warning' });
+      chips.push({ label: 'PrÃ³xima a vencer', tone: 'warning' });
 
       if (!client.membresiaVencimientoNotificado) {
         chips.push({ label: 'Sin notificar', tone: 'info' });
@@ -1047,7 +1068,7 @@ export class ClientDetailsPageComponent {
       error: () => {
         this.client.set(null);
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo cargar la información del cliente.');
+        this.errorMessage.set('No se pudo cargar la informaciÃ³n del cliente.');
       }
     });
   }
@@ -1278,7 +1299,9 @@ export class ClientDetailsPageComponent {
       cashMovementCategoryId: payload.cashMovementCategoryId,
       periodYear: payload.periodYear,
       periodMonth: payload.periodMonth,
-      collectedByEmployeeEmail: payload.collectedByEmployeeEmail
+      collectedByEmployeeEmail: payload.collectedByEmployeeEmail,
+      membershipStartDate: payload.membershipStartDate ?? null,
+      membershipEndDate: payload.membershipEndDate ?? null
     };
   }
 
@@ -1324,6 +1347,19 @@ export class ClientDetailsPageComponent {
     return endDate < today;
   }
 
+  private isMembershipPaused(membership: ClientMembership): boolean {
+    if (!membership.fechaFin || !this.isMembershipExpired(membership)) {
+      return false;
+    }
+
+    const pauseThreshold = new Date(membership.fechaFin);
+    pauseThreshold.setHours(0, 0, 0, 0);
+    pauseThreshold.setMonth(pauseThreshold.getMonth() + 2);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return pauseThreshold < today;
+  }
   private getMembershipsHistory(client: Client | null): ClientMembership[] {
     if (!client?.membershipsHistory?.length) {
       return [];
@@ -1332,10 +1368,30 @@ export class ClientDetailsPageComponent {
     return client.membershipsHistory
       .filter(membership => membership.activo !== false)
       .sort((left, right) => {
-      const leftDate = new Date(left.fechaFin ?? left.fechaInicio).getTime();
-      const rightDate = new Date(right.fechaFin ?? right.fechaInicio).getTime();
-      return rightDate - leftDate;
+      return this.getMembershipSortValue(right) - this.getMembershipSortValue(left);
     });
+  }
+
+  getMembershipPeriodLabel(membership: ClientMembership): string {
+    const periodYear = Number(membership.periodYear ?? 0);
+    const periodMonth = Number(membership.periodMonth ?? 0);
+
+    if (periodYear > 0 && periodMonth > 0) {
+      return `Período ${String(periodMonth).padStart(2, '0')}/${periodYear}`;
+    }
+
+    return 'Período sin informar';
+  }
+
+  private getMembershipSortValue(membership: ClientMembership): number {
+    const periodYear = Number(membership.periodYear ?? 0);
+    const periodMonth = Number(membership.periodMonth ?? 0);
+
+    if (periodYear > 0 && periodMonth > 0) {
+      return periodYear * 100 + periodMonth;
+    }
+
+    return new Date(membership.fechaFin ?? membership.fechaInicio).getTime();
   }
 
   private updateMembershipValidators(): void {
@@ -1380,3 +1436,5 @@ export class ClientDetailsPageComponent {
     return rawMessage || fallback;
   }
 }
+
+
