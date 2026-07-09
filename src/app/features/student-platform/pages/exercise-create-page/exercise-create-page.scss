@@ -400,6 +400,94 @@
   z-index: 1;
 }
 
+:host-context(body.dark-theme) .exercise-create-page {
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .breadcrumb,
+:host-context(body.dark-theme) .page-header p,
+:host-context(body.dark-theme) .section-heading span,
+:host-context(body.dark-theme) .helper-card span,
+:host-context(body.dark-theme) .inline-empty,
+:host-context(body.dark-theme) .suggestion-heading small,
+:host-context(body.dark-theme) .selected-muscles small,
+:host-context(body.dark-theme) .suggestion-list small,
+:host-context(body.dark-theme) .media-item small,
+:host-context(body.dark-theme) .image-dropzone {
+  color: var(--app-text-muted);
+}
+
+:host-context(body.dark-theme) .form-section,
+:host-context(body.dark-theme) .media-card,
+:host-context(body.dark-theme) .helper-card,
+:host-context(body.dark-theme) .form-actions {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .page-header {
+  background: linear-gradient(135deg, rgba(229, 72, 63, .14), var(--app-surface));
+  border-color: var(--app-border);
+}
+
+:host-context(body.dark-theme) .page-header h1,
+:host-context(body.dark-theme) .section-heading h2,
+:host-context(body.dark-theme) .selected-muscles strong,
+:host-context(body.dark-theme) .suggestion-heading strong,
+:host-context(body.dark-theme) .suggestion-list strong,
+:host-context(body.dark-theme) .media-item strong,
+:host-context(body.dark-theme) .helper-card strong {
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .session-count,
+:host-context(body.dark-theme) .section-heading mat-icon,
+:host-context(body.dark-theme) .helper-card mat-icon,
+:host-context(body.dark-theme) .video-item > mat-icon,
+:host-context(body.dark-theme) .selected-chip-list button {
+  background: var(--app-accent-soft);
+  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--app-border));
+  color: var(--app-accent-strong);
+}
+
+:host-context(body.dark-theme) .select-field span {
+  color: var(--app-text-muted);
+}
+
+:host-context(body.dark-theme) .select-field select,
+:host-context(body.dark-theme) .muscle-selector,
+:host-context(body.dark-theme) .suggestion-list button,
+:host-context(body.dark-theme) .image-dropzone,
+:host-context(body.dark-theme) .media-item,
+:host-context(body.dark-theme) .inline-empty {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+:host-context(body.dark-theme) .suggestion-list button:hover,
+:host-context(body.dark-theme) .suggestion-list button:focus-visible,
+:host-context(body.dark-theme) .image-dropzone:hover,
+:host-context(body.dark-theme) .image-dropzone:focus-visible {
+  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface-muted));
+  border-color: var(--app-accent);
+}
+
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mat-mdc-text-field-wrapper {
+  background: var(--app-surface-muted) !important;
+}
+
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mat-mdc-input-element,
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mat-mdc-floating-label,
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mdc-floating-label,
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mat-mdc-form-field-icon-prefix,
+:host-context(body.dark-theme) ::ng-deep .exercise-create-page .mat-mdc-form-field-icon-suffix {
+  color: var(--app-text) !important;
+  -webkit-text-fill-color: var(--app-text) !important;
+}
+
 @media (max-width: 980px) {
   .exercise-form,
   .form-grid,
