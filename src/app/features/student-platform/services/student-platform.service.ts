@@ -9,6 +9,12 @@ interface UploadedFile {
   downloadUrl: string;
 }
 
+export interface ExerciseFilters {
+  search?: string;
+  muscleGroupId?: number;
+  muscleId?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StudentPlatformService {
   private readonly http = inject(HttpClient);
@@ -30,9 +36,15 @@ export class StudentPlatformService {
     return this.http.put<PointRule>(`${this.apiUrl}/Achievements/point-rules/${id}`, { points, isActive });
   }
 
-  getExercises(search = ''): Observable<Exercise[]> {
+  getExercises(filters: string | ExerciseFilters = ''): Observable<Exercise[]> {
     let params = new HttpParams();
-    if (search.trim()) params = params.set('search', search.trim());
+    if (typeof filters === 'string') {
+      if (filters.trim()) params = params.set('search', filters.trim());
+    } else {
+      if (filters.search?.trim()) params = params.set('search', filters.search.trim());
+      if (filters.muscleGroupId) params = params.set('muscleGroupId', filters.muscleGroupId);
+      if (filters.muscleId) params = params.set('muscleId', filters.muscleId);
+    }
     return this.http.get<Exercise[]>(`${this.apiUrl}/Exercises`, { params });
   }
 

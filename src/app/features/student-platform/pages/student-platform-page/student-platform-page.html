@@ -1,14 +1,9 @@
 <section class="student-platform">
   <header class="page-header">
     <div>
-      <span class="eyebrow">Fase 2</span>
       <h1>Plataforma de entrenamiento</h1>
       <p>Biblioteca de ejercicios, planes de entrenamiento, workouts y asignaciones.</p>
     </div>
-    <button mat-flat-button color="primary" type="button" (click)="loadAll()">
-      <mat-icon>refresh</mat-icon>
-      Actualizar
-    </button>
   </header>
 
   @if (isLoading()) {
@@ -1001,21 +996,16 @@
                   }
                 </select>
               </label>
-              <label class="select-field compact-select">
-                <span>Musculo</span>
-                <select [formControl]="exerciseMuscleFilter">
-                  <option [value]="0">Todos los musculos</option>
-                  @for (muscle of exerciseMuscleOptions(); track muscle.id) {
-                    <option [value]="muscle.id">{{ muscle.name }}</option>
-                  }
-                </select>
-              </label>
               @if (hasExerciseFilters()) {
                 <button mat-stroked-button type="button" (click)="clearExerciseFilters()">
                   <mat-icon>filter_alt_off</mat-icon>
                   Limpiar
                 </button>
               }
+              <button mat-stroked-button type="button" [class.active-filter]="showExerciseBodyMap()" (click)="showExerciseBodyMap.update(value => !value)">
+                <mat-icon>accessibility_new</mat-icon>
+                {{ showExerciseBodyMap() ? 'Ocultar mapa muscular' : 'Mostrar mapa muscular' }}
+              </button>
               @if (isAdminOrSuperAdmin$ | async) {
                 <button mat-flat-button color="primary" type="button" routerLink="/student-platform/exercises/new">
                   <mat-icon>add</mat-icon>
@@ -1024,6 +1014,77 @@
               }
             </div>
           </div>
+
+          @if (showExerciseBodyMap()) {
+            <section class="body-map-filter">
+              <div class="list-toolbar compact-heading body-map-heading">
+                <div>
+                  <span class="eyebrow">Zona</span>
+                  <h3>Mapa corporal</h3>
+                </div>
+                @if (pendingBodyZoneKeys().length || selectedBodyZoneKeys().length) {
+                  <button mat-stroked-button type="button" class="body-map-clear" (click)="clearBodyZoneFilters()">
+                    <mat-icon>close</mat-icon>
+                    Limpiar zonas
+                  </button>
+                }
+              </div>
+
+              <div class="body-map-layout">
+                <div class="body-map-scroll">
+                  <div class="body-map-canvas">
+                    <img src="/images/body-muscle-map.png" alt="Mapa corporal muscular">
+                    <svg viewBox="0 0 1664 1248" aria-label="Zonas musculares seleccionables">
+                      <g stroke-linejoin="round" stroke-width="3" transform="translate(0 155)">
+                        @for (zone of bodyZoneDefinitions(); track zone.key) {
+                          @for (path of zone.paths; track path) {
+                            <path role="button" tabindex="0" [attr.aria-label]="zone.label" [matTooltip]="zone.label" (click)="toggleBodyZone(zone.key)" (keydown.enter)="toggleBodyZone(zone.key)" [attr.d]="path" [attr.fill]="isBodyZonePending(zone.key) ? 'rgba(93,143,240,.5)' : 'transparent'" [attr.stroke]="isBodyZonePending(zone.key) ? '#4478de' : 'transparent'"></path>
+                          }
+                        }
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="body-map-controls">
+                  <mat-form-field appearance="outline" class="body-zone-select">
+                    <mat-label>Musculos del mapa corporal</mat-label>
+                    <mat-select multiple [value]="pendingBodyZoneKeys()" (selectionChange)="setPendingBodyZones($event.value)">
+                      <mat-select-trigger>
+                        @if (pendingBodyZones().length) {
+                          {{ pendingBodyZones()[0].label }}
+                          @if (pendingBodyZones().length > 1) {
+                            <span>+{{ pendingBodyZones().length - 1 }}</span>
+                          }
+                        } @else {
+                          Todos los musculos
+                        }
+                      </mat-select-trigger>
+                      @for (zone of bodyZoneDefinitions(); track zone.key) {
+                        <mat-option [value]="zone.key">{{ zone.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+
+                  <div class="body-map-selected">
+                    @for (zone of pendingBodyZones(); track zone.key) {
+                      <button type="button" class="body-zone-selected" (click)="toggleBodyZone(zone.key)" [attr.aria-label]="'Quitar ' + zone.label">
+                        <span>{{ zone.label }}</span>
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    } @empty {
+                      <span>Sin zonas seleccionadas</span>
+                    }
+                  </div>
+
+                  <button mat-flat-button color="primary" type="button" class="body-map-apply" [disabled]="!pendingBodyZoneKeys().length" (click)="applyBodyZoneFilters()">
+                    <mat-icon>filter_alt</mat-icon>
+                    Aplicar filtros
+                  </button>
+                </div>
+              </div>
+            </section>
+          }
 
           @if (!filteredExercises().length) {
             <div class="empty-state">

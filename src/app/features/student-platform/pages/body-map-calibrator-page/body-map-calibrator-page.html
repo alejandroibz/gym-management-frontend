@@ -1,0 +1,60 @@
+<main class="calibrator-page">
+  <section class="stage">
+    <img src="/images/body-muscle-map.png" alt="Mapa corporal">
+    <svg
+      #overlay
+      viewBox="0 0 1664 1248"
+      aria-label="Calibrador"
+      (click)="addPoint($event)"
+      (dblclick)="$event.preventDefault(); closeCurrentPath()"
+      (mousemove)="updateCoords($event)">
+      <g #savedPaths></g>
+      <polyline #activeLine fill="rgba(93,143,240,.34)" stroke="#2563eb" stroke-width="4"></polyline>
+      <g #activePoints></g>
+    </svg>
+  </section>
+
+  <aside class="panel">
+    <label>
+      Zona
+      <select [value]="selectedZone" (change)="selectZone($any($event.target).value)">
+        @for (zone of zones; track zone.key) {
+          <option [value]="zone.key">{{ zone.label }}</option>
+        }
+      </select>
+    </label>
+
+    <p class="hint">
+      Click izquierdo agrega puntos. Doble click cierra el poligono. Para una zona con dos lados,
+      guarda un lado y despues usa Agregar otro path.
+    </p>
+
+    <div class="button-row">
+      <button type="button" (click)="closeCurrentPath()">Cerrar path</button>
+      <button type="button" class="secondary" (click)="startNewPath()">Agregar otro path</button>
+      <button type="button" class="secondary" (click)="undoPoint()">Deshacer punto</button>
+      <button type="button" class="danger" (click)="clearZone()">Borrar zona</button>
+    </div>
+
+    <label>
+      Path listo para pegar
+      <textarea [value]="pathOutput" readonly></textarea>
+    </label>
+
+    <div class="button-row">
+      <button type="button" (click)="copyPath()">Copiar path</button>
+      <button type="button" class="secondary" (click)="exportJson()">Exportar JSON</button>
+    </div>
+
+    <pre>{{ coordsText }}</pre>
+
+    <div class="zone-list">
+      @for (zone of zones; track zone.key) {
+        <div class="zone-item">
+          <strong>{{ zone.label }}</strong>
+          <span>{{ pathCount(zone.key) }} paths</span>
+        </div>
+      }
+    </div>
+  </aside>
+</main>

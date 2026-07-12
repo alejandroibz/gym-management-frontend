@@ -1,0 +1,75 @@
+.exercise-body-map {
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 8px;
+  color: #f8fafc;
+  display: grid;
+  gap: .8rem;
+  overflow: hidden;
+  padding: .85rem;
+}
+
+header {
+  display: grid;
+  gap: .15rem;
+}
+
+header span {
+  color: #8db2ff;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+header strong {
+  font-size: .98rem;
+}
+
+.map-canvas {
+  aspect-ratio: 1664 / 1248;
+  background: #f8fafc;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-canvas img,
+.map-canvas svg {
+  display: block;
+  inset: 0;
+  position: absolute;
+  transform-origin: center;
+  width: 100%;
+}
+
+.map-canvas img {
+  height: auto;
+  position: static;
+}
+
+.map-canvas svg {
+  height: 100%;
+}
+
+.active-zone-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  min-height: 27px;
+}
+
+.active-zone-list span {
+  background: #eef4ff;
+  border: 1px solid #bfd2ff;
+  border-radius: 999px;
+  color: #1d4ed8;
+  font-size: .74rem;
+  font-weight: 850;
+  padding: .25rem .55rem;
+}
+
+.active-zone-list small {
+  color: #98a2b3;
+  font-size: .8rem;
+}

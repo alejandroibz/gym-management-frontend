@@ -6,6 +6,12 @@ import { roleGuard } from './core/guards/role-guard';
 
 export const routes: Routes = [
   {
+    path: 'body-map-calibrator',
+    loadComponent: () =>
+      import('./features/student-platform/pages/body-map-calibrator-page/body-map-calibrator-page')
+        .then(m => m.BodyMapCalibratorPageComponent)
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login/login')

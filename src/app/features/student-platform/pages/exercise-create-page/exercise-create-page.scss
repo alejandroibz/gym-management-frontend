@@ -95,6 +95,11 @@
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
 }
 
+.exercise-form.readonly .form-main,
+.exercise-form.readonly .media-column {
+  pointer-events: none;
+}
+
 .form-main,
 .media-column {
   display: grid;

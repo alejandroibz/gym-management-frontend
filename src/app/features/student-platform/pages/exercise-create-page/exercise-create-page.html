@@ -1,6 +1,6 @@
 <section class="exercise-create-page">
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a routerLink="/student-platform">Ejercicios</a>
+    <a routerLink="/student-platform" [queryParams]="{ tab: 'ejercicios' }">Ejercicios</a>
     <mat-icon>chevron_right</mat-icon>
     <span>{{ isEditMode() ? currentExercise()?.name : 'Creacion de ejercicios' }}</span>
   </nav>
@@ -15,11 +15,17 @@
       @if (!isEditMode()) {
         <span class="session-count">{{ createdCount() }} creados en esta sesion</span>
       }
-      <button mat-stroked-button type="button" routerLink="/student-platform">
+      <button mat-stroked-button type="button" routerLink="/student-platform" [queryParams]="{ tab: 'ejercicios' }">
         <mat-icon>arrow_back</mat-icon>
         Volver
       </button>
       @if (isEditMode()) {
+        @if (!isEditingExercise()) {
+          <button mat-flat-button color="primary" type="button" (click)="startEditing()" [disabled]="isLoading()">
+            <mat-icon>edit</mat-icon>
+            Editar
+          </button>
+        }
         <button mat-stroked-button type="button" class="danger-button" (click)="deleteExercise()" [disabled]="isLoading()">
           <mat-icon>delete</mat-icon>
           Eliminar
@@ -32,7 +38,7 @@
     <mat-progress-bar mode="indeterminate" />
   }
 
-  <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise(true)" class="exercise-form">
+  <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise(true)" class="exercise-form" [class.readonly]="isReadOnly()">
     <main class="form-main">
       <section class="form-section">
         <div class="section-heading">
@@ -151,6 +157,12 @@
             </div>
           </div>
         }
+
+        <app-exercise-body-map
+          [muscleGroup]="getGroupName(exerciseForm.controls.primaryMuscleGroupId.value)"
+          [secondaryMuscleGroup]="getGroupName(exerciseForm.controls.secondaryMuscleGroupId.value)"
+          [musclesInvolved]="selectedMuscles().length ? null : currentExercise()?.musclesInvolved"
+          [muscles]="selectedMuscles()" />
       </section>
     </main>
 
@@ -260,7 +272,8 @@
       </section>
     </aside>
 
-    <footer class="form-actions">
+    @if (!isReadOnly()) {
+      <footer class="form-actions">
       @if (isEditMode()) {
         <button mat-stroked-button type="button" (click)="resetExerciseForm()" [disabled]="isLoading()">
           <mat-icon>undo</mat-icon>
@@ -271,7 +284,7 @@
           Guardar cambios
         </button>
       } @else {
-        <button mat-stroked-button type="button" routerLink="/student-platform">Cancelar</button>
+        <button mat-stroked-button type="button" routerLink="/student-platform" [queryParams]="{ tab: 'ejercicios' }">Cancelar</button>
         <button mat-stroked-button type="button" (click)="resetExerciseForm()" [disabled]="isLoading()">
           <mat-icon>restart_alt</mat-icon>
           Limpiar
@@ -285,6 +298,7 @@
           Guardar y cargar otro
         </button>
       }
-    </footer>
+      </footer>
+    }
   </form>
 </section>

@@ -14,6 +14,7 @@ import { ConfirmDialogComponent } from '../../../../core/components/confirm-dial
 import { ToastService } from '../../../../core/services/toast.service';
 import { Exercise, ExerciseMedia, Muscle, MuscleGroup } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
+import { ExerciseBodyMapComponent } from '../../components/exercise-body-map/exercise-body-map';
 
 interface PendingExerciseImage {
   file: File;
@@ -33,7 +34,8 @@ interface PendingExerciseImage {
     MatIconModule,
     MatInputModule,
     MatProgressBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ExerciseBodyMapComponent
   ],
   templateUrl: './exercise-create-page.html',
   styleUrl: './exercise-create-page.scss',
@@ -54,6 +56,7 @@ export class ExerciseCreatePageComponent {
   readonly selectedExerciseImages = signal<PendingExerciseImage[]>([]);
   readonly exerciseVideoUrls = signal<string[]>([]);
   readonly isLoading = signal(false);
+  readonly isEditingExercise = signal(true);
   readonly createdCount = signal(0);
   readonly muscleSearch = this.formBuilder.nonNullable.control('');
   readonly videoUrlInput = this.formBuilder.nonNullable.control('');
@@ -104,6 +107,15 @@ export class ExerciseCreatePageComponent {
 
   isEditMode(): boolean {
     return !!this.currentExercise();
+  }
+
+  isReadOnly(): boolean {
+    return this.isEditMode() && !this.isEditingExercise();
+  }
+
+  startEditing(): void {
+    this.isEditingExercise.set(true);
+    this.exerciseForm.enable({ emitEvent: false });
   }
 
   onExerciseImagesSelected(event: Event): void {
@@ -348,6 +360,7 @@ export class ExerciseCreatePageComponent {
 
   private loadExercise(exercise: Exercise): void {
     this.currentExercise.set(exercise);
+    this.isEditingExercise.set(false);
     this.exerciseForm.reset({
       name: exercise.name,
       description: exercise.description,
@@ -363,13 +376,14 @@ export class ExerciseCreatePageComponent {
     if (!this.exerciseVideoUrls().length && exercise.videoUrl) this.exerciseVideoUrls.set([exercise.videoUrl]);
     this.muscleSearch.setValue('');
     this.videoUrlInput.setValue('');
+    this.exerciseForm.disable({ emitEvent: false });
   }
 
   private allMuscles(): Muscle[] {
     return this.muscleGroups().flatMap(group => group.muscles);
   }
 
-  private getGroupName(groupId: number): string | null {
+  getGroupName(groupId: number): string | null {
     return this.muscleGroups().find(group => group.id === groupId)?.name ?? null;
   }
 

@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable } from 'rxjs';
@@ -21,6 +22,7 @@ import { Client } from '../../../clients/models/client.model';
 import { ClientsService } from '../../../clients/services/clients.service';
 import { AchievementTemplate, AttendanceLog, BranchAttendanceSettings, Exercise, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, WorkoutSession } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
+import { BODY_ZONE_PATHS, BodyZoneKey } from './body-zone-paths';
 
 interface RoutineBuilderExercise {
   exerciseId: number;
@@ -44,6 +46,42 @@ interface MuscleDialogData {
   muscle?: MuscleGroup['muscles'][number];
   groups: MuscleGroup[];
 }
+
+interface BodyZoneDefinition {
+  key: BodyZoneKey;
+  label: string;
+  paths: string[];
+  synonyms: string[];
+}
+
+const BODY_ZONE_BASE_DEFINITIONS: Array<Omit<BodyZoneDefinition, 'paths'>> = [
+  { key: 'pectorals', label: 'Pectorales', synonyms: ['pectorales', 'pectoral', 'pecho'] },
+  { key: 'obliques', label: 'Oblicuos', synonyms: ['oblicuo', 'oblicuos'] },
+  { key: 'posterior_tibialis', label: 'Tibiales posteriores', synonyms: ['tibial posterior', 'tibiales posteriores'] },
+  { key: 'extensors', label: 'Extensores', synonyms: ['extensor', 'extensores'] },
+  { key: 'triceps', label: 'Triceps', synonyms: ['tricep', 'triceps'] },
+  { key: 'rotators', label: 'Rotadores', synonyms: ['rotador', 'rotadores', 'manguito rotador'] },
+  { key: 'traps', label: 'Trapecios', synonyms: ['trapecio', 'trapecios', 'trapezius'] },
+  { key: 'lats', label: 'Laterales', synonyms: ['laterales', 'dorsal', 'dorsales', 'dorsal ancho'] },
+  { key: 'hamstrings', label: 'Isquiotibiales', synonyms: ['isquio', 'isquios', 'femoral', 'isquiotibial', 'isquiotibiales'] },
+  { key: 'iliotibial_bands', label: 'Cintillas iliotibiales', synonyms: ['cintilla iliotibial', 'cintillas iliotibiales', 'tracto iliotibial'] },
+  { key: 'glutes', label: 'Gluteos', synonyms: ['gluteo', 'gluteos'] },
+  { key: 'lower_back', label: 'Musculos lumbares', synonyms: ['musculo lumbar', 'musculos lumbares', 'lumbar', 'lumbares', 'erector', 'erectores'] },
+  { key: 'shoulders', label: 'Hombros', synonyms: ['hombro', 'hombros', 'delto', 'deltoides'] },
+  { key: 'flexors', label: 'Flexores', synonyms: ['flexor', 'flexores'] },
+  { key: 'biceps', label: 'Biceps', synonyms: ['bicep', 'biceps', 'braquial'] },
+  { key: 'abs', label: 'Abdominales', synonyms: ['abdomen', 'abdominal', 'abdominales', 'recto abdominal', 'transverso abdominal', 'core'] },
+  { key: 'adductors', label: 'Aductores', synonyms: ['aductor', 'aductores'] },
+  { key: 'quads', label: 'Cuadriceps', synonyms: ['cuadricep', 'cuadriceps'] },
+  { key: 'shins', label: 'Espinillas', synonyms: ['espinilla', 'espinillas', 'tibial anterior'] },
+  { key: 'feet', label: 'Pies', synonyms: ['pies'] },
+  { key: 'calves', label: 'Pantorrillas', synonyms: ['pantorrilla', 'pantorrillas', 'gemelo', 'gemelos', 'soleo'] }
+];
+
+const BODY_ZONE_DEFINITIONS: BodyZoneDefinition[] = BODY_ZONE_BASE_DEFINITIONS.map(zone => ({
+  ...zone,
+  paths: BODY_ZONE_PATHS[zone.key]
+}));
 
 @Component({
   selector: 'app-muscle-group-dialog',
@@ -74,7 +112,7 @@ interface MuscleDialogData {
       <header>
         <span class="eyebrow">Grupos musculares</span>
         <h2>{{ data.group ? 'Editar grupo' : 'Nuevo grupo' }}</h2>
-        <p>Los grupos son categorias grandes como Pecho, Brazo, Hombro o Piernas.</p>
+        <p>Los grupos son zonas del mapa corporal como Pectorales, Trapecios, Hombros o Cuadriceps.</p>
       </header>
       <form [formGroup]="form" (ngSubmit)="submit()" class="form-grid">
         <mat-form-field appearance="outline">
@@ -218,6 +256,7 @@ export class MuscleDialogComponent {
     MatInputModule,
     MatNativeDateModule,
     MatProgressBarModule,
+    MatSelectModule,
     MatTabsModule,
     MatTooltipModule
   ],
@@ -292,6 +331,9 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   readonly trackingFrom = this.formBuilder.nonNullable.control(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10));
   readonly trackingTo = this.formBuilder.nonNullable.control(new Date().toISOString().slice(0, 10));
   readonly selectedExerciseMuscleIds = signal<number[]>([]);
+  readonly showExerciseBodyMap = signal(false);
+  readonly pendingBodyZoneKeys = signal<string[]>([]);
+  readonly selectedBodyZoneKeys = signal<string[]>([]);
   readonly selectedScheduleDays = signal<number[]>([]);
   readonly selectedMuscleGroupId = signal(0);
   readonly showEmptyMuscleGroupsOnly = signal(false);
@@ -415,7 +457,8 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         exercise.secondaryMuscleGroupId === groupId ||
         exercise.muscles.some(muscle => muscle.muscleGroupId === groupId);
       const matchesMuscle = !muscleId || exercise.muscles.some(muscle => muscle.id === muscleId);
-      return matchesText && matchesGroup && matchesMuscle;
+      const matchesBodyZone = this.matchesSelectedBodyZones(exercise);
+      return matchesText && matchesGroup && matchesMuscle && matchesBodyZone;
     });
   }
 
@@ -423,6 +466,52 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     return this.muscleGroups()
       .flatMap(group => group.muscles)
       .sort((left, right) => left.name.localeCompare(right.name));
+  }
+
+  bodyZoneDefinitions(): BodyZoneDefinition[] {
+    return BODY_ZONE_DEFINITIONS;
+  }
+
+  pendingBodyZones(): BodyZoneDefinition[] {
+    const keys = this.pendingBodyZoneKeys();
+    return BODY_ZONE_DEFINITIONS.filter(zone => keys.includes(zone.key));
+  }
+
+  selectedBodyZones(): BodyZoneDefinition[] {
+    const keys = this.selectedBodyZoneKeys();
+    return BODY_ZONE_DEFINITIONS.filter(zone => keys.includes(zone.key));
+  }
+
+  toggleBodyZone(key: string): void {
+    const nextKeys = this.pendingBodyZoneKeys().includes(key)
+      ? this.pendingBodyZoneKeys().filter(item => item !== key)
+      : [...this.pendingBodyZoneKeys(), key];
+    this.pendingBodyZoneKeys.set(nextKeys);
+    this.selectedBodyZoneKeys.set(nextKeys);
+    this.exerciseGroupFilter.setValue(0);
+    this.exerciseMuscleFilter.setValue(0);
+  }
+
+  setPendingBodyZones(keys: string[]): void {
+    this.pendingBodyZoneKeys.set(keys);
+    this.selectedBodyZoneKeys.set(keys);
+    this.exerciseGroupFilter.setValue(0);
+    this.exerciseMuscleFilter.setValue(0);
+  }
+
+  applyBodyZoneFilters(): void {
+    this.selectedBodyZoneKeys.set(this.pendingBodyZoneKeys());
+    this.exerciseGroupFilter.setValue(0);
+    this.exerciseMuscleFilter.setValue(0);
+  }
+
+  clearBodyZoneFilters(): void {
+    this.pendingBodyZoneKeys.set([]);
+    this.selectedBodyZoneKeys.set([]);
+  }
+
+  isBodyZonePending(key: string): boolean {
+    return this.pendingBodyZoneKeys().includes(key);
   }
 
   filteredRoutineTemplates(): RoutineTemplate[] {
@@ -1746,13 +1835,16 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   hasExerciseFilters(): boolean {
     return !!this.exerciseSearch.value.trim() ||
       Number(this.exerciseGroupFilter.value) > 0 ||
-      Number(this.exerciseMuscleFilter.value) > 0;
+      Number(this.exerciseMuscleFilter.value) > 0 ||
+      this.pendingBodyZoneKeys().length > 0 ||
+      this.selectedBodyZoneKeys().length > 0;
   }
 
   clearExerciseFilters(): void {
     this.exerciseSearch.setValue('');
     this.exerciseGroupFilter.setValue(0);
     this.exerciseMuscleFilter.setValue(0);
+    this.clearBodyZoneFilters();
   }
 
   private handleDeepLink(): void {
@@ -1804,11 +1896,27 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   }
 
   private matchesExercise(exercise: Exercise, term: string): boolean {
-    return this.normalize(`${exercise.name} ${exercise.muscleGroup} ${exercise.description} ${exercise.musclesInvolved ?? ''} ${exercise.primaryMuscleGroupName ?? ''} ${exercise.secondaryMuscleGroupName ?? ''} ${exercise.muscles.map(muscle => muscle.name).join(' ')}`).includes(term);
+    return this.exerciseSearchText(exercise).includes(term);
+  }
+
+  private matchesSelectedBodyZones(exercise: Exercise): boolean {
+    const zones = this.selectedBodyZones();
+    if (!zones.length) return true;
+
+    const text = this.exerciseBodyZoneText(exercise);
+    return zones.some(zone => zone.synonyms.some(synonym => text.includes(this.normalize(synonym))));
+  }
+
+  private exerciseSearchText(exercise: Exercise): string {
+    return this.normalize(`${exercise.name} ${exercise.muscleGroup} ${exercise.description} ${exercise.musclesInvolved ?? ''} ${exercise.primaryMuscleGroupName ?? ''} ${exercise.secondaryMuscleGroupName ?? ''} ${exercise.muscles.map(muscle => `${muscle.name} ${muscle.muscleGroupName}`).join(' ')}`);
+  }
+
+  private exerciseBodyZoneText(exercise: Exercise): string {
+    return this.normalize(`${exercise.muscleGroup} ${exercise.musclesInvolved ?? ''} ${exercise.primaryMuscleGroupName ?? ''} ${exercise.secondaryMuscleGroupName ?? ''} ${exercise.muscles.map(muscle => `${muscle.name} ${muscle.muscleGroupName}`).join(' ')}`);
   }
 
   private normalize(value: string): string {
-    return value.trim().toLowerCase();
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   }
 
   refreshBranchAttendanceSettings(): void {
