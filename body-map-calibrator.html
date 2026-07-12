@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Body map calibrator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    main {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      padding: 16px;
+    }
+
+    .stage {
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .stage img,
+    .stage svg {
+      display: block;
+      width: 100%;
+    }
+
+    .stage svg {
+      inset: 0;
+      position: absolute;
+      height: 100%;
+    }
+
+    .panel {
+      align-content: start;
+      display: grid;
+      gap: 12px;
+    }
+
+    label,
+    textarea,
+    select,
+    button {
+      font: inherit;
+    }
+
+    label {
+      color: #cbd5e1;
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    select,
+    textarea {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 10px 12px;
+      width: 100%;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      background: #1d4ed8;
+      border: 0;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: 800;
+      padding: 10px 12px;
+    }
+
+    button.secondary { background: #334155; }
+    button.danger { background: #991b1b; }
+
+    .hint,
+    pre {
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .zone-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .zone-item {
+      align-items: center;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+    }
+
+    .zone-item strong { font-size: 13px; }
+    .zone-item span { color: #94a3b8; font-size: 12px; }
+
+    @media (max-width: 1000px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="stage">
+      <img id="bodyImage" src="/images/body-muscle-map.png" alt="Mapa corporal">
+      <svg id="overlay" viewBox="0 0 1664 1248" aria-label="Calibrador">
+        <g id="savedPaths"></g>
+        <polyline id="activeLine" fill="rgba(93,143,240,.34)" stroke="#2563eb" stroke-width="4"></polyline>
+        <g id="activePoints"></g>
+      </svg>
+    </section>
+
+    <aside class="panel">
+      <label>
+        Zona
+        <select id="zoneSelect">
+          <option value="pectorals">Pectorales</option>
+          <option value="obliques">Oblicuos</option>
+          <option value="posterior_tibialis">Tibiales posteriores</option>
+          <option value="extensors">Extensores</option>
+          <option value="triceps">Triceps</option>
+          <option value="rotators">Rotadores</option>
+          <option value="traps">Trapecios</option>
+          <option value="lats">Laterales</option>
+          <option value="hamstrings">Isquiotibiales</option>
+          <option value="iliotibial_bands">Cintillas iliotibiales</option>
+          <option value="glutes">Gluteos</option>
+          <option value="lower_back">Musculos lumbares</option>
+          <option value="shoulders">Hombros</option>
+          <option value="flexors">Flexores</option>
+          <option value="biceps">Biceps</option>
+          <option value="abs">Abdominales</option>
+          <option value="adductors">Aductores</option>
+          <option value="quads">Cuadriceps</option>
+          <option value="shins">Espinillas</option>
+          <option value="feet">Pies</option>
+          <option value="calves">Pantorrillas</option>
+        </select>
+      </label>
+
+      <p class="hint">
+        Click izquierdo agrega puntos. Doble click cierra el poligono. Ctrl+Z deshace el ultimo punto.
+        Para una zona con dos lados, por ejemplo hombros, guarda un lado y despues usa "Agregar otro path".
+      </p>
+
+      <div class="button-row">
+        <button id="closePath">Cerrar path</button>
+        <button id="newPath" class="secondary">Agregar otro path</button>
+        <button id="undoPoint" class="secondary">Deshacer punto</button>
+        <button id="clearZone" class="danger">Borrar zona</button>
+      </div>
+
+      <label>
+        Path Angular listo para pegar
+        <textarea id="pathOutput" readonly></textarea>
+      </label>
+
+      <div class="button-row">
+        <button id="copyPath">Copiar path</button>
+        <button id="exportJson" class="secondary">Exportar JSON</button>
+      </div>
+
+      <pre id="coords">x: -, y: -</pre>
+      <div id="zoneList" class="zone-list"></div>
+    </aside>
+  </main>
+
+  <script>
+    const zoneSelect = document.getElementById('zoneSelect');
+    const overlay = document.getElementById('overlay');
+    const savedPaths = document.getElementById('savedPaths');
+    const activeLine = document.getElementById('activeLine');
+    const activePoints = document.getElementById('activePoints');
+    const output = document.getElementById('pathOutput');
+    const coords = document.getElementById('coords');
+    const zoneList = document.getElementById('zoneList');
+
+    const storageKey = 'gym-body-map-calibration-v1';
+    const zoneNames = {
+      pectorals: 'Pectorales',
+      obliques: 'Oblicuos',
+      posterior_tibialis: 'Tibiales posteriores',
+      extensors: 'Extensores',
+      triceps: 'Triceps',
+      rotators: 'Rotadores',
+      traps: 'Trapecios',
+      lats: 'Laterales',
+      hamstrings: 'Isquiotibiales',
+      iliotibial_bands: 'Cintillas iliotibiales',
+      glutes: 'Gluteos',
+      lower_back: 'Musculos lumbares',
+      shoulders: 'Hombros',
+      flexors: 'Flexores',
+      biceps: 'Biceps',
+      abs: 'Abdominales',
+      adductors: 'Aductores',
+      quads: 'Cuadriceps',
+      shins: 'Espinillas',
+      feet: 'Pies',
+      calves: 'Pantorrillas'
+    };
+
+    let pathsByZone = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const legacyZoneKeys = {
+      chest: 'pectorals',
+      back: 'lats',
+      forearms: 'flexors',
+      core: 'abs'
+    };
+    for (const [legacyKey, nextKey] of Object.entries(legacyZoneKeys)) {
+      if (pathsByZone[legacyKey]?.length) {
+        pathsByZone[nextKey] = [...(pathsByZone[nextKey] || []), ...pathsByZone[legacyKey]];
+        delete pathsByZone[legacyKey];
+      }
+    }
+    localStorage.setItem(storageKey, JSON.stringify(pathsByZone));
+    let activePointsData = [];
+
+    function currentZone() {
+      return zoneSelect.value;
+    }
+
+    function save() {
+      localStorage.setItem(storageKey, JSON.stringify(pathsByZone));
+      renderSaved();
+      updateOutput();
+    }
+
+    function toSvgPoint(event) {
+      const point = overlay.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      const transformed = point.matrixTransform(overlay.getScreenCTM().inverse());
+      return {
+        x: Math.round(transformed.x),
+        y: Math.round(transformed.y)
+      };
+    }
+
+    function pointsToPath(points) {
+      if (!points.length) return '';
+      return `M${points.map(point => `${point.x} ${point.y}`).join(' L')} Z`;
+    }
+
+    function renderActive() {
+      activeLine.setAttribute('points', activePointsData.map(point => `${point.x},${point.y}`).join(' '));
+      activePoints.innerHTML = activePointsData
+        .map(point => `<circle cx="${point.x}" cy="${point.y}" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"></circle>`)
+        .join('');
+    }
+
+    function renderSaved() {
+      const zone = currentZone();
+      savedPaths.innerHTML = Object.entries(pathsByZone).flatMap(([key, paths]) =>
+        paths.map(path => `<path d="${path}" fill="${key === zone ? 'rgba(93,143,240,.42)' : 'rgba(148,163,184,.16)'}" stroke="${key === zone ? '#2563eb' : '#64748b'}" stroke-width="4"></path>`)
+      ).join('');
+
+      zoneList.innerHTML = Object.entries(zoneNames).map(([key, label]) => {
+        const count = (pathsByZone[key] || []).length;
+        return `<div class="zone-item"><strong>${label}</strong><span>${count} path${count === 1 ? '' : 's'}</span></div>`;
+      }).join('');
+    }
+
+    function updateOutput() {
+      const paths = pathsByZone[currentZone()] || [];
+      output.value = paths.join(' ');
+    }
+
+    function closeCurrentPath() {
+      if (activePointsData.length < 3) return;
+      const zone = currentZone();
+      pathsByZone[zone] = [...(pathsByZone[zone] || []), pointsToPath(activePointsData)];
+      activePointsData = [];
+      renderActive();
+      save();
+    }
+
+    overlay.addEventListener('click', event => {
+      if (event.detail > 1) return;
+      const point = toSvgPoint(event);
+      activePointsData.push(point);
+      renderActive();
+      coords.textContent = `x: ${point.x}, y: ${point.y}`;
+    });
+
+    overlay.addEventListener('dblclick', event => {
+      event.preventDefault();
+      closeCurrentPath();
+    });
+
+    overlay.addEventListener('mousemove', event => {
+      const point = toSvgPoint(event);
+      coords.textContent = `x: ${point.x}, y: ${point.y}`;
+    });
+
+    document.getElementById('closePath').addEventListener('click', closeCurrentPath);
+
+    document.getElementById('newPath').addEventListener('click', () => {
+      activePointsData = [];
+      renderActive();
+    });
+
+    document.getElementById('undoPoint').addEventListener('click', () => {
+      activePointsData.pop();
+      renderActive();
+    });
+
+    document.getElementById('clearZone').addEventListener('click', () => {
+      delete pathsByZone[currentZone()];
+      activePointsData = [];
+      renderActive();
+      save();
+    });
+
+    document.getElementById('copyPath').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(output.value);
+    });
+
+    document.getElementById('exportJson').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(JSON.stringify(pathsByZone, null, 2));
+    });
+
+    zoneSelect.addEventListener('change', () => {
+      activePointsData = [];
+      renderActive();
+      renderSaved();
+      updateOutput();
+    });
+
+    window.addEventListener('keydown', event => {
+      if (event.ctrlKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        activePointsData.pop();
+        renderActive();
+      }
+    });
+
+    renderActive();
+    renderSaved();
+    updateOutput();
+  </script>
+</body>
+</html>
