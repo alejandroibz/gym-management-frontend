@@ -799,8 +799,18 @@ export class ClientDetailsPageComponent {
       return 'En pausa';
     }
 
-    if (client.debePago || this.isMembershipExpired(membership)) {
+    const isExpired = this.isMembershipExpired(membership);
+
+    if (isExpired && client.debePago) {
       return 'Vencida - pendiente de pago';
+    }
+
+    if (isExpired) {
+      return 'Vencida';
+    }
+
+    if (client.debePago) {
+      return 'Vigente - pendiente de pago';
     }
 
     if (client.membresiaProximaAVencer) {

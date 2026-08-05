@@ -29,7 +29,7 @@ import { ClientMembership } from '../../models/client.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
 
-type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'paused';
+type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'expired' | 'paused';
 
 @Component({
   selector: 'app-clients-page',
@@ -516,7 +516,11 @@ export class ClientsPageComponent {
       return 'paused';
     }
 
-    if (client.debePago || this.isMembershipExpired(membership)) {
+    if (this.isMembershipExpired(membership) && !client.debePago) {
+      return 'expired';
+    }
+
+    if (client.debePago) {
       return 'pendingPayment';
     }
 
@@ -533,7 +537,10 @@ export class ClientsPageComponent {
       noMembership: 'Sin membresía',
       upToDate: 'Al día',
       nearExpiration: 'Próximo a vencer',
-      pendingPayment: 'Vencida - pendiente de pago',
+      pendingPayment: this.isMembershipExpired(this.getEffectiveMembership(client))
+        ? 'Vencida - pendiente de pago'
+        : 'Vigente - pendiente de pago',
+      expired: 'Vencida',
       paused: 'En pausa'
     };
 
