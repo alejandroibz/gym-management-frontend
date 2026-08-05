@@ -202,6 +202,17 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
+                  <mat-label>Mes del período</mat-label>
+                  <input matInput type="number" min="1" max="12" formControlName="membershipPeriodMonth" />
+                  <mat-hint>Mes administrativo de la membresía.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Año del período</mat-label>
+                  <input matInput type="number" min="2000" max="2100" formControlName="membershipPeriodYear" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
                   <mat-label>Precio final</mat-label>
                   <input matInput type="number" min="0" step="0.01" formControlName="precioFinal" />
                 </mat-form-field>

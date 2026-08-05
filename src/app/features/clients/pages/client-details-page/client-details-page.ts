@@ -104,6 +104,8 @@ export class ClientDetailsPageComponent {
     membershipPlanId: [null as number | null, [Validators.required]],
     fechaInicio: ['', [Validators.required]],
     fechaFin: ['', [Validators.required]],
+    membershipPeriodYear: [new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]],
+    membershipPeriodMonth: [new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
     precioFinal: [0, [Validators.required, Validators.min(0)]]
   });
 
@@ -1118,6 +1120,8 @@ export class ClientDetailsPageComponent {
       membershipPlanId: membership?.membershipPlanId ?? null,
       fechaInicio: this.toDateInputValue(membership?.fechaInicio),
       fechaFin: this.toDateInputValue(membership?.fechaFin),
+      membershipPeriodYear: membership?.periodYear ?? new Date().getFullYear(),
+      membershipPeriodMonth: membership?.periodMonth ?? new Date().getMonth() + 1,
       precioFinal: membership?.precioFinal ?? 0
     });
     this.updateMembershipValidators();
@@ -1171,6 +1175,8 @@ export class ClientDetailsPageComponent {
         membershipPlanId: Number(raw.membershipPlanId),
         fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
         fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
+        periodYear: Number(raw.membershipPeriodYear),
+        periodMonth: Number(raw.membershipPeriodMonth),
         precioFinal: Number(raw.precioFinal)
       } : null,
       initialPayment: null
@@ -1241,6 +1247,8 @@ export class ClientDetailsPageComponent {
             membershipPlanId: Number(raw.membershipPlanId),
             fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
             fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
+            periodYear: Number(raw.membershipPeriodYear),
+            periodMonth: Number(raw.membershipPeriodMonth),
             precioFinal: Number(raw.precioFinal)
           }
         : null
@@ -1399,23 +1407,31 @@ export class ClientDetailsPageComponent {
     const membershipPlanControl = this.form.controls.membershipPlanId;
     const fechaInicioControl = this.form.controls.fechaInicio;
     const fechaFinControl = this.form.controls.fechaFin;
+    const periodYearControl = this.form.controls.membershipPeriodYear;
+    const periodMonthControl = this.form.controls.membershipPeriodMonth;
     const precioFinalControl = this.form.controls.precioFinal;
 
     if (hasMembership) {
       membershipPlanControl.setValidators([Validators.required]);
       fechaInicioControl.setValidators([Validators.required]);
       fechaFinControl.setValidators([Validators.required]);
+      periodYearControl.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
+      periodMonthControl.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
       precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
     } else {
       membershipPlanControl.clearValidators();
       fechaInicioControl.clearValidators();
       fechaFinControl.clearValidators();
+      periodYearControl.clearValidators();
+      periodMonthControl.clearValidators();
       precioFinalControl.clearValidators();
     }
 
     membershipPlanControl.updateValueAndValidity({ emitEvent: false });
     fechaInicioControl.updateValueAndValidity({ emitEvent: false });
     fechaFinControl.updateValueAndValidity({ emitEvent: false });
+    periodYearControl.updateValueAndValidity({ emitEvent: false });
+    periodMonthControl.updateValueAndValidity({ emitEvent: false });
     precioFinalControl.updateValueAndValidity({ emitEvent: false });
   }
 

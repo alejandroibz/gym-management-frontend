@@ -6,6 +6,10 @@
 }
 
 .access-denied-panel {
+  --access-denied-ink: #171717;
+  --access-denied-muted: #62626b;
+  --access-denied-accent: #c1121f;
+
   width: min(100%, 520px);
   padding: 2rem;
   border: 1px solid rgba(18, 18, 18, 0.08);
@@ -23,7 +27,7 @@
   place-items: center;
   border-radius: 18px;
   background: rgba(193, 18, 31, 0.1);
-  color: var(--app-accent);
+  color: var(--access-denied-accent);
 }
 
 .icon-shell mat-icon {
@@ -34,7 +38,7 @@
 
 .eyebrow {
   margin: 0 0 0.35rem;
-  color: var(--app-accent);
+  color: var(--access-denied-accent);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -43,7 +47,7 @@
 
 h1 {
   margin: 0;
-  color: var(--app-text);
+  color: var(--access-denied-ink);
   font-size: clamp(1.7rem, 4vw, 2.35rem);
   line-height: 1.08;
   letter-spacing: 0;
@@ -52,7 +56,7 @@ h1 {
 .message {
   margin: 1rem auto 0;
   max-width: 440px;
-  color: var(--app-muted);
+  color: var(--access-denied-muted);
   font-size: 0.98rem;
   line-height: 1.55;
 }
@@ -71,8 +75,13 @@ h1 {
   border-radius: 999px;
 }
 
+.actions button {
+  color: var(--access-denied-accent);
+  border-color: rgba(193, 18, 31, 0.45);
+}
+
 .actions a {
-  background: var(--app-accent);
+  background: var(--access-denied-accent);
   color: #fff;
 }
 

@@ -158,6 +158,10 @@ export class StudentPlatformService {
     return this.http.post<void>(`${this.apiUrl}/TrainingPlans/${trainingPlanId}/assign`, payload);
   }
 
+  unassignTrainingPlan(assignmentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/TrainingPlans/assignments/${assignmentId}`);
+  }
+
   getWorkoutSessions(clientId?: number, from?: string, to?: string): Observable<WorkoutSession[]> {
     let params = new HttpParams();
     if (clientId) params = params.set('clientId', clientId);

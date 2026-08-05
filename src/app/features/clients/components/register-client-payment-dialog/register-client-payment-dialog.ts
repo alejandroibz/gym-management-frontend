@@ -171,18 +171,6 @@ export class RegisterClientPaymentDialogComponent {
     this.form.updateValueAndValidity({ emitEvent: false });
   }
 
-  onPaymentDateChange(): void {
-    const paymentDate = this.getDateFromInput(this.form.controls.fechaPago.value);
-    if (!paymentDate) {
-      return;
-    }
-
-    this.form.patchValue({
-      periodYear: paymentDate.getFullYear(),
-      periodMonth: paymentDate.getMonth() + 1
-    }, { emitEvent: false });
-  }
-
   onOriginalAmountInput(): void {
     if (!this.isDiscountApplied()) {
       return;

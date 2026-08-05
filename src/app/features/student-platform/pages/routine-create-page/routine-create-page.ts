@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, TemplateRef } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -32,6 +34,7 @@ interface RoutineBuilderExercise {
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -47,12 +50,16 @@ export class RoutineCreatePageComponent {
   private readonly platformService = inject(StudentPlatformService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly exercises = signal<Exercise[]>([]);
   readonly routineBuilderExercises = signal<RoutineBuilderExercise[]>([]);
   readonly isLoading = signal(false);
   readonly createdCount = signal(0);
   readonly exercisePickerPage = signal(0);
+  readonly previewExercise = signal<Exercise | null>(null);
+  readonly previewVideoUrl = signal<SafeResourceUrl | null>(null);
 
   readonly builderExerciseSearch = this.formBuilder.nonNullable.control('');
   private readonly exercisePickerPageSize = 6;
@@ -121,6 +128,40 @@ export class RoutineCreatePageComponent {
 
   selectedExercise(): Exercise | undefined {
     return this.exercises().find(exercise => exercise.id === this.routineExerciseForm.controls.exerciseId.value);
+  }
+
+  getYouTubeThumbnailUrl(exercise: Exercise | undefined): string | null {
+    if (!exercise) return null;
+
+    const videoUrl = exercise.videoUrl
+      || exercise.media?.find(media => media.mediaType === 'Video' && this.getYouTubeVideoId(media.url))?.url;
+    const videoId = this.getYouTubeVideoId(videoUrl);
+    return videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+  }
+
+  getExercisePhotoUrl(exercise: Exercise): string | null {
+    return exercise.photoUrl
+      || exercise.media?.find(media => media.mediaType === 'Image')?.url
+      || null;
+  }
+
+  openExercisePreview(exercise: Exercise, template: TemplateRef<unknown>): void {
+    const videoId = this.getYouTubeVideoId(this.getExerciseVideoUrl(exercise));
+    if (!videoId) return;
+
+    this.previewExercise.set(exercise);
+    this.previewVideoUrl.set(
+      this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`)
+    );
+
+    this.dialog.open(template, {
+      width: 'min(900px, 96vw)',
+      maxWidth: '96vw',
+      panelClass: 'exercise-preview-dialog'
+    }).afterClosed().subscribe(() => {
+      this.previewExercise.set(null);
+      this.previewVideoUrl.set(null);
+    });
   }
 
   selectBuilderExercise(exercise: Exercise): void {
@@ -238,5 +279,34 @@ export class RoutineCreatePageComponent {
 
   private normalize(value: string): string {
     return value.trim().toLowerCase();
+  }
+
+  private getYouTubeVideoId(value: string | null | undefined): string | null {
+    if (!value?.trim()) return null;
+
+    try {
+      const url = new URL(value.trim());
+      const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+      let videoId = '';
+
+      if (hostname === 'youtu.be') {
+        videoId = url.pathname.split('/').filter(Boolean)[0] ?? '';
+      } else if (hostname === 'youtube.com' || hostname === 'm.youtube.com' || hostname === 'youtube-nocookie.com') {
+        const pathParts = url.pathname.split('/').filter(Boolean);
+        videoId = url.searchParams.get('v')
+          ?? (['embed', 'shorts', 'live'].includes(pathParts[0]) ? pathParts[1] : '')
+          ?? '';
+      }
+
+      return /^[a-zA-Z0-9_-]{11}$/.test(videoId) ? videoId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private getExerciseVideoUrl(exercise: Exercise): string | null {
+    return exercise.videoUrl
+      || exercise.media?.find(media => media.mediaType === 'Video' && this.getYouTubeVideoId(media.url))?.url
+      || null;
   }
 }

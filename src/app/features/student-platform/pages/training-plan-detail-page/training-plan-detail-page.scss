@@ -265,6 +265,16 @@
   object-fit: cover;
 }
 
+.assignment-person-link {
+  color: inherit;
+  display: grid;
+  text-decoration: none;
+}
+
+.assignment-person-link:hover strong {
+  text-decoration: underline;
+}
+
 .avatar-fallback {
   align-items: center;
   background: #fff3f2;

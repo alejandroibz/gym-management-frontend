@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
+import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { ToastService } from '../../../../core/services/toast.service';
 import { RoutineTemplate, TrainingPlan, TrainingPlanAssignment, TrainingPlanWorkout } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
@@ -13,7 +15,7 @@ import { StudentPlatformService } from '../../services/student-platform.service'
 @Component({
   selector: 'app-training-plan-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule],
+  imports: [CommonModule, RouterModule, MatButtonModule, MatDialogModule, MatIconModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: './training-plan-detail-page.html',
   styleUrl: './training-plan-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,6 +23,7 @@ import { StudentPlatformService } from '../../services/student-platform.service'
 export class TrainingPlanDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly platformService = inject(StudentPlatformService);
+  private readonly dialog = inject(MatDialog);
   private readonly toast = inject(ToastService);
 
   readonly plan = signal<TrainingPlan | null>(null);
@@ -30,6 +33,7 @@ export class TrainingPlanDetailPageComponent {
   readonly expandedWorkoutIds = signal<number[]>([]);
   readonly editingSchedule = signal(false);
   readonly scheduleDraft = signal<Record<number, number>>({});
+  readonly unassigningId = signal<number | null>(null);
 
   constructor() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -106,6 +110,33 @@ export class TrainingPlanDetailPageComponent {
     this.platformService.updateTrainingPlan(plan.id, { name: plan.name, description: plan.description, level: plan.level, goal: plan.goal, workouts: plan.workouts.map(workout => ({ routineId: workout.routineId, sortOrder: workout.sortOrder, dayLabel: workout.dayLabel, notes: workout.notes, suggestedDayOfWeek: this.scheduleDraft()[workout.id] >= 0 ? this.scheduleDraft()[workout.id] : null })) }).subscribe({
       next: () => { this.plan.set({ ...plan, workouts: plan.workouts.map(workout => ({ ...workout, suggestedDayOfWeek: this.scheduleDraft()[workout.id] >= 0 ? this.scheduleDraft()[workout.id] : null })) }); this.editingSchedule.set(false); this.isLoading.set(false); this.toast.success('Agenda sugerida actualizada.'); },
       error: () => { this.isLoading.set(false); this.toast.error('No se pudo actualizar la agenda.'); }
+    });
+  }
+
+  unassign(assignment: TrainingPlanAssignment): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Desasignar plan',
+        message: `¿Querés quitarle este plan a ${assignment.clientNombre} ${assignment.clientApellido}? Su historial de entrenamientos se conservará.`,
+        confirmLabel: 'Desasignar',
+        tone: 'danger'
+      }
+    }).afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.unassigningId.set(assignment.id);
+      this.platformService.unassignTrainingPlan(assignment.id).subscribe({
+        next: () => {
+          this.assignments.update(items => items.filter(item => item.id !== assignment.id));
+          const plan = this.plan();
+          if (plan) this.plan.set({ ...plan, assignmentCount: Math.max(0, (plan.assignmentCount || 0) - 1) });
+          this.unassigningId.set(null);
+          this.toast.success('El plan fue desasignado. El historial del alumno se conservó.');
+        },
+        error: () => {
+          this.unassigningId.set(null);
+          this.toast.error('No se pudo desasignar el plan.');
+        }
+      });
     });
   }
 }

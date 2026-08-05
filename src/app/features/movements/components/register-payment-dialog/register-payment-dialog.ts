@@ -56,7 +56,6 @@ export class RegisterPaymentDialogComponent {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private selectedClientLookupId = 0;
-  private renewalDatesTouched = false;
   readonly data = inject<RegisterPaymentDialogData>(MAT_DIALOG_DATA);
 
   readonly isEditing = !!this.data.payment;
@@ -79,9 +78,7 @@ export class RegisterPaymentDialogComponent {
       cashMovementCategoryId: [this.data.payment?.cashMovementCategoryId ?? this.data.incomeCategories[0]?.id ?? null, [Validators.required]],
       periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, [Validators.required, Validators.min(2000)]],
       periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, [Validators.required, Validators.min(1), Validators.max(12)]],
-      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]],
-      membershipStartDate: [this.data.payment?.membershipStartDate ? this.toDateInputValue(this.data.payment.membershipStartDate) : ''],
-      membershipEndDate: [this.data.payment?.membershipEndDate ? this.toDateInputValue(this.data.payment.membershipEndDate) : '']
+      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
     },
     { validators: [this.discountValidator] }
   );
@@ -164,8 +161,6 @@ export class RegisterPaymentDialogComponent {
     }
 
     const raw = this.form.getRawValue();
-    const shouldSendRenewalDates = this.isEditing || this.renewalDatesTouched;
-
     this.dialogRef.close({
       clientId: Number(raw.clientId),
       clientMembershipId: Number(raw.clientMembershipId),
@@ -186,8 +181,8 @@ export class RegisterPaymentDialogComponent {
       periodYear: Number(raw.periodYear),
       periodMonth: Number(raw.periodMonth),
       collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? '',
-      membershipStartDate: shouldSendRenewalDates && raw.membershipStartDate ? this.toLocalDateIso(raw.membershipStartDate) : null,
-      membershipEndDate: shouldSendRenewalDates && raw.membershipEndDate ? this.toLocalDateIso(raw.membershipEndDate) : null
+      membershipStartDate: null,
+      membershipEndDate: null
     });
   }
 
@@ -228,19 +223,6 @@ export class RegisterPaymentDialogComponent {
     return this.hasPaymentForSelectedPeriod();
   }
 
-  onMembershipStartDateChange(): void {
-    const membership = this.getEffectiveMembership(this.selectedClient());
-    const startDate = this.getDateFromInput(this.form.controls.membershipStartDate.value);
-    if (!membership || !startDate) {
-      return;
-    }
-
-    this.form.controls.membershipEndDate.setValue(this.getMembershipEndInputValue(startDate, membership), { emitEvent: false });
-  }
-
-  onMembershipEndDateChange(): void {
-    this.renewalDatesTouched = true;
-  }
   hasDiscount(): boolean {
     return this.isDiscountApplied() && Number(this.form.controls.descuentoMonto.value ?? 0) > 0;
   }
@@ -271,18 +253,6 @@ export class RegisterPaymentDialogComponent {
       descuentoMotivo: ''
     }, { emitEvent: false });
     this.form.updateValueAndValidity({ emitEvent: false });
-  }
-
-  onPaymentDateChange(): void {
-    const paymentDate = this.getDateFromInput(this.form.controls.fechaPago.value);
-    if (!paymentDate) {
-      return;
-    }
-
-    this.form.patchValue({
-      periodYear: paymentDate.getFullYear(),
-      periodMonth: paymentDate.getMonth() + 1
-    }, { emitEvent: false });
   }
 
   onDiscountAmountInput(): void {
@@ -366,71 +336,21 @@ export class RegisterPaymentDialogComponent {
       return false;
     }
 
-    const shouldSuggestRenewal = this.isMembershipExpired(membership);
-
-        this.renewalDatesTouched = false;
-
     this.form.patchValue({
       clientMembershipId: membership.id,
       monto: membership.precioFinal,
-      montoOriginal: this.data.payment?.montoOriginal ?? membership.precioFinal,
-      membershipStartDate: shouldSuggestRenewal ? this.getSuggestedMembershipStartInputValue(membership) : '',
-      membershipEndDate: shouldSuggestRenewal ? this.getSuggestedMembershipEndInputValue(membership) : ''
+      montoOriginal: this.data.payment?.montoOriginal ?? membership.precioFinal
     });
 
     return true;
   }
 
   private clearMembership(): void {
-    this.renewalDatesTouched = false;
     this.form.patchValue({
       clientMembershipId: 0,
       monto: 0,
-      montoOriginal: null,
-      membershipStartDate: '',
-      membershipEndDate: ''
+      montoOriginal: null
     });
-  }
-
-  private isMembershipExpired(membership: ClientMembership): boolean {
-    const endDate = this.getDateFromInput(membership.fechaFin);
-    if (!endDate) {
-      return false;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    endDate.setHours(0, 0, 0, 0);
-    return endDate < today;
-  }
-  private getSuggestedMembershipStartInputValue(membership: ClientMembership): string {
-    const endDate = this.getDateFromInput(membership.fechaFin);
-    if (!endDate) {
-      return '';
-    }
-
-    endDate.setDate(endDate.getDate() + 1);
-    return this.toDateInputValue(endDate.toISOString());
-  }
-
-  private getSuggestedMembershipEndInputValue(membership: ClientMembership): string {
-    const startDate = this.getDateFromInput(this.getSuggestedMembershipStartInputValue(membership));
-    if (!startDate) {
-      return '';
-    }
-
-    return this.getMembershipEndInputValue(startDate, membership);
-  }
-
-  private getMembershipEndInputValue(startDate: Date, membership: ClientMembership): string {
-    const durationDays = Number(membership.plan?.duracionDias ?? 0);
-    if (durationDays <= 0) {
-      return '';
-    }
-
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + durationDays);
-    return this.toDateInputValue(endDate.toISOString());
   }
   private hasPaymentForSelectedPeriod(): boolean {
     if (this.isEditing) return false;

@@ -84,6 +84,8 @@ export interface ClientMembershipUpdatePayload {
   membershipPlanId: number;
   fechaInicio: string;
   fechaFin: string;
+  periodYear: number;
+  periodMonth: number;
   precioFinal: number;
   estado: 'Active' | 'Inactive';
 }

@@ -51,6 +51,16 @@ export interface ClientMembershipDialogData {
         </mat-form-field>
 
         <mat-form-field appearance="outline">
+          <mat-label>Mes del período</mat-label>
+          <input matInput type="number" min="1" max="12" formControlName="periodMonth">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Año del período</mat-label>
+          <input matInput type="number" min="2000" max="2100" formControlName="periodYear">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
           <mat-label>Precio final</mat-label>
           <input matInput type="number" min="0" formControlName="precioFinal">
         </mat-form-field>
@@ -100,6 +110,8 @@ export class ClientMembershipDialogComponent {
     membershipPlanId: [this.data.membership.membershipPlanId, [Validators.required]],
     fechaInicio: [this.toDateInputValue(this.data.membership.fechaInicio), [Validators.required]],
     fechaFin: [this.toDateInputValue(this.data.membership.fechaFin), [Validators.required]],
+    periodYear: [this.data.membership.periodYear ?? new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]],
+    periodMonth: [this.data.membership.periodMonth ?? new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
     precioFinal: [this.data.membership.precioFinal, [Validators.required, Validators.min(0)]],
     estado: [this.data.membership.activo === false || this.data.membership.estado === 'Inactive' ? 'Inactive' : 'Active', [Validators.required]]
   });
@@ -117,6 +129,8 @@ export class ClientMembershipDialogComponent {
       membershipPlanId: Number(raw.membershipPlanId),
       fechaInicio: new Date(`${raw.fechaInicio}T00:00:00`).toISOString(),
       fechaFin: new Date(`${raw.fechaFin}T00:00:00`).toISOString(),
+      periodYear: Number(raw.periodYear),
+      periodMonth: Number(raw.periodMonth),
       precioFinal: Number(raw.precioFinal),
       estado: raw.estado
     });

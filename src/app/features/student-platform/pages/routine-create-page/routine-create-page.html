@@ -109,13 +109,36 @@
             </div>
             <div class="search-results wide">
               @for (exercise of getBuilderExerciseMatches(); track exercise.id) {
-                <button type="button" (click)="selectBuilderExercise(exercise)">
-                  <span>
-                    <strong>{{ exercise.name }}</strong>
-                    <small>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</small>
-                  </span>
-                  <mat-icon>add</mat-icon>
-                </button>
+                <article class="exercise-result-card">
+                  @if (getYouTubeThumbnailUrl(exercise); as thumbnailUrl) {
+                    <button
+                      class="exercise-preview-trigger"
+                      type="button"
+                      (click)="openExercisePreview(exercise, exercisePreviewDialog)"
+                      [attr.aria-label]="'Ver video de ' + exercise.name">
+                      <img
+                        class="exercise-thumbnail"
+                        [src]="thumbnailUrl"
+                        [alt]="'Miniatura del video de ' + exercise.name"
+                        loading="lazy">
+                      <span class="preview-overlay">
+                        <mat-icon>play_circle</mat-icon>
+                        Ver video
+                      </span>
+                    </button>
+                  } @else {
+                    <span class="exercise-thumbnail-placeholder" aria-hidden="true">
+                      <mat-icon>smart_display</mat-icon>
+                    </span>
+                  }
+                  <button class="exercise-select-button" type="button" (click)="selectBuilderExercise(exercise)">
+                    <span class="exercise-result-content">
+                      <strong>{{ exercise.name }}</strong>
+                      <small>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</small>
+                    </span>
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </article>
               }
               @if (!getBuilderExerciseMatches().length) {
                 <div class="inline-empty compact-empty">
@@ -128,7 +151,21 @@
 
           @if (selectedExercise()) {
             <div class="selected-exercise wide">
-              <mat-icon>fitness_center</mat-icon>
+              @if (getYouTubeThumbnailUrl(selectedExercise()); as thumbnailUrl) {
+                <button
+                  class="exercise-preview-trigger selected-preview"
+                  type="button"
+                  (click)="openExercisePreview(selectedExercise()!, exercisePreviewDialog)"
+                  [attr.aria-label]="'Ver video de ' + selectedExercise()?.name">
+                  <img
+                    class="exercise-thumbnail selected-thumbnail"
+                    [src]="thumbnailUrl"
+                    [alt]="'Miniatura del video de ' + selectedExercise()?.name">
+                  <span class="preview-overlay"><mat-icon>play_circle</mat-icon></span>
+                </button>
+              } @else {
+                <mat-icon>fitness_center</mat-icon>
+              }
               <div>
                 <strong>{{ selectedExercise()?.name }}</strong>
                 <span>{{ selectedExercise()?.primaryMuscleGroupName || selectedExercise()?.muscleGroup }}</span>
@@ -242,4 +279,51 @@
       </button>
     </footer>
   </form>
+
+  <ng-template #exercisePreviewDialog>
+    @if (previewExercise(); as exercise) {
+      <div class="preview-dialog-heading">
+        <div>
+          <span class="eyebrow">Referencia del ejercicio</span>
+          <h2>{{ exercise.name }}</h2>
+        </div>
+        <button mat-icon-button type="button" mat-dialog-close aria-label="Cerrar vista previa">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <mat-dialog-content class="exercise-preview-content">
+        @if (previewVideoUrl(); as videoUrl) {
+          <div class="video-frame">
+            <iframe
+              [src]="videoUrl"
+              [title]="'Video de ' + exercise.name"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        }
+
+        <div class="exercise-preview-details">
+          @if (getExercisePhotoUrl(exercise); as photoUrl) {
+            <img [src]="photoUrl" [alt]="'Imagen de ' + exercise.name">
+          }
+          <div>
+            <span class="preview-muscle">
+              <mat-icon>fitness_center</mat-icon>
+              {{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}
+            </span>
+            <p>{{ exercise.description || 'Este ejercicio no tiene una descripcion cargada.' }}</p>
+          </div>
+        </div>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-stroked-button type="button" mat-dialog-close>Cerrar</button>
+        <button mat-flat-button color="primary" type="button" mat-dialog-close (click)="selectBuilderExercise(exercise)">
+          <mat-icon>add</mat-icon>
+          Seleccionar ejercicio
+        </button>
+      </mat-dialog-actions>
+    }
+  </ng-template>
 </section>

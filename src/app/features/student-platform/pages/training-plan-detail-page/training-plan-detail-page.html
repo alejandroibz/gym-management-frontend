@@ -133,20 +133,22 @@
         @if (assignments().length) {
           <div class="assignment-list">
             @for (assignment of assignments(); track assignment.id) {
-              <a class="assignment-row" [routerLink]="['/clients', assignment.clientId]" [queryParams]="{ returnUrl: planReturnUrl() }">
+              <article class="assignment-row">
                 @if (assignment.clientAvatarUrl) {
                   <img [src]="assignment.clientAvatarUrl" [alt]="assignment.clientApellido + ', ' + assignment.clientNombre">
                 } @else {
                   <span class="avatar-fallback">{{ initials(assignment) }}</span>
                 }
-                <div>
+                <a class="assignment-person-link" [routerLink]="['/clients', assignment.clientId]" [queryParams]="{ returnUrl: planReturnUrl() }">
                   <strong>{{ assignment.clientApellido }}, {{ assignment.clientNombre }}</strong>
                   <small>DNI {{ assignment.clientDni || '-' }}</small>
                   <small>Asignado {{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
-                </div>
+                </a>
                 <span class="status-chip">{{ assignment.status }}</span>
-                <mat-icon class="row-open-icon">chevron_right</mat-icon>
-              </a>
+                <button mat-icon-button type="button" matTooltip="Desasignar plan" [disabled]="unassigningId() === assignment.id" (click)="unassign(assignment)">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </article>
             }
           </div>
         } @else {

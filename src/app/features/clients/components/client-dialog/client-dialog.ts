@@ -120,6 +120,8 @@ export class ClientDialogComponent {
       this.toDateInputValue(this.currentMembership?.fechaFin) || this.today,
       [Validators.required]
     ],
+    membershipPeriodYear: [this.currentMembership?.periodYear ?? new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]],
+    membershipPeriodMonth: [this.currentMembership?.periodMonth ?? new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
     precioFinal: [this.currentMembership?.precioFinal ?? null, [Validators.required, Validators.min(0)]],
     registerInitialPayment: [false],
     initialPaymentDate: [this.today],
@@ -127,8 +129,8 @@ export class ClientDialogComponent {
     initialPaymentMethodId: [null as number | null],
     initialPaymentCategoryId: [this.data.incomeCategories[0]?.id ?? null as number | null],
     initialPaymentEmployeeEmail: [this.getDefaultEmployeeEmail()],
-    initialPaymentPeriodYear: [new Date().getFullYear()],
-    initialPaymentPeriodMonth: [new Date().getMonth() + 1]
+    initialPaymentPeriodYear: [this.currentMembership?.periodYear ?? new Date().getFullYear()],
+    initialPaymentPeriodMonth: [this.currentMembership?.periodMonth ?? new Date().getMonth() + 1]
   });
   readonly observacionesLength = signal(this.form.controls.observaciones.value.length);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
@@ -166,6 +168,14 @@ export class ClientDialogComponent {
           this.form.controls.initialPaymentAmount.setValue(value, { emitEvent: false });
         }
       });
+
+    this.form.controls.membershipPeriodYear.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(value => this.form.controls.initialPaymentPeriodYear.setValue(value, { emitEvent: false }));
+
+    this.form.controls.membershipPeriodMonth.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(value => this.form.controls.initialPaymentPeriodMonth.setValue(value, { emitEvent: false }));
 
     this.form.controls.observaciones.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -259,6 +269,8 @@ export class ClientDialogComponent {
             membershipPlanId: Number(value.membershipPlanId),
             fechaInicio: new Date(`${value.fechaInicio}T00:00:00`).toISOString(),
             fechaFin: new Date(`${value.fechaFin}T00:00:00`).toISOString(),
+            periodYear: Number(value.membershipPeriodYear),
+            periodMonth: Number(value.membershipPeriodMonth),
             precioFinal: Number(value.precioFinal),
             plan: this.getSelectedPlan() ?? null
           }
@@ -270,8 +282,8 @@ export class ClientDialogComponent {
             paymentMethodId: Number(value.initialPaymentMethodId),
             cashMovementCategoryId: value.initialPaymentCategoryId ? Number(value.initialPaymentCategoryId) : null,
             collectedByEmployeeEmail: value.initialPaymentEmployeeEmail,
-            periodYear: Number(value.initialPaymentPeriodYear),
-            periodMonth: Number(value.initialPaymentPeriodMonth)
+            periodYear: Number(value.membershipPeriodYear),
+            periodMonth: Number(value.membershipPeriodMonth)
           }
         : null
     });
@@ -333,17 +345,23 @@ export class ClientDialogComponent {
     const membershipPlanControl = this.form.controls.membershipPlanId;
     const fechaInicioControl = this.form.controls.fechaInicio;
     const fechaFinControl = this.form.controls.fechaFin;
+    const periodYearControl = this.form.controls.membershipPeriodYear;
+    const periodMonthControl = this.form.controls.membershipPeriodMonth;
     const precioFinalControl = this.form.controls.precioFinal;
 
     if (hasMembership) {
       membershipPlanControl.setValidators([Validators.required]);
       fechaInicioControl.setValidators([Validators.required]);
       fechaFinControl.setValidators([Validators.required]);
+      periodYearControl.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
+      periodMonthControl.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
       precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
     } else {
       membershipPlanControl.clearValidators();
       fechaInicioControl.clearValidators();
       fechaFinControl.clearValidators();
+      periodYearControl.clearValidators();
+      periodMonthControl.clearValidators();
       precioFinalControl.clearValidators();
       this.form.patchValue({
         membershipPlanId: null,
@@ -357,6 +375,8 @@ export class ClientDialogComponent {
     membershipPlanControl.updateValueAndValidity({ emitEvent: false });
     fechaInicioControl.updateValueAndValidity({ emitEvent: false });
     fechaFinControl.updateValueAndValidity({ emitEvent: false });
+    periodYearControl.updateValueAndValidity({ emitEvent: false });
+    periodMonthControl.updateValueAndValidity({ emitEvent: false });
     precioFinalControl.updateValueAndValidity({ emitEvent: false });
   }
 
@@ -376,7 +396,7 @@ export class ClientDialogComponent {
       this.form.controls.initialPaymentAmount.setValidators([Validators.required, Validators.min(1)]);
       this.form.controls.initialPaymentMethodId.setValidators([Validators.required]);
       this.form.controls.initialPaymentEmployeeEmail.setValidators([Validators.required, Validators.email]);
-      this.form.controls.initialPaymentPeriodYear.setValidators([Validators.required, Validators.min(2000)]);
+      this.form.controls.initialPaymentPeriodYear.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
       this.form.controls.initialPaymentPeriodMonth.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
     } else {
       controls.forEach(control => control.clearValidators());
