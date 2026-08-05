@@ -18,6 +18,15 @@ export interface ClientMembership {
   plan?: MembershipPlan | null;
 }
 
+export interface ClientMembershipWritePayload {
+  membershipPlanId: number;
+  fechaInicio: string;
+  fechaFin: string;
+  periodYear: number;
+  periodMonth: number;
+  precioFinal: number;
+}
+
 export interface ClientAppAccessPayload {
   createAccess: boolean;
 }
@@ -70,7 +79,7 @@ export interface ClientCreatePayload {
   tieneLesion: boolean;
   observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
-  membership?: ClientMembership | null;
+  membership?: ClientMembershipWritePayload | null;
   initialPayment?: ClientInitialPaymentPayload | null;
 }
 

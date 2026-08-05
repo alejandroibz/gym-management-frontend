@@ -150,6 +150,11 @@
   margin: 0.35rem 0 0.75rem;
 }
 
+.filters-clear {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .import-errors {
   display: grid;
   gap: 0.35rem;
@@ -446,6 +451,10 @@ app-paginator {
   .action-reset {
     width: 100%;
     justify-content: center;
+  }
+
+  .filters-clear {
+    margin-left: 0;
   }
 
   .desktop-list {

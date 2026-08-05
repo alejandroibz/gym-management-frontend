@@ -1,6 +1,6 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +28,7 @@ import { MembershipPlansService } from '../../../membership-plans/services/membe
 import { ClientMembership } from '../../models/client.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
+import { debounceTime, distinctUntilChanged, map, merge } from 'rxjs';
 
 type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'expired' | 'paused';
 
@@ -55,6 +56,7 @@ type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearE
 })
 export class ClientsPageComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -82,6 +84,8 @@ export class ClientsPageComponent {
   readonly clientsWithMembershipCount = signal(0);
   readonly pendingPaymentsTotalCount = signal(0);
   private clientStatsRequestId = 0;
+  private clientsRequestId = 0;
+  private readonly filterRevision = signal(0);
   private readonly filterStorageKey = 'admin-clients-view-state';
   private readonly columnStorageKey = 'admin-clients-columns';
   readonly visibleColumns = signal(this.restoreColumns());
@@ -102,6 +106,7 @@ export class ClientsPageComponent {
   readonly currentUserEmail = signal<string | null>(null);
   readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
   readonly activeFiltersCount = computed(() => {
+    this.filterRevision();
     const raw = this.filtersForm.getRawValue();
     return [
       raw.search.trim(),
@@ -113,6 +118,7 @@ export class ClientsPageComponent {
     ].filter(Boolean).length;
   });
   readonly activeFilterChips = computed(() => {
+    this.filterRevision();
     const raw = this.filtersForm.getRawValue();
     const chips: Array<{ label: string; value: string }> = [];
 
@@ -123,6 +129,7 @@ export class ClientsPageComponent {
     return chips;
   });
   readonly visibleFilterChips = computed(() => {
+    this.filterRevision();
     const raw = this.filtersForm.getRawValue();
     const chips: Array<{ label: string; value: string }> = [];
 
@@ -145,6 +152,7 @@ export class ClientsPageComponent {
     const requestedContractStatus = this.route.snapshot.queryParamMap.get('contractStatus');
     if (requestedPaymentStatus === 'pending' || requestedPaymentStatus === 'upToDate') this.filtersForm.controls.paymentStatus.setValue(requestedPaymentStatus);
     if (requestedContractStatus === 'missing' || requestedContractStatus === 'signed') this.filtersForm.controls.contractStatus.setValue(requestedContractStatus);
+    this.setupAutomaticFilters();
     this.auth.user$.subscribe(user => {
       this.currentUserEmail.set(typeof user?.email === 'string' ? user.email : null);
     });
@@ -183,7 +191,8 @@ export class ClientsPageComponent {
       clientStatus: 'active',
       contractStatus: 'all',
       membershipPlanId: null
-    });
+    }, { emitEvent: false });
+    this.filterRevision.update(value => value + 1);
     this.pageNumber.set(1);
     this.persistViewState();
     this.loadClients();
@@ -458,6 +467,7 @@ export class ClientsPageComponent {
   }
 
   private loadClients(): void {
+    const requestId = ++this.clientsRequestId;
     this.isLoading.set(true);
     this.errorMessage.set('');
 
@@ -465,6 +475,7 @@ export class ClientsPageComponent {
       .getPaged(this.pageNumber(), this.pageSize(), this.getFilters())
       .subscribe({
         next: response => {
+          if (requestId !== this.clientsRequestId) return;
           this.clients.set(response.items);
           this.totalCount.set(response.totalCount);
           this.pageNumber.set(response.pageNumber);
@@ -473,6 +484,7 @@ export class ClientsPageComponent {
           this.isLoading.set(false);
         },
         error: () => {
+          if (requestId !== this.clientsRequestId) return;
           this.clients.set([]);
           this.totalCount.set(0);
           this.clientsWithMembershipCount.set(0);
@@ -481,6 +493,28 @@ export class ClientsPageComponent {
           this.errorMessage.set('No se pudieron cargar los clientes desde la API.');
         }
       });
+  }
+
+  private setupAutomaticFilters(): void {
+    this.filtersForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.filterRevision.update(value => value + 1));
+
+    merge(
+      this.filtersForm.controls.search.valueChanges.pipe(map(value => value.trim()), debounceTime(1000), distinctUntilChanged()),
+      this.filtersForm.controls.dni.valueChanges.pipe(map(value => value.trim()), debounceTime(1000), distinctUntilChanged())
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.applyFilters());
+
+    merge(
+      this.filtersForm.controls.paymentStatus.valueChanges,
+      this.filtersForm.controls.clientStatus.valueChanges,
+      this.filtersForm.controls.contractStatus.valueChanges,
+      this.filtersForm.controls.membershipPlanId.valueChanges
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.applyFilters());
   }
 
   getMembershipLabel(client: Client): string {
@@ -646,6 +680,8 @@ export class ClientsPageComponent {
             membershipPlanId: result.membership.membershipPlanId,
             fechaInicio: result.membership.fechaInicio,
             fechaFin: result.membership.fechaFin,
+            periodYear: result.membership.periodYear,
+            periodMonth: result.membership.periodMonth,
             precioFinal: result.membership.precioFinal
           }
         : null,

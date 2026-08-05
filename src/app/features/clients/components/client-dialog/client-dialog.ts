@@ -14,7 +14,7 @@ import { CashMovementCategory } from '../../../cash-movement-categories/models/c
 import { Employee } from '../../../employees/models/employee.model';
 import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
-import { Client, ClientAppAccessPayload, ClientMembership } from '../../models/client.model';
+import { Client, ClientAppAccessPayload, ClientMembershipWritePayload } from '../../models/client.model';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 
 export interface ClientDialogData {
@@ -39,7 +39,7 @@ export interface ClientDialogResult {
   tieneLesion: boolean;
   observaciones: string;
   appAccess?: ClientAppAccessPayload | null;
-  membership?: ClientMembership | null;
+  membership?: ClientMembershipWritePayload | null;
   initialPayment?: {
     fechaPago: string;
     monto: number;
@@ -271,8 +271,7 @@ export class ClientDialogComponent {
             fechaFin: new Date(`${value.fechaFin}T00:00:00`).toISOString(),
             periodYear: Number(value.membershipPeriodYear),
             periodMonth: Number(value.membershipPeriodMonth),
-            precioFinal: Number(value.precioFinal),
-            plan: this.getSelectedPlan() ?? null
+            precioFinal: Number(value.precioFinal)
           }
         : null,
       initialPayment: !this.isEditing && value.hasMembership && value.registerInitialPayment
