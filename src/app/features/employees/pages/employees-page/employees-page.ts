@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
 import { HealthProfessional } from '../../../health/models/health.model';
@@ -57,7 +58,7 @@ export class EmployeesPageComponent {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isLoadingCategories = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);

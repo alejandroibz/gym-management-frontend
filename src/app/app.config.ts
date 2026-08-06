@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, importProvidersFrom, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
@@ -9,6 +9,8 @@ import { authHttpInterceptorFn, provideAuth0 } from '@auth0/auth0-angular';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { SpanishPaginatorIntl } from './core/services/spanish-paginator-intl';
+import { apiNotificationInterceptor } from './core/http/api-notification.interceptor';
+import { GlobalErrorHandler } from './core/errors/global-error-handler';
 
 const redirectUri = environment.auth0.redirectUri || `${window.location.origin}/`;
 
@@ -17,12 +19,17 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
 
     provideHttpClient(
-      withInterceptors([authHttpInterceptorFn])
+      withInterceptors([authHttpInterceptorFn, apiNotificationInterceptor])
     ),
 
     provideRouter(routes),
 
     importProvidersFrom(MatSnackBarModule),
+
+    {
+      provide: ErrorHandler,
+      useClass: GlobalErrorHandler
+    },
 
     {
       provide: MatPaginatorIntl,

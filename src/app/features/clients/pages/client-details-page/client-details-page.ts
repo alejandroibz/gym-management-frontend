@@ -1,6 +1,6 @@
 ﻿import { CommonModule, DatePipe } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
@@ -18,6 +18,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
 import { Employee } from '../../../employees/models/employee.model';
@@ -34,6 +35,7 @@ import { Client, ClientCreatePayload, ClientMembership, ClientRelationRecord, Cl
 import { ClientsService } from '../../services/clients.service';
 import { ClientContract } from '../../../contracts/models/contract.model';
 import { ContractsService } from '../../../contracts/services/contracts.service';
+import { dateOrderValidator, markAndFocusFirstInvalid, nonWhitespaceValidator, notFutureDateValidator, periodMonthValidators, periodYearValidators } from '../../../../core/forms/business-form-validators';
 
 @Component({
   selector: 'app-client-details-page',
@@ -75,6 +77,7 @@ export class ClientDetailsPageComponent {
   private readonly paymentMethodsService = inject(PaymentMethodsService);
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
   private readonly contractsService = inject(ContractsService);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly client = signal<Client | null>(null);
   readonly membershipPlans = signal<MembershipPlan[]>([]);
@@ -86,18 +89,18 @@ export class ClientDetailsPageComponent {
   readonly isDownloadingPlan = signal(false);
   readonly isEditing = signal(false);
   readonly isCreateMode = signal(this.route.snapshot.routeConfig?.path === 'clients/new');
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly observacionesMaxLength = 3000;
   readonly today = new Date().toISOString().slice(0, 10);
 
   readonly form = this.formBuilder.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
-    apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
+    nombre: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]],
+    apellido: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]],
     dni: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(8), Validators.pattern(/^\d{7,8}$/)]],
-    fechaNacimiento: ['', [Validators.required]],
-    telefono: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
+    fechaNacimiento: ['', [Validators.required, notFutureDateValidator]],
+    telefono: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(6), Validators.maxLength(30)]],
     email: ['', [Validators.email, Validators.maxLength(120)]],
-    direccion: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(160)]],
+    direccion: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(3), Validators.maxLength(160)]],
     tieneLesion: [false],
     observaciones: ['', [Validators.maxLength(this.observacionesMaxLength)]],
     hasMembership: [false],
@@ -154,7 +157,7 @@ export class ClientDetailsPageComponent {
     weightKg: [70, [Validators.required, Validators.min(20), Validators.max(400)]],
     measuredAt: [new Date().toISOString().slice(0, 10), Validators.required],
     notes: ['']
-  });
+  }, { validators: [dateOrderValidator('fechaInicio', 'fechaFin', 'hasMembership')] });
   readonly professionalGoalForm = this.formBuilder.nonNullable.group({
     type: ['BodyWeight', Validators.required], title: ['', Validators.required], description: [''], startValue: [0], currentValue: [0], targetValue: [0], unit: ['kg', Validators.required], targetDate: ['']
   });
@@ -256,7 +259,7 @@ export class ClientDetailsPageComponent {
     }
 
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
       this.errorMessage.set('Revisa los campos marcados antes de guardar.');
       return;
     }
@@ -567,8 +570,8 @@ export class ClientDetailsPageComponent {
         paymentMethods: this.paymentMethods(),
         incomeCategories: this.incomeCategories(),
         defaultDate: this.toDateInputValue(payment.fechaPago),
-        defaultMonth: payment.periodMonth ?? this.getDateMonth(payment.fechaPago),
-        defaultYear: payment.periodYear ?? this.getDateYear(payment.fechaPago),
+        defaultMonth: payment.periodMonth ?? new Date().getMonth() + 1,
+        defaultYear: payment.periodYear ?? new Date().getFullYear(),
         defaultEmployeeEmail: this.currentUserEmail(),
         payment
       }
@@ -1295,8 +1298,8 @@ export class ClientDetailsPageComponent {
       cashMovementCategoryId,
       cashMovementCategoryNombre: this.getStringPaymentField(payment, ['cashmovementcategorynombre', 'cashmovementcategoryname']),
       membershipPlanNombre: this.getStringPaymentField(payment, ['membershipplannombre', 'membershipplanname']),
-      periodYear: this.getPaymentPeriodYear(payment) ?? this.getDateYear(fechaPago),
-      periodMonth: this.getPaymentPeriodMonth(payment) ?? this.getDateMonth(fechaPago),
+      periodYear: this.getPaymentPeriodYear(payment) ?? this.currentMembership()?.periodYear ?? new Date().getFullYear(),
+      periodMonth: this.getPaymentPeriodMonth(payment) ?? this.currentMembership()?.periodMonth ?? new Date().getMonth() + 1,
       collectedByEmployeeEmail,
       collectedByEmployeeNombre: this.getStringPaymentField(payment, ['collectedbyemployeenombre', 'collectedbyemployeename'])
     };
@@ -1325,14 +1328,6 @@ export class ClientDetailsPageComponent {
 
   private toDateInputValue(value?: string | null): string {
     return value ? value.slice(0, 10) : '';
-  }
-
-  private getDateYear(value: string): number {
-    return new Date(value).getFullYear();
-  }
-
-  private getDateMonth(value: string): number {
-    return new Date(value).getMonth() + 1;
   }
 
   private addDays(dateInput: string, days: number): string {
@@ -1425,8 +1420,8 @@ export class ClientDetailsPageComponent {
       membershipPlanControl.setValidators([Validators.required]);
       fechaInicioControl.setValidators([Validators.required]);
       fechaFinControl.setValidators([Validators.required]);
-      periodYearControl.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
-      periodMonthControl.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
+      periodYearControl.setValidators(periodYearValidators);
+      periodMonthControl.setValidators(periodMonthValidators);
       precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
     } else {
       membershipPlanControl.clearValidators();

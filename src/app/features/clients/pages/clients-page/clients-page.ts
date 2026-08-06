@@ -16,6 +16,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
 import { Employee } from '../../../employees/models/employee.model';
@@ -75,7 +76,7 @@ export class ClientsPageComponent {
   readonly cashMovementCategories = signal<CashMovementCategory[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly importResult = signal<ClientImportResult | null>(null);
   readonly importFileName = signal('');
   readonly totalCount = signal(0);

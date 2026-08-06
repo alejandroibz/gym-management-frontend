@@ -2,7 +2,12 @@
   <span class="toast-icon">
     <mat-icon>{{ icon }}</mat-icon>
   </span>
-  <p>{{ data.message }}</p>
+  <div class="toast-copy">
+    @if (data.title) {
+      <strong>{{ data.title }}</strong>
+    }
+    <p>{{ data.message }}</p>
+  </div>
   <button mat-icon-button type="button" aria-label="Cerrar notificacion" (click)="close()">
     <mat-icon>close</mat-icon>
   </button>

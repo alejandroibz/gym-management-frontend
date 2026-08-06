@@ -33,6 +33,7 @@
               <mat-option [value]="method.id">{{ getPaymentMethodLabel(method) }}</mat-option>
             }
           </mat-select>
+          <mat-error>Seleccioná un método de pago.</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -42,16 +43,19 @@
               <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
             }
           </mat-select>
+          <mat-error>Seleccioná el tipo de pago.</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Fecha de pago</mat-label>
           <input matInput type="date" formControlName="fechaPago" />
+          <mat-error>Ingresá la fecha del pago.</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Monto final cobrado</mat-label>
-          <input matInput type="number" min="0" step="0.01" formControlName="monto" />
+          <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+          <mat-error>El importe debe ser mayor que cero.</mat-error>
         </mat-form-field>
 
         <div class="discount-toggle span-2">
@@ -83,7 +87,8 @@
 
               <mat-form-field appearance="outline">
                 <mat-label>Monto original</mat-label>
-                <input matInput type="number" min="0" step="0.01" formControlName="montoOriginal" (input)="onOriginalAmountInput()" />
+                <input matInput type="number" min="0.01" step="0.01" formControlName="montoOriginal" (input)="onOriginalAmountInput()" />
+                <mat-error>El monto original debe ser mayor que cero.</mat-error>
               </mat-form-field>
 
               <mat-form-field appearance="outline">
@@ -94,6 +99,10 @@
 
             @if (form.hasError('discountGreaterThanOriginal')) {
               <small>El descuento no puede superar el monto original.</small>
+            } @else if (form.hasError('originalAmountRequired')) {
+              <small>Ingresá un monto original mayor que cero.</small>
+            } @else if (form.hasError('inconsistentFinalAmount')) {
+              <small>El monto final debe coincidir con el original menos el descuento.</small>
             }
           </div>
         }
@@ -101,11 +110,13 @@
         <mat-form-field appearance="outline">
           <mat-label>Mes del período</mat-label>
           <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
+          <mat-error>Ingresá un mes entre 1 y 12.</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Año del período</mat-label>
-          <input matInput type="number" min="2000" formControlName="periodYear" />
+          <input matInput type="number" min="2000" max="2100" formControlName="periodYear" />
+          <mat-error>Ingresá un año entre 2000 y 2100.</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="span-2">

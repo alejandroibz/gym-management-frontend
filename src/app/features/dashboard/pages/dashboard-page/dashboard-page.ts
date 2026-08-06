@@ -25,6 +25,7 @@ import {
 import { DashboardService } from '../../services/dashboard.service';
 import { ClientsService } from '../../../clients/services/clients.service';
 import { ContractsService } from '../../../contracts/services/contracts.service';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 
 interface DashboardStatItem {
   label: string;
@@ -104,7 +105,7 @@ export class DashboardPageComponent implements AfterViewInit {
   private readonly contractsService = inject(ContractsService);
 
   readonly isLoading = signal(true);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly lastUpdated = signal<Date | null>(null);
   readonly dashboard = signal<DashboardViewModel | null>(null);
 

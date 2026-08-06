@@ -1,7 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -17,6 +17,9 @@ import { ClientsService } from '../../../clients/services/clients.service';
 import { Employee } from '../../../employees/models/employee.model';
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { Payment, PaymentCreatePayload } from '../../../payments/models/payment.model';
+import { employeeEmailValidators, markAndFocusFirstInvalid, paymentDiscountValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
+import { ToastService } from '../../../../core/services/toast.service';
+import { hasMembershipPaymentForPeriod, isMembershipCategoryName } from '../../../payments/utils/membership-payment-period';
 
 export interface RegisterPaymentDialogData {
   clients: Client[];
@@ -55,6 +58,8 @@ export class RegisterPaymentDialogComponent {
   private readonly clientsService = inject(ClientsService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
+  private readonly toast = inject(ToastService);
   private selectedClientLookupId = 0;
   readonly data = inject<RegisterPaymentDialogData>(MAT_DIALOG_DATA);
 
@@ -68,7 +73,7 @@ export class RegisterPaymentDialogComponent {
       clientId: [this.data.payment?.clientId ?? this.getInitialClient()?.id ?? (null as number | null), [Validators.required]],
       clientMembershipId: [this.data.payment?.clientMembershipId ?? 0, [Validators.required, Validators.min(1)]],
       fechaPago: [this.toDateInputValue(this.data.payment?.fechaPago ?? this.data.defaultDate), [Validators.required]],
-      monto: [this.data.payment?.monto ?? 0, [Validators.required, Validators.min(0)]],
+      monto: [this.data.payment?.monto ?? 0, positiveMoneyValidators],
       aplicarDescuento: [this.hasInitialDiscount()],
       montoOriginal: [this.data.payment?.montoOriginal ?? (null as number | null), [Validators.min(0)]],
       descuentoMonto: [this.data.payment?.descuentoMonto ?? 0, [Validators.required, Validators.min(0)]],
@@ -76,11 +81,11 @@ export class RegisterPaymentDialogComponent {
       descuentoMotivo: [this.data.payment?.descuentoMotivo ?? '', [Validators.maxLength(160)]],
       paymentMethodId: [this.data.payment?.paymentMethodId ?? (null as number | null), [Validators.required]],
       cashMovementCategoryId: [this.data.payment?.cashMovementCategoryId ?? this.data.incomeCategories[0]?.id ?? null, [Validators.required]],
-      periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, [Validators.required, Validators.min(2000)]],
-      periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, [Validators.required, Validators.min(1), Validators.max(12)]],
-      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), [Validators.required]]
+      periodYear: [this.data.payment?.periodYear ?? this.data.defaultYear, periodYearValidators],
+      periodMonth: [this.data.payment?.periodMonth ?? this.data.defaultMonth, periodMonthValidators],
+      collectedByEmployeeEmail: [this.getInitialEmployeeEmail(), employeeEmailValidators]
     },
-    { validators: [this.discountValidator] }
+    { validators: [paymentDiscountValidator] }
   );
 
   readonly title = this.isEditing ? 'Editar cobro de cliente' : 'Registrar cobro de cliente';
@@ -115,6 +120,7 @@ export class RegisterPaymentDialogComponent {
     this.clientSearchControl.setValue(client, { emitEvent: false });
     this.form.controls.clientId.setValue(client.id, { emitEvent: false });
     this.applyMembership(this.getEffectiveMembership(client));
+    if (!this.isEditing) this.loadSelectedClientDetails(client.id);
   }
   close(): void {
     this.dialogRef.close();
@@ -127,18 +133,13 @@ export class RegisterPaymentDialogComponent {
 
     this.selectedClient.set(client);
 
-    if (this.applyMembership(membership)) {
-      this.cancelSelectedClientLookup();
-      return;
-    }
-
-    this.clearMembership();
-
     if (clientId) {
+      this.applyMembership(membership) || this.clearMembership();
       this.loadSelectedClientDetails(clientId);
       return;
     }
 
+    this.clearMembership();
     this.cancelSelectedClientLookup();
   }
 
@@ -155,8 +156,14 @@ export class RegisterPaymentDialogComponent {
   }
 
   submit(): void {
+    if (this.selectedPeriodAlreadyPaid()) {
+      this.toast.warning('Ya existe un cobro para el cliente y período seleccionados.');
+      return;
+    }
+
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
+      this.toast.warning('Revisá los campos marcados antes de guardar el cobro.');
       return;
     }
 
@@ -357,27 +364,15 @@ export class RegisterPaymentDialogComponent {
     const client = this.selectedClient();
     const year = Number(this.form.controls.periodYear.value ?? 0);
     const month = Number(this.form.controls.periodMonth.value ?? 0);
-    if (!client || !year || !month) return false;
+    const categoryId = Number(this.form.controls.cashMovementCategoryId.value ?? 0);
+    const category = this.data.incomeCategories.find(item => item.id === categoryId) ?? null;
+    if (!client || !category || !isMembershipCategoryName(category.nombre)) return false;
 
-    return (client.payments ?? []).some(payment => {
-      const paymentYear = this.getNumericPaymentField(payment, ['periodyear', 'periodYear']);
-      const paymentMonth = this.getNumericPaymentField(payment, ['periodmonth', 'periodMonth']);
-      return paymentYear === year && paymentMonth === month;
+    return hasMembershipPaymentForPeriod(client.payments, {
+      periodYear: year,
+      periodMonth: month,
+      categoryId: category.id
     });
-  }
-
-  private getNumericPaymentField(payment: Record<string, unknown>, candidateKeys: string[]): number | null {
-    const normalizedKeys = candidateKeys.map(key => key.toLowerCase());
-    for (const [key, value] of Object.entries(payment)) {
-      if (!normalizedKeys.includes(key.trim().toLowerCase())) continue;
-      if (typeof value === 'number') return value;
-      if (typeof value === 'string') {
-        const parsed = Number(value);
-        return Number.isNaN(parsed) ? null : parsed;
-      }
-    }
-
-    return null;
   }
 
   private updateFinalAmountFromDiscount(): void {
@@ -394,40 +389,6 @@ export class RegisterPaymentDialogComponent {
 
     this.form.controls.monto.setValue(Math.max(0, originalAmount - discountAmount), { emitEvent: false });
     this.form.updateValueAndValidity({ emitEvent: false });
-  }
-
-  private discountValidator(control: AbstractControl): ValidationErrors | null {
-    const rawValue = control.value as {
-      montoOriginal?: number | string | null;
-      descuentoMonto?: number | string | null;
-      descuentoPorcentaje?: number | string | null;
-      aplicarDescuento?: boolean | null;
-    };
-    if (rawValue.aplicarDescuento !== true) {
-      return null;
-    }
-
-    const originalAmount = rawValue.montoOriginal === null || rawValue.montoOriginal === undefined || rawValue.montoOriginal === ''
-      ? null
-      : Number(rawValue.montoOriginal);
-    const discountAmount = Number(rawValue.descuentoMonto ?? 0);
-    const discountPercentage = rawValue.descuentoPorcentaje === null || rawValue.descuentoPorcentaje === undefined || rawValue.descuentoPorcentaje === ''
-      ? null
-      : Number(rawValue.descuentoPorcentaje);
-
-    if (discountAmount < 0) {
-      return { discountAmountNegative: true };
-    }
-
-    if (originalAmount !== null && discountAmount > originalAmount) {
-      return { discountGreaterThanOriginal: true };
-    }
-
-    if (discountPercentage !== null && (discountPercentage < 0 || discountPercentage > 100)) {
-      return { discountPercentageRange: true };
-    }
-
-    return null;
   }
 
   private hasInitialDiscount(): boolean {

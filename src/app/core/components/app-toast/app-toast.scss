@@ -13,11 +13,22 @@
   padding: .7rem .75rem;
 }
 
+.toast-copy {
+  display: grid;
+  gap: .18rem;
+}
+
+.toast-copy strong {
+  font-size: .92rem;
+  line-height: 1.25;
+}
+
 .toast-card p {
   font-size: .9rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.35;
   margin: 0;
+  white-space: pre-line;
 }
 
 .toast-icon {

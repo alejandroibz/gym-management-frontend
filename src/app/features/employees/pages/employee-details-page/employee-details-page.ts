@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { EmployeeCategory } from '../../../employee-categories/models/employee-category.model';
 import { EmployeeCategoriesService } from '../../../employee-categories/services/employee-categories.service';
 import { HealthProfessional } from '../../../health/models/health.model';
@@ -58,7 +59,7 @@ export class EmployeeDetailsPageComponent {
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly appRoleOptions: EmployeeAppRole[] = ['Admin', 'SuperAdmin'];
 
   readonly form = this.formBuilder.nonNullable.group({

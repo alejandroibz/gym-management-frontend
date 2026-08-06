@@ -16,6 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { RoleService } from '../../../../core/auth/role';
 import { CashMovementCategory, CashMovementType } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -88,7 +89,7 @@ export class MovementsPageComponent {
   readonly isLoadingMovements = signal(false);
   readonly isSavingPayment = signal(false);
   readonly isSavingMovement = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly currentUserEmail = signal<string | null>(null);
   readonly isSuperAdmin = toSignal(this.roleService.hasRole('SuperAdmin'), { initialValue: false });
 

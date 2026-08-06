@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +15,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
 import { Client, ClientMembership } from '../../../clients/models/client.model';
@@ -25,6 +26,9 @@ import { PaymentMethod } from '../../../payment-methods/models/payment-method.mo
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
 import { PaymentCreatePayload } from '../../models/payment.model';
 import { PaymentsService } from '../../services/payments.service';
+import { employeeEmailValidators, markAndFocusFirstInvalid, paymentDiscountValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
+import { ToastService } from '../../../../core/services/toast.service';
+import { hasMembershipPaymentForPeriod } from '../../utils/membership-payment-period';
 
 type ReturnTarget = 'clients' | 'movements';
 
@@ -60,6 +64,8 @@ export class PaymentRegisterPageComponent {
   private readonly paymentMethodsService = inject(PaymentMethodsService);
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
   private readonly paymentsService = inject(PaymentsService);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
+  private readonly toast = inject(ToastService);
 
   readonly clients = signal<Client[]>([]);
   readonly employees = signal<Employee[]>([]);
@@ -69,7 +75,7 @@ export class PaymentRegisterPageComponent {
   readonly selectedCategoryId = signal<number | null>(null);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly returnTarget = signal<ReturnTarget>('movements');
 
   readonly incomeCategories = computed(() => this.categories().filter(category => category.tipoMovimiento === 1));
@@ -93,15 +99,17 @@ export class PaymentRegisterPageComponent {
       cashMovementCategoryId: [null as number | null, [Validators.required]],
       paymentMethodId: [null as number | null, [Validators.required]],
       fechaPago: [this.toDateInputValue(new Date()), [Validators.required]],
-      monto: [0, [Validators.required, Validators.min(0)]],
+      monto: [0, positiveMoneyValidators],
       aplicarDescuento: [false],
       montoOriginal: [null as number | null, [Validators.min(0)]],
       descuentoMonto: [0, [Validators.required, Validators.min(0)]],
       descuentoPorcentaje: [null as number | null, [Validators.min(0), Validators.max(100)]],
       descuentoMotivo: ['', [Validators.maxLength(160)]],
-      collectedByEmployeeEmail: ['', [Validators.required]]
+      periodYear: [new Date().getFullYear(), periodYearValidators],
+      periodMonth: [new Date().getMonth() + 1, periodMonthValidators],
+      collectedByEmployeeEmail: ['', employeeEmailValidators]
     },
-    { validators: [this.paymentValidator] }
+    { validators: [paymentDiscountValidator] }
   );
 
   constructor() {
@@ -188,7 +196,13 @@ export class PaymentRegisterPageComponent {
     }
 
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
+      this.toast.warning('Revisá los campos marcados antes de confirmar el cobro.');
+      return;
+    }
+
+    if (this.selectedPeriodAlreadyPaid()) {
+      this.toast.warning('Ya existe un cobro para el cliente y período seleccionados.');
       return;
     }
 
@@ -364,8 +378,6 @@ export class PaymentRegisterPageComponent {
 
   private buildPayload(): PaymentCreatePayload {
     const raw = this.form.getRawValue();
-    const paymentDate = this.getDateFromInput(raw.fechaPago);
-
     return {
       clientId: Number(raw.clientId),
       clientMembershipId: this.isMembershipPayment() ? Number(raw.clientMembershipId) : null,
@@ -381,8 +393,8 @@ export class PaymentRegisterPageComponent {
       descuentoMotivo: raw.aplicarDescuento ? raw.descuentoMotivo?.trim() || null : null,
       paymentMethodId: Number(raw.paymentMethodId),
       cashMovementCategoryId: Number(raw.cashMovementCategoryId),
-      periodYear: paymentDate.getFullYear(),
-      periodMonth: paymentDate.getMonth() + 1,
+      periodYear: Number(raw.periodYear),
+      periodMonth: Number(raw.periodMonth),
       collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? ''
     };
   }
@@ -455,40 +467,17 @@ export class PaymentRegisterPageComponent {
     })[0] ?? null;
   }
 
-  private paymentValidator(control: AbstractControl): ValidationErrors | null {
-    const value = control.value as {
-      aplicarDescuento?: boolean | null;
-      montoOriginal?: number | string | null;
-      descuentoMonto?: number | string | null;
-      descuentoPorcentaje?: number | string | null;
-      clientMembershipId?: number | string | null;
-      cashMovementCategoryId?: number | string | null;
-    };
-    const errors: ValidationErrors = {};
+  selectedPeriodAlreadyPaid(): boolean {
+    const client = this.selectedClient();
+    const year = Number(this.form.controls.periodYear.value ?? 0);
+    const month = Number(this.form.controls.periodMonth.value ?? 0);
+    if (!client || !this.isMembershipPayment()) return false;
 
-    if (value.aplicarDescuento === true) {
-      const originalAmount = value.montoOriginal === null || value.montoOriginal === undefined || value.montoOriginal === ''
-        ? null
-        : Number(value.montoOriginal);
-      const discountAmount = Number(value.descuentoMonto ?? 0);
-      const discountPercentage = value.descuentoPorcentaje === null || value.descuentoPorcentaje === undefined || value.descuentoPorcentaje === ''
-        ? null
-        : Number(value.descuentoPorcentaje);
-
-      if (discountAmount < 0) {
-        errors['discountAmountNegative'] = true;
-      }
-
-      if (originalAmount !== null && discountAmount > originalAmount) {
-        errors['discountGreaterThanOriginal'] = true;
-      }
-
-      if (discountPercentage !== null && (discountPercentage < 0 || discountPercentage > 100)) {
-        errors['discountPercentageRange'] = true;
-      }
-    }
-
-    return Object.keys(errors).length > 0 ? errors : null;
+    return hasMembershipPaymentForPeriod(client.payments, {
+      periodYear: year,
+      periodMonth: month,
+      categoryId: this.selectedCategory()?.id ?? null
+    });
   }
 
   private toDateInputValue(value: Date): string {

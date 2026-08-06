@@ -7,6 +7,7 @@ import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from '@angular/material/snack-bar'
 export type ToastTone = 'success' | 'error' | 'info' | 'warning';
 
 export interface AppToastData {
+  title?: string;
   message: string;
   tone: ToastTone;
 }

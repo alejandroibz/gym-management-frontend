@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import {
   CashMovementCategoryDialogComponent,
   CashMovementCategoryDialogResult
@@ -53,7 +54,7 @@ export class CashMovementCategoriesPageComponent {
   readonly movementFilter = signal<CategoryMovementFilter>('all');
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);

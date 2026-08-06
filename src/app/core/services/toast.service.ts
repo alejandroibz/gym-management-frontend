@@ -5,11 +5,17 @@ import { AppToastComponent, ToastTone } from '../components/app-toast/app-toast'
 @Injectable({ providedIn: 'root' })
 export class ToastService {
   private readonly snackBar = inject(MatSnackBar);
+  private revision = 0;
 
-  show(message: string, tone: ToastTone = 'info', duration = 4200): void {
+  get currentRevision(): number {
+    return this.revision;
+  }
+
+  show(message: string, tone: ToastTone = 'info', duration = 5000, title?: string): void {
     if (!message.trim()) return;
+    this.revision += 1;
     this.snackBar.openFromComponent(AppToastComponent, {
-      data: { message, tone },
+      data: { title, message, tone },
       duration,
       horizontalPosition: 'end',
       verticalPosition: 'top',
@@ -23,7 +29,7 @@ export class ToastService {
   }
 
   error(message: string): void {
-    this.show(message, 'error', 5200);
+    this.show(message, 'error', 20000, 'No se pudo completar');
   }
 
   warning(message: string): void {
@@ -32,5 +38,9 @@ export class ToastService {
 
   info(message: string): void {
     this.show(message, 'info');
+  }
+
+  successIfUnchanged(message: string, expectedRevision: number): void {
+    if (this.revision === expectedRevision) this.success(message);
   }
 }

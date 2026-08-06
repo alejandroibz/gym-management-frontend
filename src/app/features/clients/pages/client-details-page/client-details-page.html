@@ -114,26 +114,35 @@
             <mat-form-field appearance="outline">
               <mat-label>Nombre</mat-label>
               <input matInput formControlName="nombre" />
+              <mat-error>Ingresá un nombre de al menos 2 caracteres.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Apellido</mat-label>
               <input matInput formControlName="apellido" />
+              <mat-error>Ingresá un apellido de al menos 2 caracteres.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>DNI</mat-label>
               <input matInput formControlName="dni" maxlength="8" inputmode="numeric" (input)="onDniInput()" />
+              <mat-error>Ingresá un DNI válido de 7 u 8 números.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Fecha de nacimiento</mat-label>
               <input matInput type="date" formControlName="fechaNacimiento" />
+              @if (form.controls.fechaNacimiento.hasError('futureDate')) {
+                <mat-error>La fecha de nacimiento no puede ser futura.</mat-error>
+              } @else {
+                <mat-error>Ingresá la fecha de nacimiento.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Telefono</mat-label>
               <input matInput formControlName="telefono" />
+              <mat-error>Ingresá un teléfono válido.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -145,6 +154,7 @@
             <mat-form-field appearance="outline" class="span-2">
               <mat-label>Direccion</mat-label>
               <input matInput formControlName="direccion" />
+              <mat-error>Ingresá una dirección válida.</mat-error>
             </mat-form-field>
 
             <div class="membership-box span-2">
@@ -189,32 +199,42 @@
                       </mat-option>
                     }
                   </mat-select>
+                  <mat-error>Seleccioná una membresía.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Fecha de inicio</mat-label>
                   <input matInput type="date" formControlName="fechaInicio" (change)="onFechaInicioChange()" />
+                  <mat-error>Ingresá la fecha de inicio.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Fecha de fin</mat-label>
                   <input matInput type="date" formControlName="fechaFin" />
+                  @if (form.hasError('dateOrder')) {
+                    <mat-hint>La fecha de fin no puede ser anterior al inicio.</mat-hint>
+                  } @else {
+                    <mat-error>Ingresá la fecha de finalización.</mat-error>
+                  }
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Mes del período</mat-label>
                   <input matInput type="number" min="1" max="12" formControlName="membershipPeriodMonth" />
                   <mat-hint>Mes administrativo de la membresía.</mat-hint>
+                  <mat-error>Ingresá un mes entre 1 y 12.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Año del período</mat-label>
                   <input matInput type="number" min="2000" max="2100" formControlName="membershipPeriodYear" />
+                  <mat-error>Ingresá un año entre 2000 y 2100.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Precio final</mat-label>
                   <input matInput type="number" min="0" step="0.01" formControlName="precioFinal" />
+                  <mat-error>El precio no puede ser negativo.</mat-error>
                 </mat-form-field>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
 import { take } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -18,6 +18,9 @@ import { PaymentMethodsService } from '../../../payment-methods/services/payment
 import { PaymentCreatePayload } from '../../../payments/models/payment.model';
 import { Employee } from '../../../employees/models/employee.model';
 import { EmployeesService } from '../../../employees/services/employees.service';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
+import { employeeEmailValidators, markAndFocusFirstInvalid, paymentDiscountValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
+import { ToastService } from '../../../../core/services/toast.service';
 
 export interface RegisterClientPaymentDialogData {
   clientId: number;
@@ -51,10 +54,12 @@ export class RegisterClientPaymentDialogComponent {
   private readonly cashMovementCategoriesService = inject(CashMovementCategoriesService);
   private readonly employeesService = inject(EmployeesService);
   private readonly auth = inject(AuthService);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
+  private readonly toast = inject(ToastService);
   readonly data = inject<RegisterClientPaymentDialogData>(MAT_DIALOG_DATA);
 
   readonly isLoading = signal(true);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly cashMovementCategories = signal<CashMovementCategory[]>([]);
   readonly employees = signal<Employee[]>([]);
@@ -66,17 +71,17 @@ export class RegisterClientPaymentDialogComponent {
       paymentMethodId: [null as number | null, [Validators.required]],
       cashMovementCategoryId: [null as number | null, [Validators.required]],
       fechaPago: [this.toDateInputValue(this.today), [Validators.required]],
-      monto: [this.data.defaultAmount || 0, [Validators.required, Validators.min(0)]],
+      monto: [this.data.defaultAmount || 0, positiveMoneyValidators],
       aplicarDescuento: [false],
       montoOriginal: [this.data.defaultAmount || null as number | null, [Validators.min(0)]],
       descuentoMonto: [0, [Validators.required, Validators.min(0)]],
       descuentoPorcentaje: [null as number | null, [Validators.min(0), Validators.max(100)]],
       descuentoMotivo: ['', [Validators.maxLength(160)]],
-      periodYear: [this.today.getFullYear(), [Validators.required, Validators.min(2000)]],
-      periodMonth: [this.today.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
-      collectedByEmployeeEmail: ['', [Validators.required]]
+      periodYear: [this.today.getFullYear(), periodYearValidators],
+      periodMonth: [this.today.getMonth() + 1, periodMonthValidators],
+      collectedByEmployeeEmail: ['', employeeEmailValidators]
     },
-    { validators: [this.discountValidator] }
+    { validators: [paymentDiscountValidator] }
   );
 
   readonly incomeCategories = computed(() =>
@@ -98,7 +103,8 @@ export class RegisterClientPaymentDialogComponent {
 
   submit(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
+      this.toast.warning('Revisá los campos marcados antes de registrar el pago.');
       return;
     }
 
@@ -301,37 +307,4 @@ export class RegisterClientPaymentDialogComponent {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  private discountValidator(control: AbstractControl): ValidationErrors | null {
-    const rawValue = control.value as {
-      montoOriginal?: number | string | null;
-      descuentoMonto?: number | string | null;
-      descuentoPorcentaje?: number | string | null;
-      aplicarDescuento?: boolean | null;
-    };
-    if (rawValue.aplicarDescuento !== true) {
-      return null;
-    }
-
-    const originalAmount = rawValue.montoOriginal === null || rawValue.montoOriginal === undefined || rawValue.montoOriginal === ''
-      ? null
-      : Number(rawValue.montoOriginal);
-    const discountAmount = Number(rawValue.descuentoMonto ?? 0);
-    const discountPercentage = rawValue.descuentoPorcentaje === null || rawValue.descuentoPorcentaje === undefined || rawValue.descuentoPorcentaje === ''
-      ? null
-      : Number(rawValue.descuentoPorcentaje);
-
-    if (discountAmount < 0) {
-      return { discountAmountNegative: true };
-    }
-
-    if (originalAmount !== null && discountAmount > originalAmount) {
-      return { discountGreaterThanOriginal: true };
-    }
-
-    if (discountPercentage !== null && (discountPercentage < 0 || discountPercentage > 100)) {
-      return { discountPercentageRange: true };
-    }
-
-    return null;
-  }
 }

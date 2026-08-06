@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -16,6 +16,8 @@ import { MembershipPlan } from '../../../membership-plans/models/membership-plan
 import { PaymentMethod } from '../../../payment-methods/models/payment-method.model';
 import { Client, ClientAppAccessPayload, ClientMembershipWritePayload } from '../../models/client.model';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { dateOrderValidator, employeeEmailValidators, markAndFocusFirstInvalid, nonWhitespaceValidator, notFutureDateValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
+import { ToastService } from '../../../../core/services/toast.service';
 
 export interface ClientDialogData {
   client?: Client;
@@ -75,6 +77,8 @@ export class ClientDialogComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(MatDialogRef<ClientDialogComponent, ClientDialogResult>);
   private readonly dialog = inject(MatDialog);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
+  private readonly toast = inject(ToastService);
   readonly data = inject<ClientDialogData>(MAT_DIALOG_DATA);
   readonly today = new Date().toISOString().slice(0, 10);
   readonly observacionesMaxLength = 3000;
@@ -84,25 +88,25 @@ export class ClientDialogComponent {
   readonly form = this.formBuilder.nonNullable.group({
     nombre: [
       this.data.client?.nombre ?? '',
-      [Validators.required, Validators.minLength(2), Validators.maxLength(80)]
+      [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]
     ],
     apellido: [
       this.data.client?.apellido ?? '',
-      [Validators.required, Validators.minLength(2), Validators.maxLength(80)]
+      [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]
     ],
     dni: [
       this.data.client?.dni ?? '',
       [Validators.required, Validators.minLength(7), Validators.maxLength(8), Validators.pattern(/^\d{7,8}$/)]
     ],
-    fechaNacimiento: [this.toDateInputValue(this.data.client?.fechaNacimiento), [Validators.required]],
+    fechaNacimiento: [this.toDateInputValue(this.data.client?.fechaNacimiento), [Validators.required, notFutureDateValidator]],
     telefono: [
       this.data.client?.telefono ?? '',
-      [Validators.required, Validators.minLength(6), Validators.maxLength(30)]
+      [Validators.required, nonWhitespaceValidator, Validators.minLength(6), Validators.maxLength(30)]
     ],
     email: [this.data.client?.email ?? '', [Validators.email, Validators.maxLength(120)]],
     direccion: [
       this.data.client?.direccion ?? '',
-      [Validators.required, Validators.minLength(3), Validators.maxLength(160)]
+      [Validators.required, nonWhitespaceValidator, Validators.minLength(3), Validators.maxLength(160)]
     ],
     tieneLesion: [this.data.client?.tieneLesion ?? false],
     observaciones: [
@@ -131,7 +135,7 @@ export class ClientDialogComponent {
     initialPaymentEmployeeEmail: [this.getDefaultEmployeeEmail()],
     initialPaymentPeriodYear: [this.currentMembership?.periodYear ?? new Date().getFullYear()],
     initialPaymentPeriodMonth: [this.currentMembership?.periodMonth ?? new Date().getMonth() + 1]
-  });
+  }, { validators: [dateOrderValidator('fechaInicio', 'fechaFin', 'hasMembership')] });
   readonly observacionesLength = signal(this.form.controls.observaciones.value.length);
   readonly observacionesRemaining = computed(() => this.observacionesMaxLength - this.observacionesLength());
 
@@ -245,7 +249,8 @@ export class ClientDialogComponent {
 
   submit(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
+      this.toast.warning('Revisá los campos marcados antes de guardar el cliente.');
       return;
     }
 
@@ -352,8 +357,8 @@ export class ClientDialogComponent {
       membershipPlanControl.setValidators([Validators.required]);
       fechaInicioControl.setValidators([Validators.required]);
       fechaFinControl.setValidators([Validators.required]);
-      periodYearControl.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
-      periodMonthControl.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
+      periodYearControl.setValidators(periodYearValidators);
+      periodMonthControl.setValidators(periodMonthValidators);
       precioFinalControl.setValidators([Validators.required, Validators.min(0)]);
     } else {
       membershipPlanControl.clearValidators();
@@ -392,11 +397,11 @@ export class ClientDialogComponent {
 
     if (shouldRegisterPayment) {
       this.form.controls.initialPaymentDate.setValidators([Validators.required]);
-      this.form.controls.initialPaymentAmount.setValidators([Validators.required, Validators.min(1)]);
+      this.form.controls.initialPaymentAmount.setValidators(positiveMoneyValidators);
       this.form.controls.initialPaymentMethodId.setValidators([Validators.required]);
-      this.form.controls.initialPaymentEmployeeEmail.setValidators([Validators.required, Validators.email]);
-      this.form.controls.initialPaymentPeriodYear.setValidators([Validators.required, Validators.min(2000), Validators.max(2100)]);
-      this.form.controls.initialPaymentPeriodMonth.setValidators([Validators.required, Validators.min(1), Validators.max(12)]);
+      this.form.controls.initialPaymentEmployeeEmail.setValidators(employeeEmailValidators);
+      this.form.controls.initialPaymentPeriodYear.setValidators(periodYearValidators);
+      this.form.controls.initialPaymentPeriodMonth.setValidators(periodMonthValidators);
     } else {
       controls.forEach(control => control.clearValidators());
     }

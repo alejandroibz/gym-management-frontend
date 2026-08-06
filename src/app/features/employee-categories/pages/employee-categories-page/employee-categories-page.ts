@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import {
   EmployeeCategoryDialogComponent,
   EmployeeCategoryDialogResult
@@ -46,7 +47,7 @@ export class EmployeeCategoriesPageComponent {
   readonly filterTerm = signal('');
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);

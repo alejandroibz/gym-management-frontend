@@ -14,6 +14,7 @@ import { RouterLink } from '@angular/router';
 import { RoleService } from '../../../../core/auth/role';
 import { AppPageEvent, AppPaginatorComponent } from '../../../../core/components/app-paginator/app-paginator';
 import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { MembershipPlanDetailsDialogComponent } from '../../components/membership-plan-details-dialog/membership-plan-details-dialog';
 import {
   MembershipPlanDialogComponent,
@@ -52,7 +53,7 @@ export class MembershipPlansPageComponent {
   readonly plans = signal<MembershipPlan[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
-  readonly errorMessage = signal('');
+  readonly errorMessage = createNotifiedErrorSignal();
   readonly totalCount = signal(0);
   readonly pageNumber = signal(1);
   readonly pageSize = signal(10);
