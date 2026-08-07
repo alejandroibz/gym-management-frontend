@@ -239,7 +239,7 @@ export class ProfilePageComponent {
   private uploadAvatarAndPersist(file: File): void {
     this.profileService.uploadAvatar(file).subscribe({
       next: uploaded => {
-        this.form.patchValue({ avatarUrl: uploaded.url });
+        this.form.patchValue({ avatarUrl: uploaded.downloadUrl || uploaded.url });
         this.selectedAvatar = null;
         this.originalAvatar = null;
         this.clearCropPreviewUrl();

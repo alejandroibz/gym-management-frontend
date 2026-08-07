@@ -223,7 +223,7 @@ export class ExerciseCreatePageComponent {
       forkJoin(images.map(image => this.platformService.uploadExerciseImage(image.file))).subscribe({
         next: files => this.persistExercise(stayOnPage, files.map((file, index) => ({
           mediaType: 'Image' as const,
-          url: file.url,
+          url: file.downloadUrl || file.url,
           title: images[index]?.name ?? null,
           sortOrder: index + 1
         }))),

@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastService } from '../../../../core/services/toast.service';
+import { environment } from '../../../../../environments/environment';
 import { Exercise } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
 
@@ -140,9 +141,28 @@ export class RoutineCreatePageComponent {
   }
 
   getExercisePhotoUrl(exercise: Exercise): string | null {
-    return exercise.photoUrl
+    const url = exercise.photoUrl
       || exercise.media?.find(media => media.mediaType === 'Image')?.url
       || null;
+
+    if (!url) return null;
+
+    // Older exercises stored the direct URL of a private Azure container.
+    // Route those references through the public API download endpoint.
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.hostname.endsWith('.blob.core.windows.net')) {
+        const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+        const blobPath = pathSegments.slice(1).map(segment => encodeURIComponent(decodeURIComponent(segment))).join('/');
+        return blobPath
+          ? `${environment.apiUrl.replace(/\/$/, '')}/api/files/download/${blobPath}`
+          : null;
+      }
+    } catch {
+      // Keep relative and already proxied URLs unchanged.
+    }
+
+    return url;
   }
 
   openExercisePreview(exercise: Exercise, template: TemplateRef<unknown>): void {
@@ -157,6 +177,7 @@ export class RoutineCreatePageComponent {
     this.dialog.open(template, {
       width: 'min(900px, 96vw)',
       maxWidth: '96vw',
+      maxHeight: '92vh',
       panelClass: 'exercise-preview-dialog'
     }).afterClosed().subscribe(() => {
       this.previewExercise.set(null);

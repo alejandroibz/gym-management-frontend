@@ -883,7 +883,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     this.platformService.uploadBadgeImage(file).subscribe({
       next: uploaded => {
         this.isUploadingBadge.set(false);
-        this.achievementForm.controls.badgeImageUrl.setValue(uploaded.url);
+        this.achievementForm.controls.badgeImageUrl.setValue(uploaded.downloadUrl || uploaded.url);
       },
       error: () => {
         this.isUploadingBadge.set(false);
@@ -1058,7 +1058,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       this.isLoading.set(true);
       this.platformService.uploadExerciseImage(this.selectedExerciseImage).subscribe({
         next: file => {
-          this.exerciseForm.patchValue({ photoUrl: file.url });
+          this.exerciseForm.patchValue({ photoUrl: file.downloadUrl || file.url });
           this.selectedExerciseImage = null;
           this.persistExercise();
         },
