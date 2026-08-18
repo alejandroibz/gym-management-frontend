@@ -10,11 +10,12 @@ export class ContractsService {
   saveTemplate(payload:{id?:number|null;name:string;acceptanceText:string;clauses:ContractClause[]}):Observable<ContractTemplate>{return this.http.post<ContractTemplate>(`${this.url}/templates`,payload)}
   activateTemplate(id:number):Observable<ContractTemplate>{return this.http.post<ContractTemplate>(`${this.url}/templates/${id}/activate`,{legalReviewed:true})}
   getContracts(clientId?:number):Observable<ClientContract[]>{return this.http.get<ClientContract[]>(this.url,{params:clientId?{clientId}:{}})}
+  getMine():Observable<ClientContract[]>{return this.http.get<ClientContract[]>(`${this.url}/mine`)}
   issue(clientId:number):Observable<ClientContract>{return this.http.post<ClientContract>(`${this.url}/clients/${clientId}/issue`,{})}
   get(id:number):Observable<ClientContract>{return this.http.get<ClientContract>(`${this.url}/${id}`)}
-  sign(id:number,payload:{signerName:string;signerDni:string;signatureDataUrl:string;accepted:boolean}):Observable<ClientContract>{return this.http.post<ClientContract>(`${this.url}/${id}/sign`,payload)}
+  sign(id:number,payload:{signerName:string;signerDni:string;signerCapacity:string;signatureDataUrl:string;accepted:boolean;readConfirmed:boolean;readingSeconds:number}):Observable<ClientContract>{return this.http.post<ClientContract>(`${this.url}/${id}/sign`,payload)}
   uploadPaper(id:number,signerName:string,signerDni:string,files:File[]):Observable<ClientContract>{const data=new FormData();data.append('signerName',signerName);data.append('signerDni',signerDni);files.forEach(file=>data.append('files',file));return this.http.post<ClientContract>(`${this.url}/${id}/paper`,data)}
-  void(id:number):Observable<void>{return this.http.post<void>(`${this.url}/${id}/void`,{})}
+  void(id:number,reason:string):Observable<void>{return this.http.post<void>(`${this.url}/${id}/void`,{reason})}
   pdfUrl(id:number):string{return `${this.url}/${id}/pdf`}
   documentUrl(contractId:number,documentId:number):string{return `${this.url}/${contractId}/documents/${documentId}`}
   download(url:string):Observable<Blob>{return this.http.get(url,{responseType:'blob'})}

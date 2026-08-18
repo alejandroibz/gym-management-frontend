@@ -495,7 +495,7 @@ export class ClientDetailsPageComponent {
   issueContract(): void { const client=this.client();if(!client)return;this.isSavingContract.set(true);this.contractsService.issue(client.id).subscribe({next:()=>{this.isSavingContract.set(false);this.loadContracts(client.id)},error:e=>{this.isSavingContract.set(false);this.errorMessage.set(e.error?.error??'No se pudo emitir el contrato.')}}); }
   downloadContract(contract:ClientContract):void{this.contractsService.download(this.contractsService.pdfUrl(contract.id)).subscribe(blob=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`contrato-${contract.clientName}.pdf`;a.click();URL.revokeObjectURL(url)})}
   uploadPaperContract(contract:ClientContract,event:Event):void{const files=Array.from((event.target as HTMLInputElement).files??[]);if(!files.length)return;this.isSavingContract.set(true);this.contractsService.uploadPaper(contract.id,contract.clientName,contract.clientDni??'',files).subscribe({next:()=>{this.isSavingContract.set(false);this.loadContracts(contract.clientId)},error:e=>{this.isSavingContract.set(false);this.errorMessage.set(e.error?.error??'No se pudo subir el contrato firmado.')}})}
-  voidContract(contract:ClientContract):void{this.contractsService.void(contract.id).subscribe(()=>this.loadContracts(contract.clientId))}
+  voidContract(contract:ClientContract):void{const reason=window.prompt('Motivo de anulación del contrato:')?.trim();if(!reason)return;this.contractsService.void(contract.id,reason).subscribe({next:()=>this.loadContracts(contract.clientId),error:e=>this.errorMessage.set(e.error?.error??'No se pudo anular el contrato.')})}
 
   confirmPayment(payment: ClientRelationRecord): void {
     const paymentId = this.getPaymentId(payment);

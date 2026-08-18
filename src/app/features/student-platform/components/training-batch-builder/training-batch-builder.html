@@ -1,0 +1,133 @@
+<section class="builder-page">
+  <header class="builder-header">
+    <div>
+      <span class="eyebrow">Constructor visual</span>
+      <h1>{{ mode === 'plans' ? 'Planes de entrenamiento' : 'Workouts por bloques' }}</h1>
+      <p>Creá, duplicá y organizá todo el lote sin salir de esta pantalla.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button type="button" class="mobile-tree-button" (click)="mobileTreeOpen.set(!mobileTreeOpen())"><mat-icon>account_tree</mat-icon>Estructura</button>
+      <button mat-stroked-button type="button" (click)="libraryOpen.set(!libraryOpen())"><mat-icon>library_books</mat-icon>Biblioteca</button>
+      <button mat-stroked-button type="button" (click)="discard()"><mat-icon>delete_sweep</mat-icon>Descartar</button>
+    </div>
+  </header>
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  <div class="builder-layout" [class.library-hidden]="!libraryOpen()">
+    <aside class="tree-panel" [class.mobile-open]="mobileTreeOpen()">
+      <div class="panel-heading"><div><span>Estructura</span><small>{{ totals().workouts }} workouts · {{ totals().blocks }} bloques</small></div>@if (mode === 'plans') { <button mat-icon-button type="button" matTooltip="Nuevo plan" (click)="addPlan()"><mat-icon>add</mat-icon></button> }</div>
+      <div class="tree-scroll" cdkDropList [cdkDropListData]="plans()" (cdkDropListDropped)="dropPlan($event)">
+        @for (plan of plans(); track plan.clientKey; let pi = $index) {
+          <article class="tree-plan" cdkDrag>
+            @if (mode === 'plans') {
+              <div class="tree-row plan-row" [class.selected]="selection()?.kind === 'plan' && selection()?.planKey === plan.clientKey" (click)="select({kind:'plan',planKey:plan.clientKey})">
+                <mat-icon cdkDragHandle matTooltip="Arrastrar">drag_indicator</mat-icon><button mat-icon-button type="button" (click)="$event.stopPropagation(); plan.collapsed=!plan.collapsed; touch()"><mat-icon>{{ plan.collapsed ? 'chevron_right' : 'expand_more' }}</mat-icon></button>
+                <span><strong>{{ plan.name || 'Plan sin nombre' }}</strong><small>{{ plan.workouts.length }} workouts</small></span>
+                <button mat-icon-button type="button" matTooltip="Duplicar plan" (click)="$event.stopPropagation(); duplicatePlan(plan)"><mat-icon>content_copy</mat-icon></button>
+                <button mat-icon-button type="button" matTooltip="Eliminar plan" (click)="$event.stopPropagation(); removePlan(plan)"><mat-icon>delete</mat-icon></button>
+              </div>
+            }
+            @if (!plan.collapsed || mode === 'workouts') {
+              <div class="tree-children" cdkDropList [cdkDropListData]="plan.workouts" (cdkDropListDropped)="dropWorkout(plan,$event)">
+                @for (workout of plan.workouts; track workout.clientKey; let wi = $index) {
+                  <div class="tree-workout" cdkDrag>
+                    <div class="tree-row" [class.selected]="selection()?.kind === 'workout' && selection()?.workoutKey === workout.clientKey" (click)="select({kind:'workout',planKey:plan.clientKey,workoutKey:workout.clientKey})">
+                      <mat-icon cdkDragHandle>drag_indicator</mat-icon><button mat-icon-button type="button" (click)="$event.stopPropagation(); workout.collapsed=!workout.collapsed; touch()"><mat-icon>{{ workout.collapsed ? 'chevron_right' : 'expand_more' }}</mat-icon></button>
+                      <span><strong>{{ workout.name || 'Workout sin nombre' }}</strong><small>{{ workout.blocks.length }} bloques</small></span>
+                      <button mat-icon-button type="button" matTooltip="Duplicar" (click)="$event.stopPropagation(); select({kind:'workout',planKey:plan.clientKey,workoutKey:workout.clientKey}); duplicateWorkout(workout)"><mat-icon>content_copy</mat-icon></button>
+                      <button mat-icon-button type="button" matTooltip="Eliminar" (click)="$event.stopPropagation(); removeWorkout(plan,workout)"><mat-icon>close</mat-icon></button>
+                    </div>
+                    @if (!workout.collapsed) {
+                      <div class="block-tree" cdkDropList [cdkDropListData]="workout.blocks" (cdkDropListDropped)="dropBlock(workout,$event)">
+                        @for (block of workout.blocks; track block.clientKey; let bi = $index) {
+                          <div cdkDrag class="block-node" [class.selected]="selection()?.kind === 'block' && selection()?.blockKey === block.clientKey" (click)="select({kind:'block',planKey:plan.clientKey,workoutKey:workout.clientKey,blockKey:block.clientKey})">
+                            <div class="block-node-controls"><mat-icon cdkDragHandle matTooltip="Arrastrar bloque">drag_indicator</mat-icon><button type="button" matTooltip="Eliminar bloque" [attr.aria-label]="'Eliminar ' + block.name" (click)="$event.stopPropagation(); removeBlock(workout,block)"><mat-icon>close</mat-icon></button></div>
+                            <span>{{ block.name || 'Bloque sin nombre' }}<small>{{ block.exercises.length }} ej. × {{ block.cycles }}</small></span>
+                          </div>
+                        }
+                        <button type="button" class="tree-add" (click)="select({kind:'workout',planKey:plan.clientKey,workoutKey:workout.clientKey}); addBlock(workout)"><mat-icon>add</mat-icon>Bloque</button>
+                      </div>
+                    }
+                  </div>
+                }
+                <button type="button" class="tree-add" (click)="select({kind:'plan',planKey:plan.clientKey}); addWorkout(plan)"><mat-icon>add</mat-icon>Workout</button>
+              </div>
+            }
+          </article>
+        }
+      </div>
+    </aside>
+
+    <main class="editor-panel">
+      @if (selectedPlan(); as plan) {
+        <nav class="context-path"><button type="button" (click)="select({kind:'plan',planKey:plan.clientKey})">{{ mode === 'plans' ? plan.name : 'Workouts' }}</button>@if (selectedWorkout(); as workout) { <mat-icon>chevron_right</mat-icon><button type="button" (click)="select({kind:'workout',planKey:plan.clientKey,workoutKey:workout.clientKey})">{{ workout.name }}</button> }@if (selectedBlock(); as block) { <mat-icon>chevron_right</mat-icon><span>{{ block.name }}</span> }</nav>
+
+        @if (selection()?.kind === 'plan') {
+          <section class="editor-card">
+            <div class="editor-title"><div><span class="step">PLAN</span><h2>{{ mode === 'plans' ? 'Datos del plan' : 'Workouts preparados' }}</h2></div><div>@if (mode === 'plans') { <button mat-stroked-button type="button" (click)="duplicatePlan(plan)"><mat-icon>content_copy</mat-icon>Duplicar</button> }<button mat-flat-button type="button" (click)="addWorkout(plan)"><mat-icon>add</mat-icon>Nuevo workout</button></div></div>
+            @if (mode === 'plans') {
+              <div class="field-grid"><label>Nombre<input [(ngModel)]="plan.name" (ngModelChange)="touch()"></label><label>Objetivo<input [(ngModel)]="plan.goal" (ngModelChange)="touch()"></label><label>Nivel<input [(ngModel)]="plan.level" (ngModelChange)="touch()"></label><label class="wide">Descripción<textarea rows="3" [(ngModel)]="plan.description" (ngModelChange)="touch()"></textarea></label></div>
+            }
+            <div class="empty-editor"><mat-icon>fitness_center</mat-icon><strong>{{ plan.workouts.length ? 'Elegí un workout para editarlo' : 'Empezá creando el primer workout' }}</strong><span>Los cambios se guardan automáticamente en el borrador.</span></div>
+          </section>
+        }
+
+        @if (selectedWorkout(); as workout) {
+          @if (selection()?.kind === 'workout') {
+            <section class="editor-card">
+              <div class="editor-title"><div><span class="step">WORKOUT {{ workout.sortOrder }}</span><h2>Configuración del workout</h2></div><div><button mat-stroked-button type="button" (click)="duplicateWorkout(workout)"><mat-icon>content_copy</mat-icon>Duplicar</button><button mat-stroked-button type="button" [disabled]="!blockClipboard()" (click)="pasteBlock(workout)"><mat-icon>content_paste</mat-icon>Pegar bloque</button><button mat-flat-button type="button" (click)="addBlock(workout)"><mat-icon>add</mat-icon>Nuevo bloque</button><button mat-stroked-button type="button" class="danger-action" (click)="removeWorkout(plan,workout)"><mat-icon>delete</mat-icon>Eliminar workout</button></div></div>
+              <div class="field-grid"><label>Nombre<input [(ngModel)]="workout.name" (ngModelChange)="touchWorkout(workout)"></label><label>Objetivo<input [(ngModel)]="workout.goal" (ngModelChange)="touchWorkout(workout)"></label><label>Nivel<input [(ngModel)]="workout.level" (ngModelChange)="touchWorkout(workout)"></label><label>Día o etiqueta<input [(ngModel)]="workout.dayLabel" (ngModelChange)="touch()"></label><label>Día sugerido<select [(ngModel)]="workout.suggestedDayOfWeek" (ngModelChange)="touch()"><option [ngValue]="null">Sin definir</option><option [ngValue]="1">Lunes</option><option [ngValue]="2">Martes</option><option [ngValue]="3">Miércoles</option><option [ngValue]="4">Jueves</option><option [ngValue]="5">Viernes</option><option [ngValue]="6">Sábado</option><option [ngValue]="0">Domingo</option></select></label><label class="wide">Descripción<textarea rows="2" [(ngModel)]="workout.description" (ngModelChange)="touchWorkout(workout)"></textarea></label><label class="wide">Notas para el plan<textarea rows="2" [(ngModel)]="workout.notes" (ngModelChange)="touch()"></textarea></label></div>
+              <div class="block-cards">@for (block of workout.blocks; track block.clientKey) { <button type="button" (click)="select({kind:'block',planKey:plan.clientKey,workoutKey:workout.clientKey,blockKey:block.clientKey})"><span>{{ block.name }}</span><strong>{{ block.exercises.length }} ejercicios × {{ block.cycles }} ciclos</strong><mat-icon>chevron_right</mat-icon></button> }</div>
+              @if(insights();as info){<section class="insights"><div><span><strong>{{ info.durationMinutes }}</strong> min estimados</span><span><strong>{{ info.prescribedSets }}</strong> series totales</span><span><strong>{{ info.distribution.length }}</strong> grupos musculares</span></div>@if(info.alerts.length){<ul>@for(alert of info.alerts;track alert){<li><mat-icon>info</mat-icon>{{ alert }}</li>}</ul>}@else{<p><mat-icon>verified</mat-icon>No detectamos alertas básicas en este workout.</p>}</section>}
+            </section>
+          }
+
+          @if (selectedBlock(); as block) {
+            <section class="editor-card block-editor">
+              <div class="editor-title"><div><span class="step">BLOQUE {{ block.sortOrder }}</span><h2>{{ block.exercises.length }} ejercicios × {{ block.cycles }} ciclos</h2></div><div><button mat-stroked-button type="button" (click)="copySelectedExercises()"><mat-icon>content_copy</mat-icon>Copiar ejercicios</button><button mat-stroked-button type="button" [disabled]="!clipboard().length" (click)="pasteExercises()"><mat-icon>content_paste</mat-icon>Pegar {{ clipboard().length }}</button><button mat-stroked-button type="button" (click)="copyBlock(block)"><mat-icon>file_copy</mat-icon>Copiar bloque</button><button mat-stroked-button type="button" (click)="duplicateBlock(block)"><mat-icon>library_add</mat-icon>Duplicar bloque</button></div></div>
+              <div class="field-grid block-fields"><label>Nombre<input [(ngModel)]="block.name" (ngModelChange)="touchWorkout(workout)"></label><label>Ciclos<input type="number" min="1" [(ngModel)]="block.cycles" (ngModelChange)="touchWorkout(workout)"></label><label class="wide">Notas<input [(ngModel)]="block.notes" (ngModelChange)="touchWorkout(workout)"></label></div>
+
+              <div class="exercise-table" cdkDropList id="selected-exercises-drop" [cdkDropListData]="block.exercises" [cdkDropListConnectedTo]="['exercise-catalog-drag-source']" (cdkDropListDropped)="dropExercise(block,$event)">
+                <div class="exercise-head"><span></span><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>Descanso</span><span>Notas</span><span></span></div>
+                @for (exercise of block.exercises; track exercise.clientKey; let ei = $index) {
+                  <div class="exercise-line" cdkDrag>
+                    <div><mat-icon cdkDragHandle matTooltip="Arrastrar">drag_indicator</mat-icon><input type="checkbox" [(ngModel)]="exercise.selected" aria-label="Seleccionar ejercicio"></div>
+                    <span class="exercise-name"><strong>{{ exercise.name }}</strong><small>{{ exercise.muscleGroup }}</small></span>
+                    <input type="number" min="1" [(ngModel)]="exercise.sets" (ngModelChange)="touchWorkout(workout)" aria-label="Series">
+                    <input type="number" min="1" [(ngModel)]="exercise.reps" (ngModelChange)="touchWorkout(workout)" aria-label="Repeticiones">
+                    <input type="number" min="0" [(ngModel)]="exercise.weight" (ngModelChange)="touchWorkout(workout)" aria-label="Peso">
+                    <input type="number" min="0" [(ngModel)]="exercise.restSeconds" (ngModelChange)="touchWorkout(workout)" aria-label="Descanso">
+                    <input [(ngModel)]="exercise.notes" (ngModelChange)="touchWorkout(workout)" aria-label="Notas" placeholder="Opcional">
+                    <div class="row-actions"><button mat-icon-button type="button" matTooltip="Copiar ejercicio" aria-label="Copiar ejercicio" (click)="duplicateExercise(exercise)"><mat-icon>content_copy</mat-icon></button><button mat-icon-button type="button" matTooltip="Eliminar" (click)="removeExercise(exercise)"><mat-icon>close</mat-icon></button></div>
+                  </div>
+                } @empty { <div class="empty-inline"><mat-icon>playlist_add</mat-icon><span>Seleccioná varios ejercicios del catálogo y agregalos juntos.</span></div> }
+              </div>
+
+              <section class="catalog">
+                <div class="catalog-heading"><div><h3>Agregar ejercicios</h3><span>{{ catalogSelection().size }} seleccionados · También podés arrastrarlos al bloque</span></div><div><button mat-button type="button" (click)="selectAllVisible()">Seleccionar visibles</button><button mat-button type="button" (click)="clearCatalog()">Limpiar</button></div></div>
+                <div class="catalog-filters"><label>Buscar<input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Nombre o músculo"></label><label>Grupo muscular<select [ngModel]="muscleFilter()" (ngModelChange)="muscleFilter.set($event)"><option value="">Todos</option>@for (group of muscleGroups(); track group) { <option [value]="group">{{ group }}</option> }</select></label></div>
+                <div class="catalog-results" cdkDropList id="exercise-catalog-drag-source" [cdkDropListData]="filteredExercises()" [cdkDropListConnectedTo]="['selected-exercises-drop']" cdkDropListSortingDisabled>@for (exercise of filteredExercises(); track exercise.id) { <button cdkDrag [cdkDragData]="exercise" type="button" [class.selected]="catalogSelection().has(exercise.id)" (click)="toggleCatalog(exercise.id)"><mat-icon cdkDragHandle matTooltip="Arrastrar al bloque">drag_indicator</mat-icon><mat-icon>{{ catalogSelection().has(exercise.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span><strong>{{ exercise.name }}</strong><small>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</small></span></button> }</div>
+                <div class="preset-row"><span>Presets rápidos</span>@for(preset of presets;track preset.name){<button type="button" (click)="applyPresetToSelected(preset)">{{ preset.name }} <small>{{ preset.sets }}×{{ preset.reps }} · {{ preset.rest }}s</small></button>}</div><div class="bulk-values"><span>Valores iniciales</span><label>Series<input type="number" [ngModel]="commonSets()" (ngModelChange)="commonSets.set($event)"></label><label>Reps<input type="number" [ngModel]="commonReps()" (ngModelChange)="commonReps.set($event)"></label><label>Peso<input type="number" [ngModel]="commonWeight()" (ngModelChange)="commonWeight.set($event)"></label><label>Descanso<input type="number" [ngModel]="commonRest()" (ngModelChange)="commonRest.set($event)"></label><button mat-flat-button type="button" [disabled]="!catalogSelection().size" (click)="addSelectedExercises()"><mat-icon>playlist_add</mat-icon>Agregar {{ catalogSelection().size }}</button></div>
+              </section>
+            </section>
+          }
+        }
+      }
+    </main>
+
+    @if (libraryOpen()) {
+      <aside class="library-panel">
+        <div class="panel-heading"><div><span>Biblioteca</span><small>Copias independientes</small></div><button mat-icon-button type="button" (click)="libraryOpen.set(false)"><mat-icon>close</mat-icon></button></div>
+        <label class="library-search"><mat-icon>search</mat-icon><input [ngModel]="librarySearch()" (ngModelChange)="librarySearch.set($event)" placeholder="Buscar workout o bloque"></label>
+        <div class="library-list">@for (template of filteredTemplates(); track template.id) { <details><summary><span><strong>{{ template.name }}</strong><small>{{ template.blocks.length || 1 }} bloques · {{ template.exercises.length }} ejercicios</small></span><mat-icon>expand_more</mat-icon></summary><div class="template-actions"><button mat-flat-button type="button" [disabled]="!selectedPlan()" (click)="addTemplate(template)"><mat-icon>add</mat-icon>Agregar workout</button></div>@for (block of template.blocks; track block.id; let bi = $index) { <details class="library-block-detail"><summary class="library-block"><span><strong>{{ block.name }}</strong><small>{{ block.exercises.length }} ej. × {{ block.cycles }}</small></span><button mat-icon-button type="button" matTooltip="Agregar bloque al workout actual" [disabled]="!selectedWorkout()" (click)="$event.preventDefault(); addTemplateBlock(template,bi)"><mat-icon>library_add</mat-icon></button></summary>@for (exercise of block.exercises; track exercise.exerciseId) { <div class="library-exercise"><span>{{ exercise.exerciseName }}<small>{{ exercise.sets || '-' }} × {{ exercise.reps || '-' }}</small></span><button mat-icon-button type="button" matTooltip="Preparar para pegar" (click)="copyTemplateExercise(exercise)"><mat-icon>add</mat-icon></button></div> }</details> }</details> } @empty { <p class="empty-library">No encontramos resultados.</p> }</div>
+      </aside>
+    }
+  </div>
+
+  <footer class="summary-bar">
+    <div class="summary-counts">@if (mode === 'plans') { <span><strong>{{ totals().plans }}</strong> planes</span> }<span><strong>{{ totals().workouts }}</strong> workouts</span><span><strong>{{ totals().blocks }}</strong> bloques</span><span><strong>{{ totals().exercises }}</strong> ejercicios</span></div>
+    <div class="draft-status"><mat-icon>cloud_done</mat-icon>{{ savedAt() ? 'Borrador guardado' : 'Preparando borrador' }}</div>
+    @if (issues().length) { <button type="button" class="issue-button" (click)="selectIssue(issues()[0])"><mat-icon>error_outline</mat-icon>{{ issues().length }} por revisar</button> }
+    <button mat-flat-button type="button" class="create-button" [disabled]="loading() || !totals().workouts" (click)="save()"><mat-icon>rocket_launch</mat-icon>{{ mode === 'plans' ? 'Crear lote completo' : 'Crear workouts' }}</button>
+  </footer>
+</section>

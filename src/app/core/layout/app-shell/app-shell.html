@@ -28,6 +28,9 @@
       <div class="sidebar-section-label" *ngIf="!isCollapsed">Principal</div>
 
       <mat-nav-list class="nav-list">
+        <a *ngIf="!(isAdminOrSuperAdmin$ | async)" mat-list-item routerLink="/my-contracts" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content"><mat-icon>verified_user</mat-icon><span class="nav-text">Mis contratos</span></div>
+        </a>
         <a
           *ngIf="isSuperAdmin$ | async"
           mat-list-item

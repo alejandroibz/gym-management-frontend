@@ -206,36 +206,37 @@
               <span>Acciones</span>
             }
           </div>
-          @for (exercise of isEditing() ? editableExercises() : currentWorkout.exercises; track exercise.exerciseId; let i = $index) {
-            <div class="table-row">
-              <strong>{{ exercise.sortOrder }}</strong>
-              <div class="exercise-cell">
-                <b>{{ exercise.exerciseName }}</b>
-                <small class="muscle-group">{{ exercise.muscleGroup }}</small>
-                @if (exercise.notes) {
-                  <small class="exercise-notes">{{ exercise.notes }}</small>
-                }
-              </div>
-              <span>{{ exercise.sets || '-' }}</span>
-              <span>{{ exercise.reps || '-' }}</span>
-              <span>{{ exercise.weight || 0 }} kg</span>
-              <span>{{ exercise.restSeconds || '-' }}s</span>
-              @if (isEditing()) {
-                <button mat-icon-button type="button" matTooltip="Quitar ejercicio" (click)="removeWorkoutExercise(i)">
-                  <mat-icon>close</mat-icon>
-                </button>
+          @if (isEditing()) {
+            @for (block of editableBlocks(); track block.id || block.sortOrder; let bi = $index) {
+              <div class="block-table-heading" [class.selected-block]="activeEditableBlockIndex() === bi" (click)="activeEditableBlockIndex.set(bi)"><strong>{{ block.name }}</strong><span>{{ block.cycles }} ciclo{{ block.cycles === 1 ? '' : 's' }}</span><button mat-icon-button type="button" matTooltip="Eliminar bloque" (click)="$event.stopPropagation(); removeEditableBlock(bi)"><mat-icon>delete</mat-icon></button></div>
+              @for (exercise of block.exercises; track exercise.exerciseId; let i = $index) {
+                <div class="table-row"><strong>{{ exercise.sortOrder }}</strong><div class="exercise-cell"><b>{{ exercise.exerciseName }}</b><small class="muscle-group">{{ exercise.muscleGroup }}</small>@if (exercise.notes) { <small class="exercise-notes">{{ exercise.notes }}</small> }</div><span>{{ exercise.sets || '-' }}</span><span>{{ exercise.reps || '-' }}</span><span>{{ exercise.weight || 0 }} kg</span><span>{{ exercise.restSeconds || '-' }}s</span><button mat-icon-button type="button" matTooltip="Quitar ejercicio" (click)="removeWorkoutExercise(bi,i)"><mat-icon>close</mat-icon></button></div>
               }
-            </div>
+            }
+          } @else {
+            @for (block of currentWorkout.blocks; track block.id) {
+              <div class="block-table-heading"><strong>{{ block.name }}</strong><span>{{ block.cycles }} ciclo{{ block.cycles === 1 ? '' : 's' }}</span></div>
+              @for (exercise of block.exercises; track exercise.id) {
+                <div class="table-row">
+                  <strong>{{ exercise.sortOrder }}</strong><div class="exercise-cell"><b>{{ exercise.exerciseName }}</b><small class="muscle-group">{{ exercise.muscleGroup }}</small>@if (exercise.notes) { <small class="exercise-notes">{{ exercise.notes }}</small> }</div>
+                  <span>{{ exercise.sets || '-' }}</span><span>{{ exercise.reps || '-' }}</span><span>{{ exercise.weight || 0 }} kg</span><span>{{ exercise.restSeconds || '-' }}s</span>
+                </div>
+              }
+            }
           }
         </div>
 
         @if (isEditing()) {
+          <section class="exercise-add-panel block-add-panel">
+            <div class="section-heading compact-heading"><mat-icon>view_agenda</mat-icon><div><h2>Agregar bloque</h2><span>Los ciclos repiten el bloque completo.</span></div></div>
+            <form [formGroup]="blockForm" class="exercise-builder"><mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="name"></mat-form-field><mat-form-field appearance="outline"><mat-label>Ciclos</mat-label><input matInput type="number" formControlName="cycles"></mat-form-field><mat-form-field appearance="outline" class="wide"><mat-label>Notas</mat-label><input matInput formControlName="notes"></mat-form-field><button mat-stroked-button type="button" class="wide" (click)="addEditableBlock()"><mat-icon>add</mat-icon>Agregar bloque</button></form>
+          </section>
           <section class="exercise-add-panel">
             <div class="section-heading compact-heading">
               <mat-icon>playlist_add</mat-icon>
               <div>
                 <h2>Agregar ejercicio</h2>
-                <span>Busca un ejercicio del catalogo y sumalo al workout.</span>
+                <span>Se agregará al bloque seleccionado: {{ editableBlocks()[activeEditableBlockIndex()]?.name || 'ninguno' }}.</span>
               </div>
             </div>
 

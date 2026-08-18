@@ -3,6 +3,7 @@ import { authGuardFn } from '@auth0/auth0-angular';
 
 import { AppShell } from './core/layout/app-shell/app-shell';
 import { roleGuard } from './core/guards/role-guard';
+import { contractComplianceGuard } from './core/guards/contract-compliance-guard';
 
 export const routes: Routes = [
   {
@@ -21,10 +22,11 @@ export const routes: Routes = [
     path: '',
     component: AppShell,
     canActivate: [authGuardFn],
+    canActivateChild: [contractComplianceGuard],
     children: [
       {
         path: '',
-        redirectTo: 'clients',
+        redirectTo: 'profile',
         pathMatch: 'full'
       },
       {
@@ -108,6 +110,11 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'my-contracts',
+        loadComponent: () => import('./features/contracts/pages/my-contracts-page/my-contracts-page').then(m => m.MyContractsPageComponent),
+        canActivate: [roleGuard], data: { roles: ['User'] }
+      },
+      {
         path: 'contracts',
         loadComponent: () => import('./features/contracts/pages/contracts-page/contracts-page').then(m => m.ContractsPageComponent),
         canActivate: [roleGuard], data: { roles: ['SuperAdmin'] }
@@ -115,7 +122,12 @@ export const routes: Routes = [
       {
         path: 'contracts/:id/sign',
         loadComponent: () => import('./features/contracts/pages/contract-signature-page/contract-signature-page').then(m => m.ContractSignaturePageComponent),
-        canActivate: [roleGuard], data: { roles: ['SuperAdmin'] }
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin', 'User'] }
+      },
+      {
+        path: 'contracts/:id',
+        loadComponent: () => import('./features/contracts/pages/contract-detail-page/contract-detail-page').then(m => m.ContractDetailPageComponent),
+        canActivate: [roleGuard], data: { roles: ['SuperAdmin', 'Admin'] }
       },
       {
         path: 'health/patients/:id',

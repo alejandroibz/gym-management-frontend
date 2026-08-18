@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { AchievementPayload, AchievementTemplate, AssignRoutinePayload, AssignTrainingPlanPayload, AttendanceLog, BranchAttendanceSettings, Exercise, ExercisePayload, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, HabitDefinitionPayload, Muscle, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutinePayload, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, TrainingPlanPayload, WorkoutSession, WorkoutSessionPayload } from '../models/student-platform.model';
+import { AchievementPayload, AchievementTemplate, AssignRoutinePayload, AssignTrainingPlanPayload, AttendanceLog, BranchAttendanceSettings, Exercise, ExercisePayload, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, HabitDefinitionPayload, Muscle, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutinePayload, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, TrainingPlanCompositionBatchPayload, TrainingPlanCompositionBatchResult, TrainingPlanCompositionPayload, TrainingPlanCompositionResult, TrainingPlanPayload, WorkoutSession, WorkoutSessionPayload, WorkoutSessionProfessionalReviewPayload } from '../models/student-platform.model';
 
 interface UploadedFile {
   url: string;
@@ -118,6 +118,10 @@ export class StudentPlatformService {
     return this.http.post<{ id: number }>(`${this.apiUrl}/Routines`, payload);
   }
 
+  createRoutinesBatch(items: Array<RoutinePayload & { clientKey: string }>): Observable<{ routineIds: Record<string, number> }> {
+    return this.http.post<{ routineIds: Record<string, number> }>(`${this.apiUrl}/Routines/batch`, { items });
+  }
+
   updateRoutine(id: number, payload: RoutinePayload): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/Routines/${id}`, payload);
   }
@@ -146,6 +150,14 @@ export class StudentPlatformService {
     return this.http.post<{ id: number }>(`${this.apiUrl}/TrainingPlans`, payload);
   }
 
+  composeTrainingPlan(payload: TrainingPlanCompositionPayload): Observable<TrainingPlanCompositionResult> {
+    return this.http.post<TrainingPlanCompositionResult>(`${this.apiUrl}/TrainingPlans/compose`, payload);
+  }
+
+  composeTrainingPlansBatch(payload: TrainingPlanCompositionBatchPayload): Observable<TrainingPlanCompositionBatchResult> {
+    return this.http.post<TrainingPlanCompositionBatchResult>(`${this.apiUrl}/TrainingPlans/compose-batch`, payload);
+  }
+
   updateTrainingPlan(id: number, payload: TrainingPlanPayload): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/TrainingPlans/${id}`, payload);
   }
@@ -172,6 +184,10 @@ export class StudentPlatformService {
 
   saveWorkoutSession(payload: WorkoutSessionPayload): Observable<WorkoutSession> {
     return this.http.post<WorkoutSession>(`${this.apiUrl}/Training/sessions`, payload);
+  }
+
+  saveWorkoutSessionProfessionalReview(sessionId: number, payload: WorkoutSessionProfessionalReviewPayload): Observable<WorkoutSession> {
+    return this.http.put<WorkoutSession>(`${this.apiUrl}/Training/sessions/${sessionId}/professional-review`, payload);
   }
 
   getAttendance(clientId?: number, from?: string, to?: string): Observable<AttendanceLog[]> {

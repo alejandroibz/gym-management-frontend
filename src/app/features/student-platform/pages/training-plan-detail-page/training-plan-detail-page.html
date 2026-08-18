@@ -38,6 +38,11 @@
         <span>Asignados</span>
         <strong>{{ currentPlan.assignmentCount || assignments().length }}</strong>
       </article>
+      <article>
+        <span>Versión</span>
+        <strong>v{{ currentPlan.versionNumber || 1 }}</strong>
+        <small>{{ currentPlan.status === 'Published' ? 'Publicada' : 'Lista para asignar' }}</small>
+      </article>
     </section>
 
     <main class="detail-layout">
@@ -87,8 +92,10 @@
                     }
 
                     @if (workoutRoutine(workout); as routine) {
-                      <div class="exercise-list">
-                        @for (exercise of routine.exercises; track exercise.id) {
+                      @for (block of routine.blocks; track block.id) {
+                        <div class="block-heading"><strong>{{ block.name }}</strong><span>{{ block.cycles }} ciclo{{ block.cycles === 1 ? '' : 's' }}</span></div>
+                        <div class="exercise-list">
+                        @for (exercise of block.exercises; track exercise.id) {
                           <div class="exercise-row">
                             <strong>{{ exercise.sortOrder }}</strong>
                             <div>
@@ -107,7 +114,8 @@
                             </a>
                           </div>
                         }
-                      </div>
+                        </div>
+                      }
                     }
                   </div>
                 }

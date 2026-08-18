@@ -74,6 +74,16 @@ export interface RoutinePayload {
   scheduleDays: number[];
   clientIds: number[];
   exercises: RoutineExercisePayload[];
+  blocks?: RoutineBlockPayload[];
+}
+
+export interface RoutineBlockPayload {
+  clientKey?: string | null;
+  name: string;
+  sortOrder: number;
+  cycles: number;
+  notes?: string | null;
+  exercises: RoutineExercisePayload[];
 }
 
 export interface RoutineAssignment {
@@ -106,6 +116,12 @@ export interface RoutineAssignment {
     restSeconds?: number | null;
     notes?: string | null;
   }>;
+  blocks: RoutineBlock[];
+}
+
+export interface RoutineBlock extends RoutineBlockPayload {
+  id: number;
+  exercises: RoutineAssignment['exercises'];
 }
 
 export interface RoutineTemplate {
@@ -118,6 +134,42 @@ export interface RoutineTemplate {
   planCount: number;
   plans: RoutineTemplatePlan[];
   exercises: RoutineAssignment['exercises'];
+  blocks: RoutineBlock[];
+}
+
+export interface TrainingPlanCompositionPayload {
+  name: string;
+  description?: string | null;
+  level?: string | null;
+  goal?: string | null;
+  workouts: Array<{
+    clientKey: string;
+    routineId?: number | null;
+    routine?: RoutinePayload | null;
+    sortOrder: number;
+    dayLabel?: string | null;
+    notes?: string | null;
+    suggestedDayOfWeek?: number | null;
+  }>;
+}
+
+export interface TrainingPlanCompositionResult {
+  planId: number;
+  routineIds: Record<string, number>;
+}
+
+export interface TrainingPlanCompositionBatchPayload {
+  plans: Array<TrainingPlanCompositionPayload & { clientKey: string }>;
+}
+
+export interface TrainingPlanCompositionBatchResult {
+  planIds: Record<string, number>;
+  routineIds: Record<string, number>;
+  blockIds: Record<string, number>;
+  plansCreated: number;
+  routinesCreated: number;
+  blocksCreated: number;
+  exercisesCreated: number;
 }
 
 export interface RoutineTemplatePlan {
@@ -137,6 +189,9 @@ export interface TrainingPlan {
   goal: string;
   workoutCount: number;
   assignmentCount: number;
+  versionNumber: number;
+  status: string;
+  publishedAt?: string | null;
   workouts: TrainingPlanWorkout[];
 }
 
@@ -205,6 +260,9 @@ export interface WorkoutSessionPayload {
   notes?: string | null;
   exercises: Array<{
     exerciseId: number;
+    routineBlockId?: number | null;
+    routineExerciseId?: number | null;
+    cycleNumber?: number | null;
     sortOrder: number;
     notes?: string | null;
     sets: Array<{
@@ -225,7 +283,35 @@ export interface WorkoutSession {
   trainingDate: string;
   completedAt: string;
   notes?: string | null;
-  exercises: WorkoutSessionPayload['exercises'];
+  exercises: Array<{
+    id: number;
+    exerciseId: number;
+    routineBlockId?: number | null;
+    routineExerciseId?: number | null;
+    cycleNumber?: number | null;
+    blockName?: string | null;
+    exerciseName: string;
+    sortOrder: number;
+    notes?: string | null;
+    sets: Array<{
+      id: number;
+      setNumber: number;
+      reps?: number | null;
+      weight?: number | null;
+      restSeconds?: number | null;
+      notes?: string | null;
+      professionalReps?: number | null;
+      professionalWeight?: number | null;
+      professionalNotes?: string | null;
+      reviewedByEmployeeId?: number | null;
+      reviewedByName?: string | null;
+      reviewedAt?: string | null;
+    }>;
+  }>;
+}
+
+export interface WorkoutSessionProfessionalReviewPayload {
+  sets: Array<{ setEntryId: number; reps: number | null; weight: number | null; notes?: string | null }>;
 }
 
 export interface AttendanceLog {

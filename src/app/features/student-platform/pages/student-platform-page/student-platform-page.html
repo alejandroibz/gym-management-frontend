@@ -531,6 +531,63 @@
     </mat-tab>
 
     <mat-tab label="Seguimiento">
+      <ng-template #professionalSessionDialog>
+        <section class="professional-session-dialog">
+          <header>
+            <span class="eyebrow">Carga asistida</span>
+            <h2>Registrar workout del alumno</h2>
+            <p>Se crea la sesión con los valores planificados. Después podrás corregir peso y repeticiones reales desde el historial.</p>
+          </header>
+          <form [formGroup]="professionalSessionForm" class="professional-session-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Workout asignado</mat-label>
+              <select matNativeControl formControlName="routineAssignmentId" (change)="resetProfessionalSessionDraft()">
+                <option [value]="0">Seleccionar</option>
+                @for (routine of trackingRoutines(); track routine.id) { <option [value]="routine.id">{{ routine.name }}</option> }
+              </select>
+            </mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Fecha</mat-label><input matInput type="date" formControlName="trainingDate"></mat-form-field>
+            <mat-form-field appearance="outline" class="wide"><mat-label>¿Cómo fue la sesión?</mat-label><textarea matInput rows="3" formControlName="notes" maxlength="1000"></textarea></mat-form-field>
+            @if (selectedProfessionalRoutine(); as routine) {
+              <div class="professional-workout-editor wide">
+                <div class="professional-workout-intro">
+                  <div><strong>{{ routine.name }}</strong><small>Carga las vueltas y los valores que hizo realmente el alumno.</small></div>
+                  <span>{{ routine.blocks.length }} bloques</span>
+                </div>
+                @for (block of routine.blocks; track block.id) {
+                  <section class="professional-block-editor">
+                    <header>
+                      <button type="button" class="professional-block-toggle" (click)="toggleProfessionalBlock(block.id)">
+                        <span><strong>{{ block.name }}</strong><small>{{ block.exercises.length }} ejercicios · {{ professionalBlockCycleCount(block.id, block.cycles) }} {{ professionalBlockCycleCount(block.id, block.cycles) === 1 ? 'vuelta' : 'vueltas' }}</small></span>
+                        <mat-icon>{{ expandedProfessionalBlockId() === block.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      </button>
+                      <label>Vueltas <input type="number" min="1" max="20" [value]="professionalBlockCycleCount(block.id, block.cycles)" (input)="updateProfessionalBlockCycles(block.id, $any($event.target).value)"></label>
+                    </header>
+                    @if (expandedProfessionalBlockId() === block.id) {
+                      <div class="professional-set-editor-header"><span>Ejercicio</span><span>Vuelta</span><span>Peso real</span><span>Repeticiones</span></div>
+                      @for (cycle of professionalCycles(block.id, block.cycles); track cycle) {
+                        <div class="professional-round-label">Vuelta {{ cycle }} de {{ professionalBlockCycleCount(block.id, block.cycles) }}</div>
+                        @for (exercise of block.exercises; track $index; let exerciseIndex = $index) {
+                          <div class="professional-set-editor-row">
+                            <span><strong>{{ exercise.exerciseName }}</strong><small>{{ exercise.muscleGroup }}</small></span>
+                            <strong class="cycle-badge">{{ cycle }}</strong>
+                            <label><span>Peso real</span><input type="number" min="0" step="0.5" [value]="professionalWorkoutDraft()[professionalSetDraftKey(block.id, exerciseIndex, cycle)]?.weight ?? ''" (input)="updateProfessionalSetDraft(block.id, exerciseIndex, cycle, 'weight', $any($event.target).value)"></label>
+                            <label><span>Repeticiones</span><input type="number" min="0" step="1" [value]="professionalWorkoutDraft()[professionalSetDraftKey(block.id, exerciseIndex, cycle)]?.reps ?? ''" (input)="updateProfessionalSetDraft(block.id, exerciseIndex, cycle, 'reps', $any($event.target).value)"></label>
+                          </div>
+                        }
+                      }
+                    }
+                  </section>
+                }
+              </div>
+            }
+            <div class="dialog-actions wide">
+              <button mat-stroked-button type="button" (click)="closeDialogs()">Cancelar</button>
+              <button mat-flat-button color="primary" type="button" [disabled]="professionalSessionForm.invalid || savingSessionReview()" (click)="saveProfessionalWorkoutSession()"><mat-icon>add_task</mat-icon>{{ savingSessionReview() ? 'Guardando...' : 'Registrar workout' }}</button>
+            </div>
+          </form>
+        </section>
+      </ng-template>
       <ng-template #attendanceDialog>
         <section class="panel dialog-panel">
           <div class="panel-heading">
@@ -670,18 +727,13 @@
                   Todavia no hay asistencias para el rango seleccionado.
                 </div>
               } @else {
-                <div class="dense-table">
-                  <div class="table-header">
-                    <span>Fecha</span>
-                    <span>Origen</span>
-                    <span>Notas</span>
-                  </div>
+                <div class="attendance-list">
                   @for (item of attendance(); track item.id) {
-                    <div class="table-row">
-                      <span>{{ item.date | date:'dd/MM/yyyy' }}</span>
-                      <span>{{ item.source }}</span>
-                      <small>{{ item.notes || '-' }}</small>
-                    </div>
+                    <article class="attendance-item">
+                      <span class="attendance-icon"><mat-icon>{{ attendanceSourceIcon(item.source) }}</mat-icon></span>
+                      <span><strong>{{ attendanceSourceLabel(item.source) }}</strong><small>{{ item.notes || 'Sin observaciones' }}</small></span>
+                      <time>{{ item.date | date:'dd MMM yyyy' }}</time>
+                    </article>
                   }
                 </div>
               }
@@ -699,23 +751,109 @@
                   Este alumno todavia no tiene planes asignados.
                 </div>
               } @else {
-                <div class="dense-table">
-                  <div class="table-header">
-                    <span>Plan</span>
-                    <span>Workouts</span>
-                    <span>Asignado</span>
-                  </div>
+                <div class="student-plan-list">
                   @for (assignment of selectedTrackingClientPlanAssignments(); track assignment.id) {
-                    <div class="table-row">
-                      <span>{{ assignment.trainingPlanName }}</span>
-                      <span>{{ assignment.workoutCount }}</span>
-                      <small>{{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small>
-                    </div>
+                    <article class="student-plan-item">
+                      <span class="student-plan-icon"><mat-icon>assignment</mat-icon></span>
+                      <span class="student-plan-name"><strong>{{ assignment.trainingPlanName }}</strong><small>Asignado el {{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small></span>
+                      <span class="student-plan-workouts"><strong>{{ assignment.workoutCount }}</strong><small>workouts</small></span>
+                      <span class="status-pill">{{ assignment.status }}</span>
+                    </article>
                   }
                 </div>
               }
             </section>
           </div>
+
+          <section class="tracking-card session-history-card">
+            <div class="panel-heading compact-heading">
+              <div>
+                <span class="eyebrow">Entrenamientos realizados</span>
+                <h3>Historial de sesiones</h3>
+                <small>Consulta lo que hizo el alumno y registra el peso o las repeticiones observadas en el gimnasio.</small>
+              </div>
+              <div class="session-heading-actions">
+                <strong>{{ workoutSessions().length }} sesiones</strong>
+                <button mat-flat-button color="primary" type="button" [disabled]="!trackingRoutines().length" (click)="openProfessionalSessionDialog(professionalSessionDialog)"><mat-icon>add</mat-icon>Registrar workout</button>
+              </div>
+            </div>
+
+            @if (!workoutSessions().length) {
+              <div class="inline-empty">No hay sesiones completadas en el rango seleccionado.</div>
+            } @else {
+              <div class="session-history-list">
+                @for (session of workoutSessions(); track session.id) {
+                  <article class="session-history-item" [class.expanded]="expandedWorkoutSessionId() === session.id">
+                    <button type="button" class="session-history-summary" (click)="toggleWorkoutSession(session)">
+                      <span class="session-date"><strong>{{ session.trainingDate | date:'dd' }}</strong>{{ session.trainingDate | date:'MMM' }}</span>
+                      <span class="session-title">
+                        <strong>{{ session.routineName }}</strong>
+                        <small>{{ session.exercises.length }} ejercicios · {{ session.completedAt | date:'HH:mm' }}</small>
+                      </span>
+                      @if (session.notes) { <span class="session-feeling"><mat-icon>chat_bubble_outline</mat-icon>{{ session.notes }}</span> }
+                      <mat-icon>{{ expandedWorkoutSessionId() === session.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+
+                    @if (expandedWorkoutSessionId() === session.id) {
+                      <div class="session-review-body">
+                        <div class="session-block-list">
+                          @for (block of getSessionBlocks(session); track block.key) {
+                            <section class="session-block" [class.expanded]="isSessionBlockExpanded(session.id, block.key)">
+                              <button type="button" class="session-block-summary" (click)="toggleSessionBlock(session.id, block.key)">
+                                <span class="block-order">{{ $index + 1 }}</span>
+                                <span>
+                                  <strong>{{ block.name }}</strong>
+                                  <small>{{ block.exercises.length }} ejercicios · {{ block.seriesCount }} series</small>
+                                </span>
+                                <mat-icon>{{ isSessionBlockExpanded(session.id, block.key) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                              </button>
+
+                              @if (isSessionBlockExpanded(session.id, block.key)) {
+                                <div class="session-block-content">
+                                  @for (exercise of block.exercises; track exercise.id) {
+                                    <section class="session-exercise">
+                                      <header>
+                                        <div>
+                                          <small>@if (exercise.cycleNumber) { Vuelta {{ exercise.cycleNumber }} } @else { Ejercicio }</small>
+                                          <strong>{{ exercise.exerciseName }}</strong>
+                                        </div>
+                                        @if (exercise.notes) { <span>{{ exercise.notes }}</span> }
+                                      </header>
+                                      <div class="session-set-grid session-set-header">
+                                        <span>Serie</span><span>Alumno</span><span>Peso real</span><span>Reps reales</span><span>Nota profesional</span>
+                                      </div>
+                                      @for (set of exercise.sets; track set.id) {
+                                        <div class="session-set-grid">
+                                          <strong>#{{ set.setNumber }}</strong>
+                                          <small>{{ set.weight ?? '-' }} kg · {{ set.reps ?? '-' }} reps</small>
+                                          <label><span>Peso real</span><input type="number" min="0" step="0.5" [value]="sessionReviewDraft()[set.id]?.weight ?? ''" (input)="updateSessionReviewDraft(set.id, 'weight', $any($event.target).value)"></label>
+                                          <label><span>Reps reales</span><input type="number" min="0" step="1" [value]="sessionReviewDraft()[set.id]?.reps ?? ''" (input)="updateSessionReviewDraft(set.id, 'reps', $any($event.target).value)"></label>
+                                          <label><span>Nota profesional</span><input type="text" maxlength="1000" placeholder="Opcional" [value]="sessionReviewDraft()[set.id]?.notes ?? ''" (input)="updateSessionReviewDraft(set.id, 'notes', $any($event.target).value)"></label>
+                                          @if (set.reviewedAt) {
+                                            <small class="review-audit">Revisó {{ set.reviewedByName }} · {{ set.reviewedAt | date:'dd/MM/yyyy HH:mm' }}</small>
+                                          }
+                                        </div>
+                                      }
+                                    </section>
+                                  }
+                                </div>
+                              }
+                            </section>
+                          }
+                        </div>
+                        <div class="session-review-actions">
+                          <small>El valor del alumno se conserva; esta revisión queda registrada por separado.</small>
+                          <button mat-flat-button color="primary" type="button" [disabled]="savingSessionReview()" (click)="saveSessionReview(session)">
+                            <mat-icon>verified</mat-icon>{{ savingSessionReview() ? 'Guardando...' : 'Guardar revisión' }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          </section>
 
           <section class="tracking-card">
             <div class="panel-heading compact-heading">
@@ -1105,8 +1243,7 @@
                 <span>Grupos</span>
                 <span>Musculos</span>
                 <span>Media</span>
-                <span>QR</span>
-                <span></span>
+                <span>Acciones</span>
               </div>
               @for (exercise of filteredExercises(); track exercise.id) {
                 <div class="table-row" [id]="'exercise-row-' + exercise.id">
@@ -1142,21 +1279,18 @@
                     <span [class.ok]="exercise.photoUrl"><mat-icon>image</mat-icon>{{ exercise.photoUrl ? 'OK' : '-' }}</span>
                     <span [class.ok]="exercise.videoUrl"><mat-icon>smart_display</mat-icon>{{ exercise.videoUrl ? 'OK' : '-' }}</span>
                   </div>
-                  <button mat-stroked-button type="button" class="qr-action" (click)="openExerciseQr(exercise, exerciseQrDialog)" [title]="getExerciseQrDestination(exercise)">
-                    <mat-icon>qr_code_2</mat-icon>
-                    Ver QR
-                  </button>
                   <div class="row-actions">
                     @if (isAdminOrSuperAdmin$ | async) {
-                      <a mat-icon-button matTooltip="Ver detalle" [routerLink]="['/student-platform/exercises', exercise.id]">
-                        <mat-icon>visibility</mat-icon>
-                      </a>
-                      <button mat-icon-button type="button" matTooltip="Duplicar" (click)="duplicateExercise(exercise)">
-                        <mat-icon>content_copy</mat-icon>
+                      <button mat-icon-button type="button" class="more-actions" [matMenuTriggerFor]="exerciseActions" [attr.aria-label]="'Acciones para ' + exercise.name" matTooltip="Acciones">
+                        <mat-icon>more_vert</mat-icon>
                       </button>
-                      <button mat-icon-button type="button" matTooltip="Eliminar" (click)="deleteExercise(exercise)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
+                      <mat-menu #exerciseActions="matMenu" xPosition="before">
+                        <a mat-menu-item [routerLink]="['/student-platform/exercises', exercise.id]"><mat-icon>visibility</mat-icon><span>Ver y editar detalle</span></a>
+                        <button mat-menu-item type="button" (click)="openExerciseQr(exercise, exerciseQrDialog)"><mat-icon>qr_code_2</mat-icon><span>Ver código QR</span></button>
+                        <button mat-menu-item type="button" matTooltip="Crea un ejercicio nuevo con los mismos datos" (click)="duplicateExercise(exercise)"><mat-icon>content_copy</mat-icon><span>Crear una copia</span></button>
+                        <mat-divider></mat-divider>
+                        <button mat-menu-item type="button" class="danger-menu-item" (click)="deleteExercise(exercise)"><mat-icon>delete</mat-icon><span>Eliminar ejercicio</span></button>
+                      </mat-menu>
                     }
                   </div>
                 </div>

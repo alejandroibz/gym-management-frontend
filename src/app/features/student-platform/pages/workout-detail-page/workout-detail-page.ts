@@ -28,6 +28,7 @@ interface EditableWorkoutExercise {
   restSeconds: number | null;
   notes: string | null;
 }
+interface EditableWorkoutBlock { id?: number; name: string; sortOrder: number; cycles: number; notes: string | null; exercises: EditableWorkoutExercise[]; }
 
 @Component({
   selector: 'app-workout-detail-page',
@@ -53,6 +54,8 @@ export class WorkoutDetailPageComponent {
   readonly clients = signal<Client[]>([]);
   readonly exercises = signal<Exercise[]>([]);
   readonly editableExercises = signal<EditableWorkoutExercise[]>([]);
+  readonly editableBlocks = signal<EditableWorkoutBlock[]>([]);
+  readonly activeEditableBlockIndex = signal(0);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isEditing = signal(false);
@@ -76,6 +79,7 @@ export class WorkoutDetailPageComponent {
     restSeconds: [60],
     notes: ['']
   });
+  readonly blockForm = this.formBuilder.nonNullable.group({ name: ['Nuevo bloque', Validators.required], cycles: [1, [Validators.required, Validators.min(1)]], notes: [''] });
 
   readonly directAssignmentForm = this.formBuilder.nonNullable.group({
     clientId: [0, Validators.min(1)]
@@ -167,7 +171,7 @@ export class WorkoutDetailPageComponent {
 
   filteredExercises(): Exercise[] {
     const term = this.normalize(this.builderExerciseSearch.value);
-    const selectedIds = this.editableExercises().map(item => item.exerciseId);
+    const selectedIds = this.editableBlocks()[this.activeEditableBlockIndex()]?.exercises.map(item => item.exerciseId) ?? [];
     const available = this.exercises().filter(exercise => !selectedIds.includes(exercise.id));
     if (!term) return available.slice(0, 8);
     return available
@@ -204,39 +208,43 @@ export class WorkoutDetailPageComponent {
       return;
     }
 
-    if (this.editableExercises().some(item => item.exerciseId === exercise.id)) {
-      this.toast.error('Ese ejercicio ya esta en el workout.');
+    const blocks = this.editableBlocks();
+    const block = blocks[this.activeEditableBlockIndex()];
+    if (!block) { this.toast.error('Seleccioná o creá un bloque.'); return; }
+    if (block.exercises.some(item => item.exerciseId === exercise.id)) {
+      this.toast.error('Ese ejercicio ya está en el bloque.');
       return;
     }
 
-    this.editableExercises.update(items => [
-      ...items,
-      {
+    block.exercises.push({
         exerciseId: exercise.id,
         exerciseName: exercise.name,
         muscleGroup: exercise.primaryMuscleGroupName || exercise.muscleGroup,
-        sortOrder: items.length + 1,
+        sortOrder: block.exercises.length + 1,
         sets: raw.sets || null,
         reps: raw.reps || null,
         weight: raw.weight || null,
         restSeconds: raw.restSeconds || null,
         notes: raw.notes || null
-      }
-    ]);
+      });
+    this.editableBlocks.set([...blocks]);
 
     this.routineExerciseForm.reset({ exerciseId: 0, sets: 3, reps: 10, weight: 0, restSeconds: 60, notes: '' });
     this.builderExerciseSearch.setValue('');
   }
 
-  removeWorkoutExercise(index: number): void {
-    this.editableExercises.update(items =>
-      items.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, sortOrder: itemIndex + 1 }))
-    );
+  removeWorkoutExercise(blockIndex: number, index: number): void {
+    const blocks = this.editableBlocks(); const block = blocks[blockIndex]; if (!block) return;
+    block.exercises = block.exercises.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, sortOrder: itemIndex + 1 }));
+    this.editableBlocks.set([...blocks]);
   }
+
+  addEditableBlock(): void { if (this.blockForm.invalid) return; const raw = this.blockForm.getRawValue(); const blocks = this.editableBlocks(); blocks.push({ name: raw.name, cycles: raw.cycles, notes: raw.notes || null, sortOrder: blocks.length + 1, exercises: [] }); this.editableBlocks.set([...blocks]); this.activeEditableBlockIndex.set(blocks.length - 1); this.blockForm.reset({ name: `Bloque ${blocks.length + 1}`, cycles: 1, notes: '' }); }
+  removeEditableBlock(index: number): void { const blocks = this.editableBlocks().filter((_, i) => i !== index).map((block, i) => ({ ...block, sortOrder: i + 1 })); this.editableBlocks.set(blocks); this.activeEditableBlockIndex.set(Math.max(0, Math.min(this.activeEditableBlockIndex(), blocks.length - 1))); }
 
   saveWorkoutChanges(): void {
     const workout = this.workout();
-    if (!workout || this.workoutEditForm.invalid || !this.editableExercises().length) {
+    if (!workout || this.workoutEditForm.invalid || !this.editableBlocks().length || this.editableBlocks().some(block => !block.exercises.length)) {
       this.workoutEditForm.markAllAsTouched();
       this.toast.error('Completa nombre y deja al menos un ejercicio.');
       return;
@@ -251,15 +259,8 @@ export class WorkoutDetailPageComponent {
       goal: workout.goal,
       clientIds: [],
       scheduleDays: [],
-      exercises: this.editableExercises().map(item => ({
-        exerciseId: item.exerciseId,
-        sortOrder: item.sortOrder,
-        sets: item.sets,
-        reps: item.reps,
-        weight: item.weight,
-        restSeconds: item.restSeconds,
-        notes: item.notes
-      }))
+      exercises: [],
+      blocks: this.editableBlocks().map(block => ({ name: block.name, sortOrder: block.sortOrder, cycles: block.cycles, notes: block.notes, exercises: block.exercises.map(item => ({ exerciseId: item.exerciseId, sortOrder: item.sortOrder, sets: item.sets, reps: item.reps, weight: item.weight, restSeconds: item.restSeconds, notes: item.notes })) }))
     }).subscribe({
       next: () => {
         this.toast.success('Workout actualizado.');
@@ -422,6 +423,8 @@ export class WorkoutDetailPageComponent {
       restSeconds: item.restSeconds ?? null,
       notes: item.notes ?? null
     })));
+    this.editableBlocks.set((workout?.blocks ?? []).map(block => ({ id: block.id, name: block.name, sortOrder: block.sortOrder, cycles: block.cycles, notes: block.notes ?? null, exercises: block.exercises.map(item => ({ exerciseId: item.exerciseId, exerciseName: item.exerciseName, muscleGroup: item.muscleGroup, sortOrder: item.sortOrder, sets: item.sets ?? null, reps: item.reps ?? null, weight: item.weight ?? null, restSeconds: item.restSeconds ?? null, notes: item.notes ?? null })) })));
+    this.activeEditableBlockIndex.set(0);
     this.routineExerciseForm.reset({ exerciseId: 0, sets: 3, reps: 10, weight: 0, restSeconds: 60, notes: '' });
     this.builderExerciseSearch.setValue('');
   }

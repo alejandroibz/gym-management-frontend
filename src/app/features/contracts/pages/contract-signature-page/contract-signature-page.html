@@ -1,1 +1,33 @@
-<main class="signature-page"><header><a mat-button routerLink="/contracts"><mat-icon>arrow_back</mat-icon>Cancelar</a><span>FIRMA SUPERVISADA EN RECEPCIÓN</span></header>@if(contract();as item){<section class="contract-summary"><div><span>CONTRATO</span><h1>{{item.templateName}}</h1><p>Versión {{item.templateVersion}} · {{item.clientName}}</p></div></section><form [formGroup]="form" (ngSubmit)="submit()"><div class="identity"><mat-form-field appearance="outline"><mat-label>Nombre y apellido</mat-label><input matInput formControlName="signerName"></mat-form-field><mat-form-field appearance="outline"><mat-label>DNI</mat-label><input matInput formControlName="signerDni"></mat-form-field></div><div class="canvas-heading"><div><h2>Firma del alumno</h2><p>Usá el dedo, mouse o lápiz.</p></div><button mat-button type="button" (click)="clear()">Limpiar</button></div><canvas #canvas (pointerdown)="start($event)" (pointermove)="move($event)" (pointerup)="stop()" (pointercancel)="stop()"></canvas><mat-checkbox formControlName="accepted">Leí el contrato y acepto sus términos libremente.</mat-checkbox>@if(error()){<p class="error">{{error()}}</p>}<button mat-flat-button type="submit" [disabled]="form.invalid||!hasSignature()||saving()"><mat-icon>verified</mat-icon>{{saving()?'Guardando...':'Firmar contrato'}}</button></form>}</main>
+<main class="signature-page">
+  <header><span>LECTURA Y FIRMA OBLIGATORIA</span><span class="secure"><mat-icon>lock</mat-icon>Registro protegido</span></header>
+  @if (contract(); as item) {
+    <section class="contract-summary">
+      <div><span>CONTRATO DE DESLINDE</span><h1>{{item.templateName}}</h1><p>Versión {{item.templateVersion}} · {{item.clientName}} · DNI {{item.snapshot.clientDni}}</p></div>
+      <span class="status">Pendiente de firma</span>
+    </section>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <section #contractText class="contract-text" (scroll)="onContractScroll($event)" (mouseenter)="unlockIfShort(contractText)" tabindex="0">
+        <div class="contract-meta"><strong>{{item.snapshot.branchName}}</strong><span>{{item.snapshot.branchAddress}}</span><span>{{item.snapshot.membershipName}} · {{item.snapshot.membershipPeriod}}</span></div>
+        @for (clause of item.snapshot.clauses; track clause.sortOrder) {
+          <article><h2>{{clause.sortOrder}}. {{clause.title}}</h2><p>{{clause.body}}</p></article>
+        }
+        <div class="end-marker"><mat-icon>done_all</mat-icon><strong>Fin del contrato</strong></div>
+      </section>
+      <p class="reading-hint" [class.complete]="reachedEnd()"><mat-icon>{{reachedEnd() ? 'check_circle' : 'south'}}</mat-icon>{{reachedEnd() ? 'Lectura completa. Ya podés confirmar.' : 'Desplazate hasta el final para habilitar la confirmación.'}}</p>
+
+      <mat-checkbox formControlName="readConfirmed">Confirmo que recorrí y leí el contrato completo.</mat-checkbox>
+      <div class="identity">
+        <mat-form-field appearance="outline"><mat-label>{{item.snapshot.isMinor ? 'Nombre del responsable legal' : 'Nombre y apellido'}}</mat-label><input matInput formControlName="signerName" autocomplete="name"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{item.snapshot.isMinor ? 'DNI del responsable legal' : 'DNI'}}</mat-label><input matInput formControlName="signerDni" inputmode="numeric"></mat-form-field>
+      </div>
+      @if(item.snapshot.isMinor){<p class="evidence-note"><mat-icon>family_restroom</mat-icon>El titular es menor de edad. La firma debe corresponder a su padre, madre o tutor legal.</p>}
+      <div class="canvas-heading"><div><h2>Firma digital</h2><p>Firmá dentro del recuadro con el dedo, mouse o lápiz.</p></div><button mat-button type="button" (click)="clear()">Limpiar</button></div>
+      <canvas #canvas aria-label="Área de firma" (pointerdown)="start($event)" (pointermove)="move($event)" (pointerup)="stop()" (pointercancel)="stop()" (pointerleave)="stop()"></canvas>
+      <mat-checkbox formControlName="accepted">{{item.acceptanceText}}</mat-checkbox>
+      <p class="evidence-note"><mat-icon>verified_user</mat-icon>Se guardarán la firma, fecha y hora, versión del contrato y huella de integridad como evidencia.</p>
+      @if (error()) { <p class="error">{{error()}}</p> }
+      <button mat-flat-button type="submit" [disabled]="item.status!=='PendingSignature'||form.invalid||!hasSignature()||saving()"><mat-icon>draw</mat-icon>{{saving() ? 'Guardando firma...' : 'Aceptar y firmar contrato'}}</button>
+    </form>
+  }
+</main>

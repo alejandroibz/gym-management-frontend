@@ -1,0 +1,22 @@
+<section class="my-contracts">
+  <header><span>MIS DOCUMENTOS</span><h1>Mis contratos</h1><p>Consultá y descargá todas las versiones asociadas a tu cuenta.</p></header>
+  @if (error()) { <p class="error">{{error()}}</p> }
+  <div class="list">
+    @for (item of contracts(); track item.id) {
+      <article>
+        <mat-icon>{{item.status === 'Signed' ? 'verified' : 'description'}}</mat-icon>
+        <div>
+          <strong>{{item.templateName}} · v{{item.templateVersion}}</strong>
+          <span>{{label(item.status)}} · Emitido {{item.issuedAt | date:'dd/MM/yyyy'}} @if (item.signedAt) { · Firmado {{item.signedAt | date:'dd/MM/yyyy HH:mm'}} }</span>
+        </div>
+        @if (item.status === 'PendingSignature') {
+          <a mat-flat-button [routerLink]="['/contracts', item.id, 'sign']">Leer y firmar</a>
+        } @else {
+          <button mat-stroked-button type="button" (click)="download(item)"><mat-icon>download</mat-icon>Descargar</button>
+        }
+      </article>
+    } @empty {
+      @if (!loading()) { <div class="empty"><mat-icon>folder_off</mat-icon><p>No hay contratos disponibles.</p></div> }
+    }
+  </div>
+</section>

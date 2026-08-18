@@ -444,3 +444,6 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+.block-table-heading { grid-column:1/-1; display:flex; justify-content:space-between; padding:.65rem .85rem; background:#e4e4e7; }
+.block-table-heading.selected-block { background:#fee2e2; outline:1px solid #dc2626; }
+.block-add-panel { margin-bottom:1rem; }

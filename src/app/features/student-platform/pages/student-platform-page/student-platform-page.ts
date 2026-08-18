@@ -6,9 +6,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -45,6 +47,13 @@ interface MuscleDialogData {
   groupName?: string;
   muscle?: MuscleGroup['muscles'][number];
   groups: MuscleGroup[];
+}
+
+interface WorkoutSessionBlockGroup {
+  key: string;
+  name: string;
+  exercises: WorkoutSession['exercises'];
+  seriesCount: number;
 }
 
 interface BodyZoneDefinition {
@@ -251,9 +260,11 @@ export class MuscleDialogComponent {
     MatButtonModule,
     MatDatepickerModule,
     MatDialogModule,
+    MatDividerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatMenuModule,
     MatNativeDateModule,
     MatProgressBarModule,
     MatSelectModule,
@@ -286,6 +297,14 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   readonly muscleGroups = signal<MuscleGroup[]>([]);
   readonly attendance = signal<AttendanceLog[]>([]);
   readonly workoutSessions = signal<WorkoutSession[]>([]);
+  readonly trackingRoutines = signal<RoutineAssignment[]>([]);
+  readonly expandedWorkoutSessionId = signal<number | null>(null);
+  readonly expandedSessionBlockKeys = signal<string[]>([]);
+  readonly sessionReviewDraft = signal<Record<number, { weight: number | null; reps: number | null; notes: string }>>({});
+  readonly savingSessionReview = signal(false);
+  readonly professionalBlockCycles = signal<Record<string, number>>({});
+  readonly professionalWorkoutDraft = signal<Record<string, { weight: number | null; reps: number | null }>>({});
+  readonly expandedProfessionalBlockId = signal<number | null>(null);
   readonly progressHistory = signal<ExerciseProgressHistory | null>(null);
   readonly ranking = signal<RankingResponse | null>(null);
   readonly achievements = signal<AchievementTemplate[]>([]);
@@ -408,6 +427,11 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     exerciseId: [0, Validators.min(1)],
     attendanceDate: [new Date().toISOString().slice(0, 10)],
     attendanceNotes: ['']
+  });
+  readonly professionalSessionForm = this.formBuilder.nonNullable.group({
+    routineAssignmentId: [0, Validators.min(1)],
+    trainingDate: [new Date().toISOString().slice(0, 10), Validators.required],
+    notes: ['']
   });
 
   readonly achievementForm = this.formBuilder.nonNullable.group({
@@ -1141,7 +1165,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     }).subscribe({
       next: created => {
         this.exercises.update(items => [...items, created]);
-        this.feedback.set('Ejercicio duplicado.');
+        this.feedback.set(`Se creó "${created.name}" como un ejercicio independiente.`);
       },
       error: () => this.feedback.set('No se pudo duplicar el ejercicio.')
     });
@@ -1662,6 +1686,26 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       error: () => this.feedback.set('No se pudo cargar la asistencia.')
     });
 
+    this.platformService.getWorkoutSessions(raw.clientId, this.trackingFrom.value || undefined, this.trackingTo.value || undefined).subscribe({
+      next: sessions => {
+        this.workoutSessions.set(sessions);
+        if (this.expandedWorkoutSessionId() && !sessions.some(session => session.id === this.expandedWorkoutSessionId())) {
+          this.expandedWorkoutSessionId.set(null);
+          this.sessionReviewDraft.set({});
+        }
+      },
+      error: () => this.feedback.set('No se pudo cargar el historial de sesiones.')
+    });
+    this.platformService.getRoutines(raw.clientId).subscribe({
+      next: routines => {
+        this.trackingRoutines.set(routines);
+        if (!routines.some(routine => routine.id === this.professionalSessionForm.controls.routineAssignmentId.value)) {
+          this.professionalSessionForm.controls.routineAssignmentId.setValue(routines[0]?.id ?? 0);
+        }
+      },
+      error: () => this.feedback.set('No se pudieron cargar los workouts asignados al alumno.')
+    });
+
     if (raw.exerciseId > 0) {
       this.loadExerciseProgress(false);
     } else {
@@ -1838,6 +1882,250 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       Number(this.exerciseMuscleFilter.value) > 0 ||
       this.pendingBodyZoneKeys().length > 0 ||
       this.selectedBodyZoneKeys().length > 0;
+  }
+
+  attendanceSourceLabel(source: string): string {
+    const labels: Record<string, string> = {
+      StudentManual: 'Informada por el alumno',
+      Workout: 'Workout completado',
+      Manual: 'Registrada por el personal',
+      Qr: 'Ingreso con QR',
+      Geolocation: 'Ingreso verificado'
+    };
+    return labels[source] ?? source;
+  }
+
+  attendanceSourceIcon(source: string): string {
+    if (source === 'Workout') return 'fitness_center';
+    if (source === 'StudentManual') return 'person';
+    if (source === 'Qr') return 'qr_code_2';
+    return 'event_available';
+  }
+
+  toggleWorkoutSession(session: WorkoutSession): void {
+    if (this.expandedWorkoutSessionId() === session.id) {
+      this.expandedWorkoutSessionId.set(null);
+      this.expandedSessionBlockKeys.set([]);
+      this.sessionReviewDraft.set({});
+      return;
+    }
+
+    const draft: Record<number, { weight: number | null; reps: number | null; notes: string }> = {};
+    session.exercises.forEach(exercise => exercise.sets.forEach(set => {
+      draft[set.id] = {
+        weight: set.professionalWeight ?? set.weight ?? null,
+        reps: set.professionalReps ?? set.reps ?? null,
+        notes: set.professionalNotes ?? ''
+      };
+    }));
+    this.sessionReviewDraft.set(draft);
+    this.expandedWorkoutSessionId.set(session.id);
+    const firstBlock = this.getSessionBlocks(session)[0];
+    this.expandedSessionBlockKeys.set(firstBlock ? [this.sessionBlockStateKey(session.id, firstBlock.key)] : []);
+  }
+
+  getSessionBlocks(session: WorkoutSession): WorkoutSessionBlockGroup[] {
+    const groups = new Map<string, WorkoutSessionBlockGroup>();
+    session.exercises.forEach(exercise => {
+      const key = exercise.routineBlockId ? `id-${exercise.routineBlockId}` : `name-${exercise.blockName || 'sin-bloque'}`;
+      const current = groups.get(key) ?? {
+        key,
+        name: exercise.blockName || 'Sin bloque',
+        exercises: [],
+        seriesCount: 0
+      };
+      current.exercises.push(exercise);
+      current.seriesCount += exercise.sets.length;
+      groups.set(key, current);
+    });
+    return [...groups.values()];
+  }
+
+  isSessionBlockExpanded(sessionId: number, blockKey: string): boolean {
+    return this.expandedSessionBlockKeys().includes(this.sessionBlockStateKey(sessionId, blockKey));
+  }
+
+  toggleSessionBlock(sessionId: number, blockKey: string): void {
+    const key = this.sessionBlockStateKey(sessionId, blockKey);
+    this.expandedSessionBlockKeys.update(keys => keys.includes(key) ? keys.filter(item => item !== key) : [...keys, key]);
+  }
+
+  private sessionBlockStateKey(sessionId: number, blockKey: string): string {
+    return `${sessionId}:${blockKey}`;
+  }
+
+  updateSessionReviewDraft(setEntryId: number, field: 'weight' | 'reps' | 'notes', value: string): void {
+    this.sessionReviewDraft.update(current => ({
+      ...current,
+      [setEntryId]: {
+        ...(current[setEntryId] ?? { weight: null, reps: null, notes: '' }),
+        [field]: field === 'notes' ? value : (value === '' ? null : Number(value))
+      }
+    }));
+  }
+
+  saveSessionReview(session: WorkoutSession): void {
+    const draft = this.sessionReviewDraft();
+    const sets = session.exercises.flatMap(exercise => exercise.sets.map(set => ({
+      setEntryId: set.id,
+      weight: draft[set.id]?.weight ?? null,
+      reps: draft[set.id]?.reps ?? null,
+      notes: draft[set.id]?.notes?.trim() || null
+    })));
+    if (!sets.length) return;
+
+    this.savingSessionReview.set(true);
+    this.platformService.saveWorkoutSessionProfessionalReview(session.id, { sets }).subscribe({
+      next: updated => {
+        this.workoutSessions.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.savingSessionReview.set(false);
+        this.toggleWorkoutSession(updated);
+        this.toggleWorkoutSession(updated);
+        this.feedback.set('Pesos y repeticiones reales guardados con la revisión profesional.');
+      },
+      error: () => {
+        this.savingSessionReview.set(false);
+        this.feedback.set('No se pudo guardar la revisión de la sesión.');
+      }
+    });
+  }
+
+  saveProfessionalWorkoutSession(): void {
+    const clientId = this.trackingForm.controls.clientId.value;
+    const raw = this.professionalSessionForm.getRawValue();
+    const assignment = this.trackingRoutines().find(item => item.id === Number(raw.routineAssignmentId));
+    if (clientId <= 0 || !assignment || !raw.trainingDate) {
+      this.feedback.set('Selecciona un alumno, un workout y una fecha.');
+      return;
+    }
+
+    let sortOrder = 0;
+    const hasBlocks = !!assignment.blocks?.length;
+    const sourceBlocks = hasBlocks ? assignment.blocks : [{ id: 0, name: 'Workout', cycles: 1, exercises: assignment.exercises }];
+    const exercises = sourceBlocks.flatMap(block => block.exercises.map((exercise, exerciseIndex) => ({
+      exerciseId: exercise.exerciseId,
+      routineBlockId: block.id,
+      routineExerciseId: exercise.id,
+      cycleNumber: null,
+      sortOrder: ++sortOrder,
+      notes: exercise.notes ?? null,
+      sets: Array.from({ length: hasBlocks ? this.professionalBlockCycleCount(block.id, block.cycles) : Math.max(1, exercise.sets ?? 1) }, (_, index) => {
+        const actual = this.professionalWorkoutDraft()[this.professionalSetDraftKey(block.id, exerciseIndex, index + 1)];
+        return {
+        setNumber: index + 1,
+        reps: actual?.reps ?? exercise.reps ?? null,
+        weight: actual?.weight ?? exercise.weight ?? null,
+        restSeconds: exercise.restSeconds ?? null,
+        notes: null
+        };
+      })
+    })));
+
+    this.savingSessionReview.set(true);
+    this.platformService.saveWorkoutSession({
+      clientId,
+      routineAssignmentId: assignment.id,
+      trainingDate: raw.trainingDate,
+      notes: raw.notes.trim() || null,
+      exercises
+    }).subscribe({
+      next: session => {
+        const sets = session.exercises.flatMap(exercise => exercise.sets.map(set => ({ setEntryId: set.id, weight: set.weight ?? null, reps: set.reps ?? null, notes: null })));
+        this.platformService.saveWorkoutSessionProfessionalReview(session.id, { sets }).subscribe({
+          next: reviewed => {
+            this.savingSessionReview.set(false);
+            this.dialog.closeAll();
+            this.workoutSessions.update(items => [reviewed, ...items.filter(item => item.id !== reviewed.id)]);
+            this.feedback.set('Workout registrado por el profesional. Ya puedes ajustar cada serie desde el historial.');
+            this.loadStudentTracking(false);
+          },
+          error: () => {
+            this.savingSessionReview.set(false);
+            this.feedback.set('El workout se guardó, pero no se pudo registrar la auditoría profesional.');
+            this.loadStudentTracking(false);
+          }
+        });
+      },
+      error: () => {
+        this.savingSessionReview.set(false);
+        this.feedback.set('No se pudo registrar el workout para el alumno.');
+      }
+    });
+  }
+
+  openProfessionalSessionDialog(template: TemplateRef<unknown>): void {
+    if (!this.professionalSessionForm.controls.routineAssignmentId.value && this.trackingRoutines().length) {
+      this.professionalSessionForm.controls.routineAssignmentId.setValue(this.trackingRoutines()[0].id);
+    }
+    this.resetProfessionalSessionDraft();
+    this.openTemplate(template, '860px');
+  }
+
+  selectedProfessionalRoutine(): RoutineAssignment | undefined {
+    return this.trackingRoutines().find(item => item.id === Number(this.professionalSessionForm.controls.routineAssignmentId.value));
+  }
+
+  resetProfessionalSessionDraft(): void {
+    const assignment = this.selectedProfessionalRoutine();
+    const cycleDraft: Record<string, number> = {};
+    const setDraft: Record<string, { weight: number | null; reps: number | null }> = {};
+    assignment?.blocks.forEach(block => {
+      const cycles = Math.max(1, block.cycles ?? 1);
+      cycleDraft[String(block.id)] = cycles;
+      block.exercises.forEach((exercise, exerciseIndex) => {
+        for (let cycle = 1; cycle <= cycles; cycle++) {
+          setDraft[this.professionalSetDraftKey(block.id, exerciseIndex, cycle)] = {
+            weight: exercise.weight ?? null,
+            reps: exercise.reps ?? null
+          };
+        }
+      });
+    });
+    this.professionalBlockCycles.set(cycleDraft);
+    this.professionalWorkoutDraft.set(setDraft);
+    this.expandedProfessionalBlockId.set(assignment?.blocks[0]?.id ?? null);
+  }
+
+  toggleProfessionalBlock(blockId: number): void {
+    this.expandedProfessionalBlockId.update(current => current === blockId ? null : blockId);
+  }
+
+  updateProfessionalBlockCycles(blockId: number, value: string): void {
+    const cycles = Math.min(20, Math.max(1, Number(value) || 1));
+    this.professionalBlockCycles.update(current => ({ ...current, [String(blockId)]: cycles }));
+    const assignment = this.selectedProfessionalRoutine();
+    const block = assignment?.blocks.find(item => item.id === blockId);
+    if (!block) return;
+    this.professionalWorkoutDraft.update(current => {
+      const next = { ...current };
+      block.exercises.forEach((exercise, exerciseIndex) => {
+        for (let cycle = 1; cycle <= cycles; cycle++) {
+          const key = this.professionalSetDraftKey(blockId, exerciseIndex, cycle);
+          next[key] ??= { weight: exercise.weight ?? null, reps: exercise.reps ?? null };
+        }
+      });
+      return next;
+    });
+  }
+
+  professionalBlockCycleCount(blockId: number, fallback = 1): number {
+    return this.professionalBlockCycles()[String(blockId)] ?? Math.max(1, fallback ?? 1);
+  }
+
+  professionalCycles(blockId: number, fallback = 1): number[] {
+    return Array.from({ length: this.professionalBlockCycleCount(blockId, fallback) }, (_, index) => index + 1);
+  }
+
+  updateProfessionalSetDraft(blockId: number, exerciseIndex: number, cycle: number, field: 'weight' | 'reps', value: string): void {
+    const key = this.professionalSetDraftKey(blockId, exerciseIndex, cycle);
+    this.professionalWorkoutDraft.update(current => ({
+      ...current,
+      [key]: { ...(current[key] ?? { weight: null, reps: null }), [field]: value === '' ? null : Number(value) }
+    }));
+  }
+
+  professionalSetDraftKey(blockId: number, exerciseIndex: number, cycle: number): string {
+    return `${blockId}:${exerciseIndex}:${cycle}`;
   }
 
   clearExerciseFilters(): void {
