@@ -38,9 +38,6 @@
         } @else if (!hasSelectedClientMembership() && form.controls.clientId.value) {
           <small>El cliente seleccionado no tiene una membresía activa para asociar el cobro.</small>
         }
-        @if (selectedPeriodAlreadyPaid()) {
-          <small class="warning-line">Ya existe un cobro registrado para este cliente en el periodo seleccionado.</small>
-        }
       </div>
 
       <mat-form-field appearance="outline">
@@ -139,13 +136,13 @@
       }
 
       <mat-form-field appearance="outline">
-        <mat-label>Mes abonado</mat-label>
+        <mat-label>Mes de imputación</mat-label>
         <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
         <mat-error>Ingresá un mes entre 1 y 12.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Año abonado</mat-label>
+        <mat-label>Año de imputación</mat-label>
         <input matInput type="number" min="2000" max="2100" formControlName="periodYear" />
         <mat-error>Ingresá un año entre 2000 y 2100.</mat-error>
       </mat-form-field>

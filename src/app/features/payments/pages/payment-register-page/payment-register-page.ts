@@ -28,7 +28,6 @@ import { PaymentCreatePayload } from '../../models/payment.model';
 import { PaymentsService } from '../../services/payments.service';
 import { employeeEmailValidators, markAndFocusFirstInvalid, paymentDiscountValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
 import { ToastService } from '../../../../core/services/toast.service';
-import { hasMembershipPaymentForPeriod } from '../../utils/membership-payment-period';
 
 type ReturnTarget = 'clients' | 'movements';
 
@@ -201,10 +200,6 @@ export class PaymentRegisterPageComponent {
       return;
     }
 
-    if (this.selectedPeriodAlreadyPaid()) {
-      this.toast.warning('Ya existe un cobro para el cliente y período seleccionados.');
-      return;
-    }
 
     const payload = this.buildPayload();
     const client = this.selectedClient();
@@ -467,18 +462,7 @@ export class PaymentRegisterPageComponent {
     })[0] ?? null;
   }
 
-  selectedPeriodAlreadyPaid(): boolean {
-    const client = this.selectedClient();
-    const year = Number(this.form.controls.periodYear.value ?? 0);
-    const month = Number(this.form.controls.periodMonth.value ?? 0);
-    if (!client || !this.isMembershipPayment()) return false;
 
-    return hasMembershipPaymentForPeriod(client.payments, {
-      periodYear: year,
-      periodMonth: month,
-      categoryId: this.selectedCategory()?.id ?? null
-    });
-  }
 
   private toDateInputValue(value: Date): string {
     const year = value.getFullYear();

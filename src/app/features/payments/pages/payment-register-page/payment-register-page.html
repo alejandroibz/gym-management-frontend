@@ -111,24 +111,17 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Mes abonado</mat-label>
+            <mat-label>Mes de imputación</mat-label>
             <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
             <mat-error>Ingresá un mes entre 1 y 12.</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Año abonado</mat-label>
+            <mat-label>Año de imputación</mat-label>
             <input matInput type="number" min="2000" max="2100" formControlName="periodYear" />
-            <mat-hint>Es independiente de la fecha de cobro.</mat-hint>
+            <mat-hint>Dato para reportes; no determina la cobertura.</mat-hint>
             <mat-error>Ingresá un año entre 2000 y 2100.</mat-error>
           </mat-form-field>
-
-          @if (selectedPeriodAlreadyPaid()) {
-            <div class="context-box warning span-2">
-              <strong>Este período ya tiene un cobro registrado.</strong>
-              <small>Elegí otro mes y año antes de confirmar.</small>
-            </div>
-          }
         </div>
       </mat-card>
 

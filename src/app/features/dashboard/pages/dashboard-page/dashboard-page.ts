@@ -333,7 +333,7 @@ export class DashboardPageComponent implements AfterViewInit {
           tone: 'accent'
         },
         {
-          label: 'Membresias vencidas',
+          label: 'Membresías vencidas',
           value: summary.expiredMemberships,
           displayValue: this.formatNumber(summary.expiredMemberships),
           hint: 'Clientes activos a recuperar',

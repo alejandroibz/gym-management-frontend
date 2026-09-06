@@ -1,4 +1,4 @@
-﻿<section class="client-details-page" [class.create-mode]="isCreateMode()">
+<section class="client-details-page" [class.create-mode]="isCreateMode()">
   <div class="page-topbar">
     <nav class="breadcrumb">
       <a routerLink="/clients">Clientes</a>
@@ -12,6 +12,17 @@
     </button>
   </div>
 
+  @if (fromPreregistration) {
+    <div class="feedback-banner">
+      <a routerLink="/preregistrations" [queryParams]="{ id: preregistration()?.id }">Volver a la preinscripción</a>
+      <p>Revisá los datos y confirmá sede, membresía y fechas. El pago se registra después del alta. Los datos originales quedan conservados.</p>
+      <mat-form-field appearance="outline"><mat-label>Sede</mat-label>
+        <mat-select [formControl]="form.controls.branchId" required>
+          @for (branch of branches(); track branch.id) { <mat-option [value]="branch.id">{{ branch.nombre }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
   @if (errorMessage()) {
     <div class="feedback-banner error">
       <mat-icon>error</mat-icon>
@@ -209,7 +220,7 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Fecha de fin</mat-label>
+                  <mat-label>Fecha para aviso de vencimiento</mat-label>
                   <input matInput type="date" formControlName="fechaFin" />
                   @if (form.hasError('dateOrder')) {
                     <mat-hint>La fecha de fin no puede ser anterior al inicio.</mat-hint>
@@ -390,7 +401,7 @@
               <article class="payment-card">
                 <div class="payment-card-header">
                   <div class="payment-card-copy">
-                    <strong>{{ membership.plan?.nombre || ('Plan #' + membership.membershipPlanId) }}</strong>
+                    <strong>{{ membership.planNameSnapshot || membership.plan?.nombre || ('Plan #' + membership.membershipPlanId) }}</strong>
                     <span>{{ getMembershipPeriodLabel(membership) }} · {{ getMembershipStateLabel(membership) }}</span>
                   </div>
                   <div class="membership-actions">
@@ -409,7 +420,7 @@
                     <strong>{{ membership.fechaInicio | date: 'dd/MM/yyyy' }}</strong>
                   </div>
                   <div class="payment-field">
-                    <span>Fin</span>
+                    <span>Fecha para aviso</span>
                     <strong>{{ membership.fechaFin | date: 'dd/MM/yyyy' }}</strong>
                   </div>
                   <div class="payment-field">

@@ -16,6 +16,7 @@ import { ConfirmDialogComponent } from '../../../../core/components/confirm-dial
 import { ToastService } from '../../../../core/services/toast.service';
 import { Exercise, RoutinePayload, RoutineTemplate, TrainingPlanCompositionBatchPayload } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
+import { ExerciseDetailDialogComponent } from './exercise-detail-dialog';
 
 type SelectionKind = 'plan' | 'workout' | 'block';
 interface BuilderExercise { clientKey: string; exerciseId: number; name: string; muscleGroup: string; sortOrder: number; sets: number | null; reps: number | null; weight: number | null; restSeconds: number | null; notes: string; selected?: boolean; }
@@ -105,6 +106,19 @@ export class TrainingBatchBuilderComponent implements OnInit {
   touch(): void { this.plans.set(structuredClone(this.plans())); this.persist(); }
   touchWorkout(workout: BuilderWorkout): void { if (workout.sourceRoutineId) workout.isModified = true; this.touch(); }
   toggleCatalog(id: number): void { const next = new Set(this.catalogSelection()); next.has(id) ? next.delete(id) : next.add(id); this.catalogSelection.set(next); }
+  openExerciseDetails(exercise: Exercise, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dialog.open(ExerciseDetailDialogComponent, {
+      data: exercise,
+      width: 'min(860px, calc(100vw - 1rem))',
+      maxWidth: 'calc(100vw - 1rem)',
+      autoFocus: false,
+      panelClass: 'exercise-detail-dialog-panel'
+    });
+  }
+  getExerciseImage(exercise: Exercise): string | null { return exercise.photoUrl || exercise.media?.find(item => item.mediaType === 'Image')?.url || null; }
+  getExerciseVideo(exercise: Exercise): string | null { return exercise.videoUrl || exercise.media?.find(item => item.mediaType === 'Video')?.url || null; }
   selectAllVisible(): void { const next = new Set(this.catalogSelection()); this.filteredExercises().forEach(e => next.add(e.id)); this.catalogSelection.set(next); }
   clearCatalog(): void { this.catalogSelection.set(new Set()); }
   addSelectedExercises(): void {

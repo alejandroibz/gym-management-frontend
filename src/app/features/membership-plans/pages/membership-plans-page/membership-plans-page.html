@@ -181,7 +181,7 @@
                   </div>
                 </td>
                 <td data-label="Duracion">
-                  <span class="duration-pill">{{ plan.duracionDias }} dias</span>
+                  <span class="duration-pill">{{ plan.durationQuantity ?? plan.duracionDias }} {{ plan.durationUnit === 'Months' ? 'meses' : plan.durationUnit === 'Years' ? 'años' : 'días' }}</span>
                 </td>
                 <td data-label="Precio">
                   <span class="price-pill">${{ plan.precio }}</span>

@@ -5,6 +5,8 @@ export interface MembershipPlan {
   descripcion: string;
   precio: number;
   duracionDias: number;
+  durationUnit?: string;
+  durationQuantity?: number;
   fechaCreacion?: string;
 }
 
@@ -14,6 +16,8 @@ export interface MembershipPlanCreatePayload {
   descripcion: string;
   precio: number;
   duracionDias: number;
+  durationUnit?: string;
+  durationQuantity?: number;
 }
 
 export interface MembershipPlanUpdatePayload extends MembershipPlanCreatePayload {

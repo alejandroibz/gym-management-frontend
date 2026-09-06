@@ -19,7 +19,6 @@ import { PaymentMethod } from '../../../payment-methods/models/payment-method.mo
 import { Payment, PaymentCreatePayload } from '../../../payments/models/payment.model';
 import { employeeEmailValidators, markAndFocusFirstInvalid, paymentDiscountValidator, periodMonthValidators, periodYearValidators, positiveMoneyValidators } from '../../../../core/forms/business-form-validators';
 import { ToastService } from '../../../../core/services/toast.service';
-import { hasMembershipPaymentForPeriod, isMembershipCategoryName } from '../../../payments/utils/membership-payment-period';
 
 export interface RegisterPaymentDialogData {
   clients: Client[];
@@ -156,10 +155,6 @@ export class RegisterPaymentDialogComponent {
   }
 
   submit(): void {
-    if (this.selectedPeriodAlreadyPaid()) {
-      this.toast.warning('Ya existe un cobro para el cliente y período seleccionados.');
-      return;
-    }
 
     if (this.form.invalid) {
       markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
@@ -226,9 +221,7 @@ export class RegisterPaymentDialogComponent {
     return !!this.getEffectiveMembership(this.selectedClient())?.id;
   }
 
-  selectedPeriodAlreadyPaid(): boolean {
-    return this.hasPaymentForSelectedPeriod();
-  }
+
 
   hasDiscount(): boolean {
     return this.isDiscountApplied() && Number(this.form.controls.descuentoMonto.value ?? 0) > 0;
@@ -359,21 +352,7 @@ export class RegisterPaymentDialogComponent {
       montoOriginal: null
     });
   }
-  private hasPaymentForSelectedPeriod(): boolean {
-    if (this.isEditing) return false;
-    const client = this.selectedClient();
-    const year = Number(this.form.controls.periodYear.value ?? 0);
-    const month = Number(this.form.controls.periodMonth.value ?? 0);
-    const categoryId = Number(this.form.controls.cashMovementCategoryId.value ?? 0);
-    const category = this.data.incomeCategories.find(item => item.id === categoryId) ?? null;
-    if (!client || !category || !isMembershipCategoryName(category.nombre)) return false;
 
-    return hasMembershipPaymentForPeriod(client.payments, {
-      periodYear: year,
-      periodMonth: month,
-      categoryId: category.id
-    });
-  }
 
   private updateFinalAmountFromDiscount(): void {
     if (!this.isDiscountApplied()) {

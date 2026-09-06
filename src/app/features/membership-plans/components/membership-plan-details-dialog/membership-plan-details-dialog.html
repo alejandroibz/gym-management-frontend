@@ -19,7 +19,7 @@
 
     <article class="detail-card">
       <span class="detail-label">Duracion</span>
-      <strong>{{ data.plan.duracionDias }} dias</strong>
+      <strong>{{ data.plan.durationQuantity ?? data.plan.duracionDias }} {{ data.plan.durationUnit === 'Months' ? 'meses' : data.plan.durationUnit === 'Years' ? 'años' : 'días' }}</strong>
     </article>
 
     <article class="detail-card">

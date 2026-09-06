@@ -106,7 +106,29 @@
               <section class="catalog">
                 <div class="catalog-heading"><div><h3>Agregar ejercicios</h3><span>{{ catalogSelection().size }} seleccionados · También podés arrastrarlos al bloque</span></div><div><button mat-button type="button" (click)="selectAllVisible()">Seleccionar visibles</button><button mat-button type="button" (click)="clearCatalog()">Limpiar</button></div></div>
                 <div class="catalog-filters"><label>Buscar<input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Nombre o músculo"></label><label>Grupo muscular<select [ngModel]="muscleFilter()" (ngModelChange)="muscleFilter.set($event)"><option value="">Todos</option>@for (group of muscleGroups(); track group) { <option [value]="group">{{ group }}</option> }</select></label></div>
-                <div class="catalog-results" cdkDropList id="exercise-catalog-drag-source" [cdkDropListData]="filteredExercises()" [cdkDropListConnectedTo]="['selected-exercises-drop']" cdkDropListSortingDisabled>@for (exercise of filteredExercises(); track exercise.id) { <button cdkDrag [cdkDragData]="exercise" type="button" [class.selected]="catalogSelection().has(exercise.id)" (click)="toggleCatalog(exercise.id)"><mat-icon cdkDragHandle matTooltip="Arrastrar al bloque">drag_indicator</mat-icon><mat-icon>{{ catalogSelection().has(exercise.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon><span><strong>{{ exercise.name }}</strong><small>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</small></span></button> }</div>
+                <div class="catalog-results" cdkDropList id="exercise-catalog-drag-source" [cdkDropListData]="filteredExercises()" [cdkDropListConnectedTo]="['selected-exercises-drop']" cdkDropListSortingDisabled>
+                  @for (exercise of filteredExercises(); track exercise.id) {
+                    <article cdkDrag [cdkDragData]="exercise" class="catalog-exercise" [class.selected]="catalogSelection().has(exercise.id)" role="button" tabindex="0" (click)="toggleCatalog(exercise.id)" (keydown.enter)="toggleCatalog(exercise.id)" (keydown.space)="$event.preventDefault(); toggleCatalog(exercise.id)">
+                      <div class="catalog-thumb">
+                        @if (getExerciseImage(exercise); as imageUrl) {
+                          <img [src]="imageUrl" [alt]="exercise.name" loading="lazy">
+                        } @else if (getExerciseVideo(exercise); as videoUrl) {
+                          <video [src]="videoUrl" muted preload="metadata" playsinline></video>
+                        } @else {
+                          <span class="catalog-thumb-placeholder"><mat-icon>fitness_center</mat-icon></span>
+                        }
+                        <button type="button" class="catalog-preview" matTooltip="Ver detalle" [attr.aria-label]="'Ver detalle de ' + exercise.name" (pointerdown)="$event.stopPropagation()" (click)="openExerciseDetails(exercise, $event)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                      </div>
+                      <div class="catalog-exercise-copy">
+                        <mat-icon cdkDragHandle matTooltip="Arrastrar al bloque" (click)="$event.stopPropagation()">drag_indicator</mat-icon>
+                        <mat-icon>{{ catalogSelection().has(exercise.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                        <span><strong>{{ exercise.name }}</strong><small>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup }}</small></span>
+                      </div>
+                    </article>
+                  }
+                </div>
                 <div class="preset-row"><span>Presets rápidos</span>@for(preset of presets;track preset.name){<button type="button" (click)="applyPresetToSelected(preset)">{{ preset.name }} <small>{{ preset.sets }}×{{ preset.reps }} · {{ preset.rest }}s</small></button>}</div><div class="bulk-values"><span>Valores iniciales</span><label>Series<input type="number" [ngModel]="commonSets()" (ngModelChange)="commonSets.set($event)"></label><label>Reps<input type="number" [ngModel]="commonReps()" (ngModelChange)="commonReps.set($event)"></label><label>Peso<input type="number" [ngModel]="commonWeight()" (ngModelChange)="commonWeight.set($event)"></label><label>Descanso<input type="number" [ngModel]="commonRest()" (ngModelChange)="commonRest.set($event)"></label><button mat-flat-button type="button" [disabled]="!catalogSelection().size" (click)="addSelectedExercises()"><mat-icon>playlist_add</mat-icon>Agregar {{ catalogSelection().size }}</button></div>
               </section>
             </section>

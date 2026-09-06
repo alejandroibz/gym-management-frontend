@@ -800,3 +800,134 @@ body.dark-theme .student-platform :is(.search-results button:hover, .routine-act
 body.dark-theme :is(.qr-code-frame, .attendance-qr-preview img, .signature-page canvas) {
   background: #fff !important;
 }
+app-student-platform-page {
+  .group-coordinate-status { align-items: center; color: var(--app-text-muted); display: flex; font-size: .72rem; gap: .3rem; }
+  .group-coordinate-status.configured { color: #176b87; font-weight: 800; }
+  .group-coordinate-status mat-icon { font-size: 16px; height: 16px; width: 16px; }
+  .coordinate-detail { background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 9px; display: grid; gap: .6rem; padding: .7rem; }
+  .coordinate-detail > div { display: flex; justify-content: space-between; }
+  .coordinate-detail svg { background: #f8fafc; border-radius: 7px; height: 145px; width: 100%; }
+  .coordinate-detail path { fill: rgba(201, 42, 31, .35); stroke: #c92a1f; stroke-width: 4; }
+  .coordinate-detail small { color: var(--app-text-muted); }
+  .student-plan-unassign { color: var(--app-text-muted); }
+  .student-plan-unassign:hover { background: var(--app-accent-soft); color: var(--app-accent); }
+  .plan-history-heading { align-items: center; border-top: 1px solid var(--app-border); display: flex; justify-content: space-between; margin-top: .85rem; padding-top: .85rem; }
+  .plan-history-heading h3 { margin: .15rem 0 0; }
+  .plan-history-heading > span { background: var(--app-surface-muted); border-radius: 999px; font-size: .75rem; font-weight: 800; padding: .3rem .6rem; }
+  .student-plan-item.historical { opacity: .82; }
+  .student-plan-item.historical .student-plan-icon { background: var(--app-surface); color: var(--app-text-muted); }
+  .status-pill.historical { background: var(--app-surface); color: var(--app-text-muted); }
+}
+
+/* Selectores de planes/alumnos renderizados dentro del overlay de Material. */
+.cdk-overlay-container .assignment-panel {
+  box-sizing: border-box;
+  min-width: 0 !important;
+  overflow: visible;
+  width: 100%;
+}
+
+.cdk-overlay-container .assignment-panel .picker-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.cdk-overlay-container .assignment-panel .dropdown-results {
+  box-sizing: border-box;
+  left: 0;
+  max-height: min(280px, 40vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  right: 0;
+  width: auto;
+}
+
+.cdk-overlay-container .assignment-panel .search-results button {
+  box-sizing: border-box;
+  gap: .75rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.cdk-overlay-container .assignment-panel .search-results button strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdk-overlay-container .assignment-panel .search-results button span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+body.dark-theme .cdk-overlay-container .assignment-panel :is(.dropdown-results, .search-results button) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme .cdk-overlay-container .assignment-panel .search-results button:hover {
+  background: var(--app-surface-muted) !important;
+}
+
+body.dark-theme .cdk-overlay-container .assignment-panel .search-results button.selected {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+app-weekly-schedules-page .clients-loading {
+  align-items: center;
+  color: var(--app-text-muted);
+  display: flex;
+  gap: .65rem;
+  justify-content: center;
+  padding: 2rem;
+}
+
+app-weekly-schedules-page .client-pagination {
+  align-items: center;
+  display: flex;
+  gap: .75rem;
+  justify-content: flex-end;
+  padding-top: .75rem;
+}
+
+app-weekly-schedules-page .client-pagination span {
+  color: var(--app-text-muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+body.dark-theme app-weekly-schedules-page :is(.table-wrap, table, thead, th, td) {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+body.dark-theme app-weekly-schedules-page th {
+  background: var(--app-surface-muted) !important;
+  color: var(--app-text-muted) !important;
+}
+
+body.dark-theme app-weekly-schedules-page :is(.controls select, .controls input) {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+  color-scheme: dark;
+}
+
+body.dark-theme app-weekly-schedules-page .controls select option {
+  background-color: #1b1b1e;
+  color: #f8fafc;
+}
+
+body.dark-theme app-weekly-schedules-page .controls select option:disabled {
+  color: #7d8490;
+}
+
+body.dark-theme app-weekly-schedules-page .controls :is(select, input):focus {
+  border-color: var(--app-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 20%, transparent);
+  outline: 0;
+}

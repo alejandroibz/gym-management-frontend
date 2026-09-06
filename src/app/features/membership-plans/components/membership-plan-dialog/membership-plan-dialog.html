@@ -12,7 +12,7 @@
   </div>
 
   <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
-    <div class="form-grid">
+    <div class="form-grid"><mat-form-field appearance="outline"><mat-label>Unidad de duración</mat-label><mat-select formControlName="durationUnit"><mat-option value="Days">Días</mat-option><mat-option value="Months">Meses calendario</mat-option><mat-option value="Years">Años</mat-option></mat-select></mat-form-field>
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Nombre</mat-label>
         <input matInput formControlName="nombre" />
@@ -29,7 +29,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Duracion en dias</mat-label>
+        <mat-label>Cantidad</mat-label>
         <input matInput type="number" min="1" step="1" formControlName="duracionDias" />
       </mat-form-field>
     </div>

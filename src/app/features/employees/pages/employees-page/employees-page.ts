@@ -338,6 +338,7 @@ export class EmployeesPageComponent {
       fechaNacimiento: result.fechaNacimiento,
       fechaIngreso: result.fechaIngreso,
       sueldo: result.sueldo,
+      esProfesor: result.esProfesor,
       appAccess: result.appAccess ?? null
     };
   }

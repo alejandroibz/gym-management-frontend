@@ -159,9 +159,8 @@
         }
 
         <app-exercise-body-map
-          [muscleGroup]="getGroupName(exerciseForm.controls.primaryMuscleGroupId.value)"
-          [secondaryMuscleGroup]="getGroupName(exerciseForm.controls.secondaryMuscleGroupId.value)"
-          [musclesInvolved]="selectedMuscles().length ? null : currentExercise()?.musclesInvolved"
+          [primaryGroup]="getGroup(exerciseForm.controls.primaryMuscleGroupId.value)"
+          [secondaryGroup]="getGroup(exerciseForm.controls.secondaryMuscleGroupId.value)"
           [muscles]="selectedMuscles()" />
       </section>
     </main>

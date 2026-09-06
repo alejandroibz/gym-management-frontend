@@ -77,6 +77,12 @@
         <mat-error>Ingresa un sueldo válido.</mat-error>
       </mat-form-field>
 
+      @if (!categoryIsProfessor) {
+        <mat-checkbox formControlName="esProfesor">Puede recibir alumnos como profesor</mat-checkbox>
+      } @else {
+        <div class="professor-category-note"><mat-icon>school</mat-icon><span>Esta categoría habilita automáticamente al empleado como profesor.</span></div>
+      }
+
       <div class="access-section">
         <mat-checkbox formControlName="createAccess">Crear acceso al sistema</mat-checkbox>
         <p>Si lo activas, se crea el usuario del empleado en Auth0.</p>

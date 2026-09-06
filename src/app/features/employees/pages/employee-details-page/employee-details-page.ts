@@ -72,6 +72,7 @@ export class EmployeeDetailsPageComponent {
     fechaNacimiento: ['', [Validators.required]],
     fechaIngreso: ['', [Validators.required]],
     sueldo: [0, [Validators.required, Validators.min(0)]],
+    esProfesor: [false],
     createAccess: [false],
     appRole: ['' as EmployeeAppRole | '']
   });
@@ -109,6 +110,9 @@ export class EmployeeDetailsPageComponent {
       .subscribe(() => {
         this.updateAppAccessValidators();
       });
+    this.form.controls.employeeCategoryId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.applyProfessorCategory());
 
     this.loadCategories();
     this.loadHealthProfessionals();
@@ -122,6 +126,12 @@ export class EmployeeDetailsPageComponent {
   startEditing(): void {
     this.isEditing.set(true);
     this.form.enable({ emitEvent: false });
+  }
+
+  categoryIsProfessor(): boolean {
+    const categoryId = this.form.controls.employeeCategoryId.value;
+    return this.categories().find(category => category.id === Number(categoryId))?.nombre
+      .toLocaleLowerCase().includes('profesor') ?? false;
   }
 
   cancelEditing(): void {
@@ -299,6 +309,7 @@ export class EmployeeDetailsPageComponent {
       fechaNacimiento: this.toDateInputValue(employee.fechaNacimiento),
       fechaIngreso: this.toDateInputValue(employee.fechaIngreso),
       sueldo: employee.sueldo,
+      esProfesor: employee.esProfesor,
       createAccess: false,
       appRole: employee.hasAppAccess ? ((employee.appRole as EmployeeAppRole | null) ?? 'Admin') : 'Admin'
     });
@@ -344,6 +355,7 @@ export class EmployeeDetailsPageComponent {
       fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
       fechaIngreso: new Date(`${raw.fechaIngreso}T00:00:00`).toISOString(),
       sueldo: Number(raw.sueldo),
+      esProfesor: this.categoryIsProfessor() || raw.esProfesor,
       appAccess: employee?.hasAppAccess
         ? {
             role: (raw.appRole || null) as EmployeeAppRole | null
@@ -355,6 +367,12 @@ export class EmployeeDetailsPageComponent {
             }
           : null
     };
+  }
+
+  private applyProfessorCategory(): void {
+    if (this.categoryIsProfessor()) {
+      this.form.controls.esProfesor.setValue(true, { emitEvent: false });
+    }
   }
 
   private updateAppAccessValidators(): void {

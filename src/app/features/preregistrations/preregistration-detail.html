@@ -1,0 +1,57 @@
+<h2 mat-dialog-title>Ficha de preinscripción</h2>
+<mat-dialog-content>
+  @if (loading()) { <mat-spinner diameter="32" aria-label="Cargando ficha" /> }
+  @if (error()) { <p role="alert">{{ error() }}</p><button mat-button (click)="load()" [disabled]="saving()">Recargar ficha</button> }
+  @if (item(); as p) {
+    <h3>{{ p.firstName }} {{ p.lastName }}</h3>
+    <p class="muted">{{ statusLabel(p.status) }} · Recibida el {{ receivedDate(p.receivedAtUtc) | date:'dd/MM/yyyy HH:mm':'-0300' }} · Solicitud #{{ p.id }}</p>
+    @if (p.clientId) { <p><a mat-stroked-button [routerLink]="['/clients', p.clientId]" mat-dialog-close>Ver cliente #{{ p.clientId }}</a></p><p class="muted">El alta está confirmada. Los cambios posteriores se realizan en la ficha del cliente.</p> }
+    @if (editing()) {
+      <form #editForm="ngForm" (ngSubmit)="save()" class="detail-grid">
+        @for (field of fields; track field.key) {
+          <mat-form-field appearance="outline" [class.wide]="field.type === 'textarea'">
+            <mat-label>{{ field.label }}</mat-label>
+            @if (field.type === 'textarea') { <textarea matInput [name]="field.key" [(ngModel)]="draft[field.key]" [maxlength]="field.max" required rows="4" [disabled]="saving()"></textarea> }
+            @else { <input matInput [type]="field.type" [name]="field.key" [(ngModel)]="draft[field.key]" [maxlength]="field.max" required [disabled]="saving()" /> }
+          </mat-form-field>
+        }
+        <mat-form-field appearance="outline"><mat-label>Frecuencia semanal</mat-label><mat-select name="weeklyFrequency" [(ngModel)]="draft['weeklyFrequency']" required [disabled]="saving()">@for (n of ['2','3','4','5','6']; track n) { <mat-option [value]="n">{{ n }} veces por semana</mat-option> }</mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Turno preferido</mat-label><mat-select name="preferredShift" [(ngModel)]="draft['preferredShift']" required [disabled]="saving()">@for (s of shifts; track s) { <mat-option [value]="s">{{ s }}</mat-option> }</mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Estado</mat-label><mat-select name="status" [(ngModel)]="draft['status']" required [disabled]="saving()">@for (s of ['Pending','Contacted','Discarded']; track s) { <mat-option [value]="s">{{ statusLabel(s) }}</mat-option> }</mat-select></mat-form-field>
+        <mat-form-field appearance="outline" class="wide"><mat-label>Notas de seguimiento</mat-label><textarea matInput name="followUpNotes" [(ngModel)]="draft['followUpNotes']" maxlength="4000" rows="3" [disabled]="saving()"></textarea></mat-form-field>
+        <p class="muted wide">Se conservarán el envío original y los consentimientos. Para reabrir una solicitud descartada, elegí Pendiente o Contactado.</p>
+        <div class="wide"><button mat-flat-button type="submit" [disabled]="saving() || editForm.invalid">{{ saving() ? 'Guardando…' : 'Guardar cambios' }}</button><button mat-button type="button" (click)="editing.set(false)" [disabled]="saving()">Cancelar edición</button></div>
+      </form>
+    } @else {
+      <dl class="detail-grid">
+        @for (field of snapshotFields; track field.key) {
+          <div [class.wide]="field.type === 'textarea'"><dt>{{ field.label }}</dt><dd class="multiline">@if (field.type === 'date') { {{ valueFromItem(field.key) | date:'dd/MM/yyyy':'UTC' }} } @else { {{ valueFromItem(field.key) || '—' }} }</dd></div>
+        }
+        <div><dt>Autorización de contacto</dt><dd>{{ p.consent ? 'Aceptada' : 'No aceptada' }}</dd></div>
+        <div><dt>Consentimiento de DNI y salud</dt><dd>{{ p.sensitiveDataConsent ? 'Aceptado' : 'No aceptado' }}</dd></div>
+        <div><dt>Versión del consentimiento</dt><dd>{{ p.consentVersion }}</dd></div><div><dt>Origen</dt><dd>Formulario de la landing</dd></div>
+      </dl>
+      @if (!p.clientId) {
+        <button mat-stroked-button (click)="startEdit()" [disabled]="saving()">Editar datos y seguimiento</button>
+        @if (p.status === 'Discarded') { <p class="muted">Reabrí la solicitud antes de dar de alta o vincular un cliente.</p> }
+        @else if (p.matchingClients.length) {
+          <h4>Ya hay clientes con este DNI</h4><p class="muted">Confirmá la persona correcta para vincularla. No se creará otro cliente ni se modificarán sus membresías.</p>
+          @for (m of p.matchingClients; track m.id) { <div class="match"><a [routerLink]="['/clients',m.id]" mat-dialog-close>{{ m.nombre }} {{ m.apellido }} · #{{ m.id }}</a><span>{{ m.activo ? 'Activo' : 'Archivado' }}</span><button mat-button (click)="link(m)" [disabled]="saving()">Vincular cliente</button></div> }
+        } @else { <p><button mat-flat-button (click)="enroll()" [disabled]="saving()">Dar de alta como cliente</button></p><p class="muted">Se abrirá el formulario de alta para confirmar los datos, la sede y la membresía. El pago se registra después.</p> }
+      }
+    }
+    <details class="audit"><summary>Datos originales de la landing</summary><ng-container *ngTemplateOutlet="snapshot; context: { $implicit: p.original }" /></details>
+    <details class="audit"><summary>Historial de cambios ({{ p.history.length }})</summary>
+      @if (!p.history.length) { <p>Todavía no hubo cambios administrativos.</p> }
+      @for (h of p.history; track h.id) { <details class="audit"><summary>{{ receivedDate(h.changedAtUtc) | date:'dd/MM/yyyy HH:mm':'-0300' }} · {{ h.action === 'Edited' ? 'Edición y seguimiento' : h.action === 'Linked' ? 'Cliente vinculado' : 'Alta de cliente' }}</summary><p class="muted">Administrador: {{ h.changedBy }}</p><ng-container *ngTemplateOutlet="snapshot; context: { $implicit: h.data }" /></details> }
+    </details>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button mat-dialog-close [disabled]="saving()">Cerrar</button></mat-dialog-actions>
+<ng-template #snapshot let-data>
+  <dl class="detail-grid">@for (field of snapshotFields; track field.key) { <div [class.wide]="field.type === 'textarea'"><dt>{{ field.label }}</dt><dd class="multiline">{{ value(data,field.key) || '—' }}</dd></div> }
+    <div><dt>Estado</dt><dd>{{ statusLabel(value(data,'status')) }}</dd></div><div><dt>Cliente vinculado</dt><dd>{{ value(data,'clientId') || 'Sin vincular' }}</dd></div>
+    <div><dt>Consentimiento de contacto</dt><dd>{{ data.consent ? 'Aceptado' : 'No aceptado' }}</dd></div><div><dt>Consentimiento DNI y salud</dt><dd>{{ data.sensitiveDataConsent ? 'Aceptado' : 'No aceptado' }}</dd></div>
+    <div><dt>Versión de consentimiento</dt><dd>{{ data.consentVersion }}</dd></div>
+  </dl>
+</ng-template>

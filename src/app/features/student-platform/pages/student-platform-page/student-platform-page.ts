@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, Component, TemplateRef, ViewChild, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
@@ -24,7 +24,7 @@ import { Client } from '../../../clients/models/client.model';
 import { ClientsService } from '../../../clients/services/clients.service';
 import { AchievementTemplate, AttendanceLog, BranchAttendanceSettings, Exercise, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, WorkoutSession } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
-import { BODY_ZONE_PATHS, BodyZoneKey } from './body-zone-paths';
+import { WeeklySchedulesPageComponent } from '../../../weekly-schedules/pages/weekly-schedules-page/weekly-schedules-page';
 
 interface RoutineBuilderExercise {
   exerciseId: number;
@@ -40,6 +40,7 @@ interface RoutineBuilderExercise {
 
 interface MuscleGroupDialogData {
   group?: MuscleGroup;
+  suggestedCoordinates?: string[];
 }
 
 interface MuscleDialogData {
@@ -47,6 +48,11 @@ interface MuscleDialogData {
   groupName?: string;
   muscle?: MuscleGroup['muscles'][number];
   groups: MuscleGroup[];
+}
+
+interface CalibrationPoint {
+  x: number;
+  y: number;
 }
 
 interface WorkoutSessionBlockGroup {
@@ -57,64 +63,54 @@ interface WorkoutSessionBlockGroup {
 }
 
 interface BodyZoneDefinition {
-  key: BodyZoneKey;
+  key: string;
   label: string;
   paths: string[];
   synonyms: string[];
+  muscleGroupId?: number;
+  muscleId?: number;
 }
-
-const BODY_ZONE_BASE_DEFINITIONS: Array<Omit<BodyZoneDefinition, 'paths'>> = [
-  { key: 'pectorals', label: 'Pectorales', synonyms: ['pectorales', 'pectoral', 'pecho'] },
-  { key: 'obliques', label: 'Oblicuos', synonyms: ['oblicuo', 'oblicuos'] },
-  { key: 'posterior_tibialis', label: 'Tibiales posteriores', synonyms: ['tibial posterior', 'tibiales posteriores'] },
-  { key: 'extensors', label: 'Extensores', synonyms: ['extensor', 'extensores'] },
-  { key: 'triceps', label: 'Triceps', synonyms: ['tricep', 'triceps'] },
-  { key: 'rotators', label: 'Rotadores', synonyms: ['rotador', 'rotadores', 'manguito rotador'] },
-  { key: 'traps', label: 'Trapecios', synonyms: ['trapecio', 'trapecios', 'trapezius'] },
-  { key: 'lats', label: 'Laterales', synonyms: ['laterales', 'dorsal', 'dorsales', 'dorsal ancho'] },
-  { key: 'hamstrings', label: 'Isquiotibiales', synonyms: ['isquio', 'isquios', 'femoral', 'isquiotibial', 'isquiotibiales'] },
-  { key: 'iliotibial_bands', label: 'Cintillas iliotibiales', synonyms: ['cintilla iliotibial', 'cintillas iliotibiales', 'tracto iliotibial'] },
-  { key: 'glutes', label: 'Gluteos', synonyms: ['gluteo', 'gluteos'] },
-  { key: 'lower_back', label: 'Musculos lumbares', synonyms: ['musculo lumbar', 'musculos lumbares', 'lumbar', 'lumbares', 'erector', 'erectores'] },
-  { key: 'shoulders', label: 'Hombros', synonyms: ['hombro', 'hombros', 'delto', 'deltoides'] },
-  { key: 'flexors', label: 'Flexores', synonyms: ['flexor', 'flexores'] },
-  { key: 'biceps', label: 'Biceps', synonyms: ['bicep', 'biceps', 'braquial'] },
-  { key: 'abs', label: 'Abdominales', synonyms: ['abdomen', 'abdominal', 'abdominales', 'recto abdominal', 'transverso abdominal', 'core'] },
-  { key: 'adductors', label: 'Aductores', synonyms: ['aductor', 'aductores'] },
-  { key: 'quads', label: 'Cuadriceps', synonyms: ['cuadricep', 'cuadriceps'] },
-  { key: 'shins', label: 'Espinillas', synonyms: ['espinilla', 'espinillas', 'tibial anterior'] },
-  { key: 'feet', label: 'Pies', synonyms: ['pies'] },
-  { key: 'calves', label: 'Pantorrillas', synonyms: ['pantorrilla', 'pantorrillas', 'gemelo', 'gemelos', 'soleo'] }
-];
-
-const BODY_ZONE_DEFINITIONS: BodyZoneDefinition[] = BODY_ZONE_BASE_DEFINITIONS.map(zone => ({
-  ...zone,
-  paths: BODY_ZONE_PATHS[zone.key]
-}));
 
 @Component({
   selector: 'app-muscle-group-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule],
   styles: [`
-    .catalog-dialog { background: #f8fafc; border-radius: 10px; display: grid; gap: 1rem; padding: 1rem; }
+    .catalog-dialog { background: var(--app-surface); border-radius: 10px; color: var(--app-text); display: grid; gap: 1rem; padding: 1rem; }
     .catalog-dialog header { display: grid; gap: .35rem; }
     .catalog-dialog h2, .catalog-dialog p { margin: 0; }
-    .catalog-dialog p, .select-field span { color: #667085; }
-    .eyebrow { color: #176b87; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+    .catalog-dialog p, .catalog-dialog small, .select-field span { color: var(--app-text-muted); }
+    .catalog-dialog h2, .catalog-dialog h3, .catalog-dialog strong { color: var(--app-text); }
+    .eyebrow { color: var(--app-accent); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
     .form-grid { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
     .wide { grid-column: 1 / -1; }
+    .body-map-editor { background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 12px; color: var(--app-text); display: grid; gap: 1rem; grid-column: 1 / -1; padding: 1rem; }
+    .map-editor-header { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
+    .map-editor-header div { display: grid; gap: .2rem; }
+    .map-editor-header strong { color: var(--app-text); }
+    .map-editor-header small { color: var(--app-text-muted); }
+    .drawing-help { background: color-mix(in srgb, var(--app-accent) 7%, var(--app-surface)); border: 1px solid color-mix(in srgb, var(--app-accent) 28%, var(--app-border)); border-radius: 9px; color: var(--app-text-muted); line-height: 1.45; padding: .75rem; }
+    .map-editor-canvas { aspect-ratio: 1664 / 1248; background: #f8fafc; border: 1px solid var(--app-border); border-radius: 10px; cursor: crosshair; overflow: hidden; position: relative; width: 100%; }
+    .map-editor-canvas img, .map-editor-canvas svg { display: block; inset: 0; position: absolute; width: 100%; }
+    .map-editor-canvas img { height: auto; position: static; }
+    .map-editor-canvas svg { height: 100%; }
+    .saved-shape { fill: rgba(201, 42, 31, .46); stroke: #a51f18; stroke-width: 4; }
+    .active-shape { fill: rgba(93, 143, 240, .24); stroke: #2563eb; stroke-width: 4; }
+    .active-point { fill: #ef4444; stroke: #fff; stroke-width: 3; }
+    .drawing-toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+    .drawing-toolbar .danger-action { color: var(--app-accent-strong); }
+    .drawing-status { color: var(--app-text-muted); font-size: .78rem; margin-left: auto; }
     mat-form-field { width: 100%; }
-    :host ::ng-deep .catalog-dialog .mat-mdc-text-field-wrapper { background: #fff; border-radius: 8px; }
+    :host ::ng-deep .catalog-dialog .mat-mdc-text-field-wrapper { background: var(--app-surface-muted); border-radius: 8px; }
     :host ::ng-deep .catalog-dialog .mdc-notched-outline__leading,
     :host ::ng-deep .catalog-dialog .mdc-notched-outline__notch,
-    :host ::ng-deep .catalog-dialog .mdc-notched-outline__trailing { border-color: #cfd8e3 !important; }
-    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mat-mdc-text-field-wrapper { box-shadow: 0 0 0 4px rgba(201, 42, 31, .08); }
+    :host ::ng-deep .catalog-dialog .mdc-notched-outline__trailing { border-color: var(--app-border) !important; }
+    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mat-mdc-text-field-wrapper { box-shadow: 0 0 0 4px var(--app-accent-shadow); }
     :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__leading,
     :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__notch,
-    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__trailing { border-color: rgba(201, 42, 31, .55) !important; }
+    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__trailing { border-color: var(--app-accent) !important; }
     .dialog-actions { display: flex; gap: .5rem; justify-content: flex-end; }
-    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } .map-editor-header { align-items: flex-start; flex-direction: column; } .drawing-status { margin-left: 0; width: 100%; } }
   `],
   template: `
     <section class="catalog-dialog">
@@ -136,6 +132,28 @@ const BODY_ZONE_DEFINITIONS: BodyZoneDefinition[] = BODY_ZONE_BASE_DEFINITIONS.m
           <mat-label>Descripcion</mat-label>
           <input matInput formControlName="description">
         </mat-form-field>
+        <section class="body-map-editor">
+          <div class="map-editor-header"><div><strong>Delimitá la zona sobre el mapa</strong><small>El mapa usa la misma calibración que el resto de la plataforma.</small></div></div>
+          <div class="drawing-help"><strong>Cómo dibujar:</strong> hacé clic alrededor de todo el contorno muscular para agregar puntos. Cuando tengas al menos tres, usá <b>Cerrar polígono</b>. Podés guardar varios polígonos para un mismo grupo.</div>
+          <div class="map-editor-canvas">
+            <img src="/images/body-muscle-map.png" alt="Mapa corporal para delimitar una zona muscular punto por punto">
+            <svg viewBox="0 0 1664 1248" aria-label="Calibrador de zona muscular" (click)="addDrawingPoint($event)" (dblclick)="$event.preventDefault(); closeCurrentPath()" (mousemove)="updateDrawingCoordinates($event)">
+              <g transform="translate(0 155)" stroke-linejoin="round">
+                @for (path of savedPaths(); track path) { <path class="saved-shape" [attr.d]="path"></path> }
+                <polyline class="active-shape" [attr.points]="activePolylinePoints()"></polyline>
+                @for (point of activePoints; track $index) { <circle class="active-point" [attr.cx]="point.x" [attr.cy]="point.y" r="9"></circle> }
+              </g>
+            </svg>
+          </div>
+          <div class="drawing-toolbar">
+            <button mat-flat-button color="primary" type="button" [disabled]="activePoints.length < 3" (click)="$event.stopPropagation(); closeCurrentPath()"><mat-icon>gesture</mat-icon> Cerrar polígono</button>
+            <button mat-stroked-button type="button" [disabled]="!activePoints.length" (click)="undoDrawingPoint()"><mat-icon>undo</mat-icon> Deshacer punto</button>
+            <button mat-stroked-button type="button" [disabled]="!activePoints.length" (click)="startNewPath()"><mat-icon>restart_alt</mat-icon> Cancelar trazado</button>
+            <button mat-stroked-button type="button" [disabled]="!savedPaths().length" (click)="deleteLastPath()"><mat-icon>backspace</mat-icon> Borrar último polígono</button>
+            <button mat-stroked-button class="danger-action" type="button" [disabled]="!savedPaths().length && !activePoints.length" (click)="clearMapSelection()"><mat-icon>layers_clear</mat-icon> Borrar todo</button>
+            <span class="drawing-status">{{ drawingCoordinates }} · {{ activePoints.length }} puntos actuales · {{ savedPaths().length }} polígonos guardados</span>
+          </div>
+        </section>
         <div class="dialog-actions wide">
           <button mat-stroked-button type="button" (click)="dialogRef.close()">Cancelar</button>
           <button mat-flat-button color="primary" type="submit">
@@ -151,17 +169,87 @@ export class MuscleGroupDialogComponent {
   readonly data = inject<MuscleGroupDialogData>(MAT_DIALOG_DATA);
   readonly dialogRef = inject(MatDialogRef<MuscleGroupDialogComponent>);
   private readonly formBuilder = inject(FormBuilder);
+  readonly drawingOffsetY = 155;
+  activePoints: CalibrationPoint[] = [];
+  drawingCoordinates = 'x: -, y: -';
 
   readonly form = this.formBuilder.nonNullable.group({
     id: [this.data.group?.id ?? 0],
     name: [this.data.group?.name ?? '', Validators.required],
     description: [this.data.group?.description ?? ''],
-    sortOrder: [this.data.group?.sortOrder ?? 0]
+    sortOrder: [this.data.group?.sortOrder ?? 0],
+    bodyMapCoordinates: [(this.data.group?.bodyMapCoordinates?.length ? this.data.group.bodyMapCoordinates : this.data.suggestedCoordinates ?? []).join('\n')]
   });
+
+  clearMapSelection(): void {
+    this.setPaths([]);
+    this.activePoints = [];
+  }
+
+  addDrawingPoint(event: MouseEvent): void {
+    if (event.detail > 1) return;
+    const point = this.toDrawingPoint(event);
+    this.activePoints = [...this.activePoints, point];
+    this.drawingCoordinates = `x: ${point.x}, y: ${point.y}`;
+  }
+
+  updateDrawingCoordinates(event: MouseEvent): void {
+    const point = this.toDrawingPoint(event);
+    this.drawingCoordinates = `x: ${point.x}, y: ${point.y}`;
+  }
+
+  closeCurrentPath(): void {
+    if (this.activePoints.length < 3) return;
+    this.setPaths([...this.savedPaths(), this.pointsToPath(this.activePoints)]);
+    this.activePoints = [];
+  }
+
+  undoDrawingPoint(): void {
+    this.activePoints = this.activePoints.slice(0, -1);
+  }
+
+  startNewPath(): void {
+    this.activePoints = [];
+  }
+
+  deleteLastPath(): void {
+    this.setPaths(this.savedPaths().slice(0, -1));
+  }
+
+  activePolylinePoints(): string {
+    return this.activePoints.map(point => `${point.x},${point.y}`).join(' ');
+  }
+
+  savedPaths(): string[] {
+    return this.currentPaths();
+  }
+
+  private currentPaths(): string[] {
+    return this.form.controls.bodyMapCoordinates.value.split(/\r?\n/).map(path => path.trim()).filter(Boolean);
+  }
+
+  private setPaths(paths: string[]): void {
+    this.form.controls.bodyMapCoordinates.setValue(paths.join('\n'));
+    this.form.controls.bodyMapCoordinates.markAsDirty();
+  }
+
+  private toDrawingPoint(event: MouseEvent): CalibrationPoint {
+    const overlay = event.currentTarget as SVGSVGElement;
+    const point = overlay.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const transformed = point.matrixTransform(overlay.getScreenCTM()!.inverse());
+    return { x: Math.round(transformed.x), y: Math.round(transformed.y - this.drawingOffsetY) };
+  }
+
+  private pointsToPath(points: CalibrationPoint[]): string {
+    return `M${points.map(point => `${point.x} ${point.y}`).join(' L')} Z`;
+  }
 
   submit(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.getRawValue());
+    const raw = this.form.getRawValue();
+    this.dialogRef.close({ ...raw, bodyMapCoordinates: raw.bodyMapCoordinates.split(/\r?\n/).map(path => path.trim()).filter(Boolean) });
   }
 }
 
@@ -170,25 +258,37 @@ export class MuscleGroupDialogComponent {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule],
   styles: [`
-    .catalog-dialog { background: #f8fafc; border-radius: 10px; display: grid; gap: 1rem; padding: 1rem; }
+    .catalog-dialog { background: var(--app-surface); border-radius: 10px; color: var(--app-text); display: grid; gap: 1rem; padding: 1rem; }
     .catalog-dialog header { display: grid; gap: .35rem; }
     .catalog-dialog h2, .catalog-dialog p { margin: 0; }
-    .catalog-dialog p, .select-field span { color: #667085; }
-    .eyebrow { color: #176b87; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+    .catalog-dialog p, .select-field span { color: var(--app-text-muted); }
+    .catalog-dialog h2 { color: var(--app-text); }
+    .eyebrow { color: var(--app-accent); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
     .form-grid { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
     .wide { grid-column: 1 / -1; }
     .select-field { display: grid; gap: .35rem; }
-    .select-field select { background: #fff; border: 1px solid #cfd8e3; border-radius: 8px; min-height: 48px; padding: 0 .75rem; }
-    .select-field select:focus { border-color: rgba(201, 42, 31, .55); box-shadow: 0 0 0 4px rgba(201, 42, 31, .08); outline: 0; }
+    .select-field select { background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 8px; color: var(--app-text); min-height: 48px; padding: 0 .75rem; }
+    .select-field select:focus { border-color: var(--app-accent); box-shadow: 0 0 0 4px var(--app-accent-shadow); outline: 0; }
+    .body-map-editor { background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 12px; display: grid; gap: 1rem; padding: 1rem; }
+    .drawing-help { color: var(--app-text-muted); line-height: 1.45; }
+    .map-editor-canvas { aspect-ratio: 1664 / 1248; background: #f8fafc; border: 1px solid var(--app-border); border-radius: 10px; cursor: crosshair; overflow: hidden; position: relative; width: 100%; }
+    .map-editor-canvas img, .map-editor-canvas svg { display: block; inset: 0; position: absolute; width: 100%; }
+    .map-editor-canvas img { height: auto; position: static; }
+    .map-editor-canvas svg { height: 100%; }
+    .saved-shape { fill: rgba(201, 42, 31, .46); stroke: #a51f18; stroke-width: 4; }
+    .active-shape { fill: rgba(93, 143, 240, .24); stroke: #2563eb; stroke-width: 4; }
+    .active-point { fill: #ef4444; stroke: #fff; stroke-width: 3; }
+    .drawing-toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+    .drawing-status { color: var(--app-text-muted); font-size: .78rem; margin-left: auto; }
     mat-form-field { width: 100%; }
-    :host ::ng-deep .catalog-dialog .mat-mdc-text-field-wrapper { background: #fff; border-radius: 8px; }
+    :host ::ng-deep .catalog-dialog .mat-mdc-text-field-wrapper { background: var(--app-surface-muted); border-radius: 8px; }
     :host ::ng-deep .catalog-dialog .mdc-notched-outline__leading,
     :host ::ng-deep .catalog-dialog .mdc-notched-outline__notch,
-    :host ::ng-deep .catalog-dialog .mdc-notched-outline__trailing { border-color: #cfd8e3 !important; }
-    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mat-mdc-text-field-wrapper { box-shadow: 0 0 0 4px rgba(201, 42, 31, .08); }
+    :host ::ng-deep .catalog-dialog .mdc-notched-outline__trailing { border-color: var(--app-border) !important; }
+    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mat-mdc-text-field-wrapper { box-shadow: 0 0 0 4px var(--app-accent-shadow); }
     :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__leading,
     :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__notch,
-    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__trailing { border-color: rgba(201, 42, 31, .55) !important; }
+    :host ::ng-deep .catalog-dialog mat-form-field:focus-within .mdc-notched-outline__trailing { border-color: var(--app-accent) !important; }
     .dialog-actions { display: flex; gap: .5rem; justify-content: flex-end; }
     @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
   `],
@@ -220,6 +320,27 @@ export class MuscleGroupDialogComponent {
           <mat-label>Descripcion</mat-label>
           <input matInput formControlName="description">
         </mat-form-field>
+        <section class="body-map-editor wide">
+          <div><strong>Delimitá este músculo en el mapa</strong><div class="drawing-help">Marcá punto por punto su contorno. Cerrá el polígono al terminar; podés crear varios para zonas simétricas o separadas.</div></div>
+          <div class="map-editor-canvas">
+            <img src="/images/body-muscle-map.png" alt="Mapa corporal para delimitar el músculo">
+            <svg viewBox="0 0 1664 1248" (click)="addDrawingPoint($event)" (dblclick)="$event.preventDefault(); closeCurrentPath()" (mousemove)="updateDrawingCoordinates($event)">
+              <g transform="translate(0 155)" stroke-linejoin="round">
+                @for (path of savedPaths(); track path) { <path class="saved-shape" [attr.d]="path"></path> }
+                <polyline class="active-shape" [attr.points]="activePolylinePoints()"></polyline>
+                @for (point of activePoints; track $index) { <circle class="active-point" [attr.cx]="point.x" [attr.cy]="point.y" r="9"></circle> }
+              </g>
+            </svg>
+          </div>
+          <div class="drawing-toolbar">
+            <button mat-flat-button color="primary" type="button" [disabled]="activePoints.length < 3" (click)="closeCurrentPath()"><mat-icon>gesture</mat-icon> Cerrar polígono</button>
+            <button mat-stroked-button type="button" [disabled]="!activePoints.length" (click)="undoDrawingPoint()"><mat-icon>undo</mat-icon> Deshacer punto</button>
+            <button mat-stroked-button type="button" [disabled]="!activePoints.length" (click)="cancelDrawing()"><mat-icon>restart_alt</mat-icon> Cancelar trazado</button>
+            <button mat-stroked-button type="button" [disabled]="!savedPaths().length" (click)="deleteLastPath()"><mat-icon>backspace</mat-icon> Borrar último</button>
+            <button mat-stroked-button type="button" [disabled]="!savedPaths().length && !activePoints.length" (click)="clearMapSelection()"><mat-icon>layers_clear</mat-icon> Borrar todo</button>
+            <span class="drawing-status">{{ drawingCoordinates }} · {{ activePoints.length }} puntos · {{ savedPaths().length }} polígonos</span>
+          </div>
+        </section>
         <div class="dialog-actions wide">
           <button mat-stroked-button type="button" (click)="dialogRef.close()">Cancelar</button>
           <button mat-flat-button color="primary" type="submit">
@@ -235,18 +356,36 @@ export class MuscleDialogComponent {
   readonly data = inject<MuscleDialogData>(MAT_DIALOG_DATA);
   readonly dialogRef = inject(MatDialogRef<MuscleDialogComponent>);
   private readonly formBuilder = inject(FormBuilder);
+  readonly drawingOffsetY = 155;
+  activePoints: CalibrationPoint[] = [];
+  drawingCoordinates = 'x: -, y: -';
 
   readonly form = this.formBuilder.nonNullable.group({
     id: [this.data.muscle?.id ?? 0],
     muscleGroupId: [this.data.muscle?.muscleGroupId ?? this.data.groupId ?? this.data.groups[0]?.id ?? 0, Validators.min(1)],
     name: [this.data.muscle?.name ?? '', Validators.required],
     description: [this.data.muscle?.description ?? ''],
-    sortOrder: [this.data.muscle?.sortOrder ?? 0]
+    sortOrder: [this.data.muscle?.sortOrder ?? 0],
+    bodyMapCoordinates: [(this.data.muscle?.bodyMapCoordinates ?? []).join('\n')]
   });
+
+  addDrawingPoint(event: MouseEvent): void { if (event.detail > 1) return; const point = this.toDrawingPoint(event); this.activePoints = [...this.activePoints, point]; this.drawingCoordinates = `x: ${point.x}, y: ${point.y}`; }
+  updateDrawingCoordinates(event: MouseEvent): void { const point = this.toDrawingPoint(event); this.drawingCoordinates = `x: ${point.x}, y: ${point.y}`; }
+  closeCurrentPath(): void { if (this.activePoints.length < 3) return; this.setPaths([...this.savedPaths(), this.pointsToPath(this.activePoints)]); this.activePoints = []; }
+  undoDrawingPoint(): void { this.activePoints = this.activePoints.slice(0, -1); }
+  cancelDrawing(): void { this.activePoints = []; }
+  deleteLastPath(): void { this.setPaths(this.savedPaths().slice(0, -1)); }
+  clearMapSelection(): void { this.setPaths([]); this.activePoints = []; }
+  activePolylinePoints(): string { return this.activePoints.map(point => `${point.x},${point.y}`).join(' '); }
+  savedPaths(): string[] { return this.form.controls.bodyMapCoordinates.value.split(/\r?\n/).map(path => path.trim()).filter(Boolean); }
+  private setPaths(paths: string[]): void { this.form.controls.bodyMapCoordinates.setValue(paths.join('\n')); this.form.controls.bodyMapCoordinates.markAsDirty(); }
+  private toDrawingPoint(event: MouseEvent): CalibrationPoint { const overlay = event.currentTarget as SVGSVGElement; const point = overlay.createSVGPoint(); point.x = event.clientX; point.y = event.clientY; const transformed = point.matrixTransform(overlay.getScreenCTM()!.inverse()); return { x: Math.round(transformed.x), y: Math.round(transformed.y - this.drawingOffsetY) }; }
+  private pointsToPath(points: CalibrationPoint[]): string { return `M${points.map(point => `${point.x} ${point.y}`).join(' L')} Z`; }
 
   submit(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.getRawValue());
+    const raw = this.form.getRawValue();
+    this.dialogRef.close({ ...raw, bodyMapCoordinates: raw.bodyMapCoordinates.split(/\r?\n/).map(path => path.trim()).filter(Boolean) });
   }
 }
 
@@ -269,7 +408,8 @@ export class MuscleDialogComponent {
     MatProgressBarModule,
     MatSelectModule,
     MatTabsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    WeeklySchedulesPageComponent
   ],
   templateUrl: './student-platform-page.html',
   styleUrl: './student-platform-page.scss',
@@ -283,6 +423,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   private readonly roleService = inject(RoleService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private viewReady = false;
   private lastHandledDeepLink = '';
 
@@ -293,6 +434,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   readonly routineTemplates = signal<RoutineTemplate[]>([]);
   readonly trainingPlans = signal<TrainingPlan[]>([]);
   readonly trainingPlanAssignments = signal<TrainingPlanAssignment[]>([]);
+  readonly trackingPlanAssignments = signal<TrainingPlanAssignment[]>([]);
   readonly routines = signal<RoutineAssignment[]>([]);
   readonly muscleGroups = signal<MuscleGroup[]>([]);
   readonly attendance = signal<AttendanceLog[]>([]);
@@ -428,6 +570,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     attendanceDate: [new Date().toISOString().slice(0, 10)],
     attendanceNotes: ['']
   });
+
   readonly professionalSessionForm = this.formBuilder.nonNullable.group({
     routineAssignmentId: [0, Validators.min(1)],
     trainingDate: [new Date().toISOString().slice(0, 10), Validators.required],
@@ -493,17 +636,37 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   }
 
   bodyZoneDefinitions(): BodyZoneDefinition[] {
-    return BODY_ZONE_DEFINITIONS;
+    const configuredMuscles = this.muscleGroups().flatMap(group => group.muscles
+      .filter(muscle => muscle.bodyMapCoordinates?.length)
+      .map(muscle => ({
+        key: `muscle-${muscle.id}`,
+        label: muscle.name,
+        paths: muscle.bodyMapCoordinates,
+        synonyms: [muscle.name],
+        muscleGroupId: group.id,
+        muscleId: muscle.id
+      })));
+    const configuredGroups = this.muscleGroups()
+      .filter(group => group.bodyMapCoordinates?.length)
+      .map(group => ({
+        key: `group-${group.id}`,
+        label: group.name,
+        paths: group.bodyMapCoordinates,
+        synonyms: [group.name, ...group.muscles.map(muscle => muscle.name)],
+        muscleGroupId: group.id
+      }));
+    const configured = [...configuredMuscles, ...configuredGroups];
+    return configured;
   }
 
   pendingBodyZones(): BodyZoneDefinition[] {
     const keys = this.pendingBodyZoneKeys();
-    return BODY_ZONE_DEFINITIONS.filter(zone => keys.includes(zone.key));
+    return this.bodyZoneDefinitions().filter(zone => keys.includes(zone.key));
   }
 
   selectedBodyZones(): BodyZoneDefinition[] {
     const keys = this.selectedBodyZoneKeys();
-    return BODY_ZONE_DEFINITIONS.filter(zone => keys.includes(zone.key));
+    return this.bodyZoneDefinitions().filter(zone => keys.includes(zone.key));
   }
 
   toggleBodyZone(key: string): void {
@@ -636,9 +799,19 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   }
 
   selectedTrackingClientPlanAssignments(): TrainingPlanAssignment[] {
-    const clientId = this.trackingForm.controls.clientId.value;
-    if (clientId <= 0) return [];
-    return this.trainingPlanAssignments().filter(assignment => assignment.clientId === clientId);
+    return this.trackingPlanAssignments().filter(assignment => this.isActivePlanAssignment(assignment));
+  }
+
+  selectedTrackingClientPlanHistory(): TrainingPlanAssignment[] {
+    return this.trackingPlanAssignments().filter(assignment => !this.isActivePlanAssignment(assignment));
+  }
+
+  isActivePlanAssignment(assignment: TrainingPlanAssignment): boolean {
+    return assignment.status.toLowerCase() === 'active';
+  }
+
+  openAssignedTrainingPlan(trainingPlanId: number): void {
+    void this.router.navigate(['/student-platform/training-plans', trainingPlanId]);
   }
 
   filteredMuscleGroups(): MuscleGroup[] {
@@ -677,12 +850,13 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         rutinas: 1,
         workouts: 1,
         seguimiento: 2,
-        ejercicios: 3,
-        catalogos: 4,
-        'grupos-musculares': 4,
-        ranking: 5,
-        logros: 5,
-        asistencia: 6
+        turnos: 3,
+        ejercicios: 4,
+        catalogos: 5,
+        'grupos-musculares': 5,
+        ranking: 6,
+        logros: 6,
+        asistencia: 7
       };
       this.selectedTabIndex.set(tabs[tab] ?? 0);
       this.handleDeepLink();
@@ -1178,7 +1352,8 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       id: raw.id || undefined,
       name: raw.name,
       description: raw.description || null,
-      sortOrder: raw.sortOrder
+      sortOrder: raw.sortOrder,
+      bodyMapCoordinates: []
     }).subscribe({
       next: () => {
         this.feedback.set('Grupo muscular guardado.');
@@ -1191,9 +1366,10 @@ export class StudentPlatformPageComponent implements AfterViewInit {
 
   openMuscleGroupDialog(group?: MuscleGroup): void {
     const dialogRef = this.dialog.open(MuscleGroupDialogComponent, {
-      width: '560px',
+      width: '1040px',
       maxWidth: 'calc(100vw - 2rem)',
-      data: { group }
+      maxHeight: 'calc(100vh - 2rem)',
+      data: { group, suggestedCoordinates: [] }
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -1202,7 +1378,8 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         id: result.id || undefined,
         name: result.name,
         description: result.description || null,
-        sortOrder: result.sortOrder
+        sortOrder: result.sortOrder,
+        bodyMapCoordinates: result.bodyMapCoordinates
       }).subscribe({
         next: () => {
           this.feedback.set('Grupo muscular guardado.');
@@ -1256,8 +1433,9 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     }
 
     const dialogRef = this.dialog.open(MuscleDialogComponent, {
-      width: '560px',
+      width: '1040px',
       maxWidth: 'calc(100vw - 2rem)',
+      maxHeight: 'calc(100vh - 2rem)',
       data: { groupId: group?.id, groupName: group?.name, muscle, groups: this.muscleGroups() }
     });
 
@@ -1268,7 +1446,8 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         muscleGroupId: result.muscleGroupId,
         name: result.name,
         description: result.description || null,
-        sortOrder: result.sortOrder
+        sortOrder: result.sortOrder,
+        bodyMapCoordinates: result.bodyMapCoordinates
       }).subscribe({
         next: () => {
           this.feedback.set('Musculo guardado.');
@@ -1588,7 +1767,25 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     this.attendance.set([]);
     this.workoutSessions.set([]);
     this.progressHistory.set(null);
+    this.trackingPlanAssignments.set([]);
     this.loadStudentTracking(false);
+  }
+
+  openTrackingFromSchedule(clientId: number): void {
+    this.selectedTabIndex.set(2);
+    const loadedClient = this.clients().find(client => client.id === clientId);
+    if (loadedClient) {
+      this.selectClientForTracking(loadedClient);
+      return;
+    }
+
+    this.clientsService.getById(clientId).subscribe({
+      next: client => {
+        this.clients.update(clients => clients.some(item => item.id === client.id) ? clients : [...clients, client]);
+        this.selectClientForTracking(client);
+      },
+      error: () => this.feedback.set('No se pudo abrir el seguimiento del alumno.')
+    });
   }
 
   closeTrackingClientPickerSoon(): void {
@@ -1624,6 +1821,9 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         this.assignmentPlanSearch.setValue('');
         this.planAssignmentClientSearch.setValue('');
         this.refreshTrainingPlans();
+        if (raw.clientId === this.trackingForm.controls.clientId.value) {
+          this.loadTrackingPlanAssignments(raw.clientId);
+        }
       },
       error: () => this.feedback.set('No se pudo asignar el plan.')
     });
@@ -1705,6 +1905,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       },
       error: () => this.feedback.set('No se pudieron cargar los workouts asignados al alumno.')
     });
+    this.loadTrackingPlanAssignments(raw.clientId);
 
     if (raw.exerciseId > 0) {
       this.loadExerciseProgress(false);
@@ -1882,6 +2083,39 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       Number(this.exerciseMuscleFilter.value) > 0 ||
       this.pendingBodyZoneKeys().length > 0 ||
       this.selectedBodyZoneKeys().length > 0;
+  }
+
+  prepareTrackingPlanAssignment(): void {
+    const client = this.selectedTrackingClient();
+    if (!client) return;
+    this.planAssignmentForm.reset({ trainingPlanId: 0, clientId: client.id });
+    this.assignmentPlanSearch.setValue('');
+    this.planAssignmentClientSearch.setValue(`${client.apellido}, ${client.nombre} - DNI ${client.dni}`);
+    this.planAssignmentPlanPickerOpen.set(false);
+  }
+
+  unassignTrackingPlan(assignment: TrainingPlanAssignment): void {
+    this.confirmDelete(
+      'Finalizar asignacion',
+      `El plan "${assignment.trainingPlanName}" dejara de estar activo, pero permanecera en el historial del alumno.`
+    ).subscribe(confirmed => {
+      if (!confirmed) return;
+      this.platformService.unassignTrainingPlan(assignment.id).subscribe({
+        next: () => {
+          this.feedback.set('Plan finalizado. Se conservo en el historial.');
+          this.loadTrackingPlanAssignments(assignment.clientId);
+          this.refreshTrainingPlans();
+        },
+        error: () => this.feedback.set('No se pudo finalizar la asignacion del plan.')
+      });
+    });
+  }
+
+  private loadTrackingPlanAssignments(clientId: number): void {
+    this.platformService.getTrainingPlanAssignments(clientId, true).subscribe({
+      next: assignments => this.trackingPlanAssignments.set(assignments),
+      error: () => this.feedback.set('No se pudieron cargar los planes del alumno.')
+    });
   }
 
   attendanceSourceLabel(source: string): string {
@@ -2192,7 +2426,11 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     if (!zones.length) return true;
 
     const text = this.exerciseBodyZoneText(exercise);
-    return zones.some(zone => zone.synonyms.some(synonym => text.includes(this.normalize(synonym))));
+    return zones.some(zone => zone.muscleId
+      ? exercise.muscles.some(muscle => muscle.id === zone.muscleId)
+      : zone.muscleGroupId
+      ? exercise.primaryMuscleGroupId === zone.muscleGroupId || exercise.secondaryMuscleGroupId === zone.muscleGroupId || exercise.muscles.some(muscle => muscle.muscleGroupId === zone.muscleGroupId)
+      : zone.synonyms.some(synonym => text.includes(this.normalize(synonym))));
   }
 
   private exerciseSearchText(exercise: Exercise): string {

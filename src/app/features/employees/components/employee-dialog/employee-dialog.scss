@@ -151,3 +151,18 @@
     width: 100%;
   }
 }
+.professor-category-note {
+  align-items: center;
+  background: var(--app-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 28%, transparent);
+  border-radius: 8px;
+  color: var(--app-accent);
+  display: flex;
+  gap: .55rem;
+  padding: .7rem .8rem;
+}
+
+.professor-category-note span {
+  font-size: .82rem;
+  font-weight: 700;
+}

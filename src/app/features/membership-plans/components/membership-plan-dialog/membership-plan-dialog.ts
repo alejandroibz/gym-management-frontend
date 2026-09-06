@@ -19,6 +19,8 @@ export interface MembershipPlanDialogResult {
   descripcion: string;
   precio: number;
   duracionDias: number;
+  durationUnit: string;
+  durationQuantity: number;
 }
 
 @Component({
@@ -54,7 +56,8 @@ export class MembershipPlanDialogComponent {
       [Validators.required, Validators.minLength(3), Validators.maxLength(240)]
     ],
     precio: [this.data.plan?.precio ?? null, [Validators.required, Validators.min(0)]],
-    duracionDias: [this.data.plan?.duracionDias ?? null, [Validators.required, Validators.min(1)]]
+    durationUnit: [this.data.plan?.durationUnit ?? "Days", [Validators.required]],
+    duracionDias: [this.data.plan?.durationQuantity ?? this.data.plan?.duracionDias ?? null, [Validators.required, Validators.min(1)]]
   });
 
   get isEditing(): boolean {
@@ -78,6 +81,8 @@ export class MembershipPlanDialogComponent {
       nombre: value.nombre.trim(),
       descripcion: value.descripcion.trim(),
       precio: Number(value.precio),
+      durationUnit: value.durationUnit,
+      durationQuantity: Number(value.duracionDias),
       duracionDias: Number(value.duracionDias)
     });
   }

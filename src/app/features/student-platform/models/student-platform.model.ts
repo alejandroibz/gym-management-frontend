@@ -29,6 +29,7 @@ export interface MuscleGroup {
   name: string;
   description?: string | null;
   sortOrder: number;
+  bodyMapCoordinates: string[];
   muscles: Muscle[];
 }
 
@@ -39,6 +40,7 @@ export interface Muscle {
   name: string;
   description?: string | null;
   sortOrder: number;
+  bodyMapCoordinates: string[];
 }
 
 export interface ExercisePayload {

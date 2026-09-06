@@ -1,4 +1,6 @@
-﻿import { CommonModule, DatePipe } from '@angular/common';
+import { forkJoin } from 'rxjs';
+import { ApplicantDetail, PreregistrationsService } from '../../../preregistrations/preregistrations.service';
+import { CommonModule, DatePipe } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -79,6 +81,10 @@ export class ClientDetailsPageComponent {
   private readonly contractsService = inject(ContractsService);
   private readonly elementRef = inject(ElementRef<HTMLElement>);
 
+  private readonly preregistrations = inject(PreregistrationsService);
+  readonly fromPreregistration = this.route.snapshot.queryParamMap.has('preregistrationId') && this.route.snapshot.routeConfig?.path === 'clients/new';
+  readonly preregistration = signal<ApplicantDetail | null>(null);
+  readonly branches = signal<{ id: number; nombre: string }[]>([]);
   readonly client = signal<Client | null>(null);
   readonly membershipPlans = signal<MembershipPlan[]>([]);
   readonly employees = signal<Employee[]>([]);
@@ -93,7 +99,7 @@ export class ClientDetailsPageComponent {
   readonly observacionesMaxLength = 3000;
   readonly today = new Date().toISOString().slice(0, 10);
 
-  readonly form = this.formBuilder.nonNullable.group({
+  readonly form = this.formBuilder.nonNullable.group({ branchId: [2, [Validators.required, Validators.min(1)]],
     nombre: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]],
     apellido: ['', [Validators.required, nonWhitespaceValidator, Validators.minLength(2), Validators.maxLength(80)]],
     dni: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(8), Validators.pattern(/^\d{7,8}$/)]],
@@ -194,6 +200,7 @@ export class ClientDetailsPageComponent {
     this.loadMembershipPlans();
     this.loadPaymentLookups();
     if (!this.isCreateMode()) this.loadClient();
+    if (this.fromPreregistration) this.loadPreregistration();
   }
 
   goBack(): void {
@@ -761,10 +768,6 @@ export class ClientDetailsPageComponent {
   }
 
   getMembershipStateLabel(stateOrMembership?: string | ClientMembership | null): string {
-    if (stateOrMembership && typeof stateOrMembership !== 'string' && this.isMembershipExpired(stateOrMembership)) {
-      return 'Vencida';
-    }
-
     const state = typeof stateOrMembership === 'string' ? stateOrMembership : stateOrMembership?.estado;
     if (!state) {
       return 'Sin estado';
@@ -798,23 +801,10 @@ export class ClientDetailsPageComponent {
       return 'Sin membresía';
     }
 
-    if (this.isMembershipPaused(membership)) {
-      return 'En pausa';
-    }
-
-    const isExpired = this.isMembershipExpired(membership);
-
-    if (isExpired && client.debePago) {
-      return 'Vencida - pendiente de pago';
-    }
-
-    if (isExpired) {
-      return 'Vencida';
-    }
-
-    if (client.debePago) {
-      return 'Vigente - pendiente de pago';
-    }
+    if (this.isMembershipExpired(membership)) return 'Vencida';
+    const today = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    if (membership.fechaInicio.slice(0,10) > today) return 'Programada';
+    if (client.debePago) return 'Pendiente de pago';
 
     if (client.membresiaProximaAVencer) {
       return 'Próximo a vencer';
@@ -1161,7 +1151,43 @@ export class ClientDetailsPageComponent {
     return this.membershipPlans().find(plan => plan.id === Number(this.form.controls.membershipPlanId.value));
   }
 
+  private loadPreregistration(): void {
+    const id = Number(this.route.snapshot.queryParamMap.get('preregistrationId'));
+    if (!Number.isSafeInteger(id) || id <= 0) { this.errorMessage.set('Preinscripción inválida.'); return; }
+    this.isLoading.set(true);
+    forkJoin({ item: this.preregistrations.get(id), branches: this.preregistrations.branches() })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: ({ item, branches }) => {
+          this.isLoading.set(false);
+          if (item.clientId) { this.router.navigate(['/clients', item.clientId]); return; }
+          if (item.status === 'Discarded' || item.matchingClients.length) {
+            this.errorMessage.set('Volvé a la preinscripción para reabrirla o vincular el cliente que ya existe.'); return;
+          }
+          this.preregistration.set(item); this.branches.set(branches);
+          this.form.controls.dni.setValidators([Validators.required, Validators.pattern(/^\d{6,10}$/)]);
+          this.form.controls.dni.disable();
+          this.form.controls.hasMembership.setValidators(Validators.requiredTrue);
+          this.form.patchValue({ branchId: 0, nombre: item.firstName, apellido: item.lastName, dni: item.documentNumber,
+            fechaNacimiento: item.birthDate, telefono: item.whatsapp, email: item.email, direccion: item.address,
+            observaciones: [item.goalsAndBackground && `Objetivos y antecedentes: ${item.goalsAndBackground}`,
+              item.healthConsiderations && `Salud declarada: ${item.healthConsiderations}`].filter(Boolean).join('\n\n'),
+            hasMembership: true, fechaInicio: item.desiredStartDate });
+        },
+        error: () => { this.isLoading.set(false); this.errorMessage.set('No se pudo cargar la preinscripción. Volvé a intentarlo desde el listado.'); }
+      });
+  }
+
   private createClient(): void {
+    if (this.fromPreregistration) {
+      const source = this.preregistration();
+      if (!source || !this.form.controls.hasMembership.value) { this.errorMessage.set('Cargá la preinscripción y confirmá su membresía antes de crear el cliente.'); return; }
+      this.isSaving.set(true); this.errorMessage.set('');
+      this.preregistrations.enroll(source.id, source.version, this.buildCreatePayload()).subscribe({
+        next: result => { this.isSaving.set(false); this.router.navigate(['/clients', result.clientId]); },
+        error: error => { this.isSaving.set(false); this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo completar el alta. Revisá la preinscripción.')); }
+      });
+      return;
+    }
     this.isSaving.set(true);
     this.errorMessage.set('');
     this.clientsService.create(this.buildCreatePayload()).subscribe({
@@ -1179,7 +1205,7 @@ export class ClientDetailsPageComponent {
   private buildCreatePayload(): ClientCreatePayload {
     const raw = this.form.getRawValue();
     return {
-      branchId: 2,
+      branchId: raw.branchId,
       nombre: raw.nombre.trim(), apellido: raw.apellido.trim(), dni: raw.dni.trim(),
       fechaNacimiento: new Date(`${raw.fechaNacimiento}T00:00:00`).toISOString(),
       telefono: raw.telefono.trim(), email: raw.email.trim(), direccion: raw.direccion.trim(),

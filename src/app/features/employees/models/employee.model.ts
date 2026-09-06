@@ -19,6 +19,7 @@ export interface Employee {
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
+  esProfesor: boolean;
   fechaCreacion?: string;
   hasAppAccess?: boolean;
   appRole?: string | null;
@@ -35,6 +36,7 @@ export interface EmployeeCreatePayload {
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
+  esProfesor: boolean;
   appAccess?: EmployeeAppAccessPayload | null;
 }
 

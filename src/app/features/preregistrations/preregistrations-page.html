@@ -1,0 +1,22 @@
+<section class="preregistrations-page">
+  <header><div><p class="eyebrow">INGRESOS AL GIMNASIO</p><h1>Preinscripciones</h1><p class="muted">Personas que completaron el formulario de la landing. Revisá su información antes de confirmar el ingreso.</p></div><button mat-stroked-button (click)="load()" [disabled]="loading()"><mat-icon>refresh</mat-icon>Actualizar</button></header>
+  <form class="filters" (ngSubmit)="searchApplicants()">
+    <mat-form-field appearance="outline"><mat-label>Buscar por nombre, DNI, email o teléfono</mat-label><input matInput name="search" [(ngModel)]="search" maxlength="200" /></mat-form-field>
+<mat-form-field appearance="outline"><mat-label>Estado</mat-label><mat-select name="status" [(ngModel)]="status"><mat-option value="">Todos</mat-option>@for (s of ['Pending','Contacted','Enrolled','Discarded']; track s) { <mat-option [value]="s">{{ statusLabel(s) }}</mat-option> }</mat-select></mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="loading()">Buscar</button>
+  </form>
+  @if (loading()) { <div class="state" role="status"><mat-spinner diameter="36" aria-label="Cargando preinscripciones" /><p>Cargando preinscripciones…</p></div> }
+  @else if (error()) { <div class="state" role="alert"><p>{{ error() }}</p><button mat-button (click)="load()">Reintentar</button></div> }
+  @else {
+    <p class="muted">{{ total() }} solicitudes encontradas · Más recientes primero</p>
+    @if (items().length === 0) { <div class="state"><mat-icon>person_search</mat-icon><h2>No hay preinscripciones para mostrar</h2><p>Las solicitudes recibidas aparecerán aquí. Si usaste una búsqueda, probá con otros datos.</p></div> }
+    @else {
+      <div class="table-wrap"><table><caption class="sr-only">Solicitudes de ingreso recibidas desde la landing</caption><thead><tr><th>Persona</th><th>Contacto</th><th>Inicio y preferencia</th><th>Recibida</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>
+      @for (p of items(); track p.id) {
+        <tr><td><strong>{{ p.firstName }} {{ p.lastName }}</strong><small>DNI {{ p.documentNumber }}</small></td><td>{{ p.whatsapp }}<small>{{ p.email }}</small></td><td>{{ p.desiredStartDate | date:'dd/MM/yyyy':'UTC' }} · {{ p.weeklyFrequency }} veces/semana<small>{{ p.preferredShift }}</small></td><td>{{ receivedDate(p.receivedAtUtc) | date:'dd/MM/yyyy HH:mm':'-0300' }}</td><td>{{ statusLabel(p.status) }}</td><td><button mat-button (click)="open(p)" [attr.aria-label]="'Ver ficha de ' + p.firstName + ' ' + p.lastName">Ver ficha</button></td></tr>
+      }
+      </tbody></table></div>
+      <app-paginator [length]="total()" [pageNumber]="page()" [pageSize]="size()" [pageSizeOptions]="[10,20,40]" (pageChange)="changePage($event)" />
+    }
+  }
+</section>

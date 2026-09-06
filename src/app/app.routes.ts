@@ -25,6 +25,12 @@ export const routes: Routes = [
     canActivateChild: [contractComplianceGuard],
     children: [
       {
+        path: 'preregistrations',
+        loadComponent: () => import('./features/preregistrations/preregistrations-page').then(m => m.PreregistrationsPageComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin', 'Admin'] }
+      },
+      {
         path: '',
         redirectTo: 'profile',
         pathMatch: 'full'
@@ -198,6 +204,14 @@ export const routes: Routes = [
         data: {
           roles: ['SuperAdmin']
         }
+      },
+      {
+        path: 'weekly-schedules',
+        loadComponent: () =>
+          import('./features/weekly-schedules/pages/weekly-schedules-page/weekly-schedules-page')
+            .then(m => m.WeeklySchedulesPageComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin', 'Admin'] }
       },
       {
         path: 'student-platform/routines/:id',

@@ -139,16 +139,18 @@
                       <strong>{{ plan.name }}</strong>
                       <small>{{ plan.goal }} | {{ plan.level }}</small>
                     </span>
-                    <span class="stat-pill">{{ plan.workoutCount }} workouts</span>
-                    <span
-                      class="stat-pill muted clickable-pill"
-                      role="button"
-                      tabindex="0"
-                      [attr.aria-label]="'Ver asignaciones del plan ' + plan.name"
-                      (click)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
-                      (keydown.enter)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
-                      (keydown.space)="$event.preventDefault(); $event.stopPropagation(); showAssignmentsForPlan(plan)">
-                      {{ plan.assignmentCount || 0 }} asignaciones
+                    <span class="plan-summary-stats">
+                      <span class="stat-pill">{{ plan.workoutCount }} workouts</span>
+                      <span
+                        class="stat-pill muted clickable-pill"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-label]="'Ver asignaciones del plan ' + plan.name"
+                        (click)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
+                        (keydown.enter)="$event.stopPropagation(); showAssignmentsForPlan(plan)"
+                        (keydown.space)="$event.preventDefault(); $event.stopPropagation(); showAssignmentsForPlan(plan)">
+                        {{ plan.assignmentCount || 0 }} asignaciones
+                      </span>
                     </span>
                   </div>
 
@@ -531,6 +533,39 @@
     </mat-tab>
 
     <mat-tab label="Seguimiento">
+      <ng-template #trackingPlanAssignmentDialog>
+        <section class="panel dialog-panel assignment-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Nuevo plan</span>
+              <h2>Asignar a {{ selectedTrackingClient()!.apellido }}, {{ selectedTrackingClient()!.nombre }}</h2>
+              <small>Seleccioná el plan que querés incorporar al seguimiento del alumno.</small>
+            </div>
+            <button mat-icon-button type="button" mat-dialog-close matTooltip="Cerrar" aria-label="Cerrar asignación de plan"><mat-icon>close</mat-icon></button>
+          </div>
+          <div class="picker-field">
+            <mat-form-field appearance="outline">
+              <mat-label>Buscar plan</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [formControl]="assignmentPlanSearch" (focus)="planAssignmentPlanPickerOpen.set(true)" (click)="planAssignmentPlanPickerOpen.set(true)" (blur)="closePlanAssignmentPlanPickerSoon()">
+              <button mat-icon-button matSuffix type="button" matTooltip="Mostrar planes" (mousedown)="$event.preventDefault()" (click)="planAssignmentPlanPickerOpen.update(open => !open)"><mat-icon>{{ planAssignmentPlanPickerOpen() ? 'expand_less' : 'expand_more' }}</mat-icon></button>
+            </mat-form-field>
+            @if (planAssignmentPlanPickerOpen()) {
+              <div class="search-results dropdown-results">
+                @for (plan of getAssignmentPlanMatches(); track plan.id) {
+                  <button type="button" [class.selected]="planAssignmentForm.controls.trainingPlanId.value === plan.id" (mousedown)="$event.preventDefault()" (click)="selectPlanForAssignment(plan)">
+                    <strong>{{ plan.name }}</strong><span>{{ plan.workoutCount }} workouts · {{ plan.goal }}</span>
+                  </button>
+                } @empty { <div class="search-empty">No encontramos planes con ese criterio.</div> }
+              </div>
+            }
+          </div>
+          <div class="dialog-actions">
+            <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
+            <button mat-flat-button color="primary" type="button" [disabled]="planAssignmentForm.controls.trainingPlanId.value <= 0" (click)="assignTrainingPlan()"><mat-icon>assignment_ind</mat-icon>Asignar plan</button>
+          </div>
+        </section>
+      </ng-template>
       <ng-template #professionalSessionDialog>
         <section class="professional-session-dialog">
           <header>
@@ -710,7 +745,7 @@
             </article>
             <article>
               <span>Historial</span>
-              <strong>{{ progressHistory()?.points?.length || 0 }}</strong>
+              <strong>{{ selectedTrackingClientPlanHistory().length }}</strong>
             </article>
           </div>
 
@@ -743,8 +778,9 @@
               <div class="panel-heading compact-heading">
                 <div>
                   <span class="eyebrow">Planes</span>
-                  <h3>Asignaciones del alumno</h3>
+                  <h3>Planes activos</h3>
                 </div>
+                <button mat-flat-button color="primary" type="button" (click)="prepareTrackingPlanAssignment(); openTemplate(trackingPlanAssignmentDialog, '680px')"><mat-icon>add</mat-icon>Asignar plan</button>
               </div>
               @if (!selectedTrackingClientPlanAssignments().length) {
                 <div class="inline-empty">
@@ -753,11 +789,31 @@
               } @else {
                 <div class="student-plan-list">
                   @for (assignment of selectedTrackingClientPlanAssignments(); track assignment.id) {
-                    <article class="student-plan-item">
+                    <article class="student-plan-item clickable" role="link" tabindex="0" [attr.aria-label]="'Abrir plan ' + assignment.trainingPlanName" (click)="openAssignedTrainingPlan(assignment.trainingPlanId)" (keydown.enter)="openAssignedTrainingPlan(assignment.trainingPlanId)" (keydown.space)="$event.preventDefault(); openAssignedTrainingPlan(assignment.trainingPlanId)">
                       <span class="student-plan-icon"><mat-icon>assignment</mat-icon></span>
                       <span class="student-plan-name"><strong>{{ assignment.trainingPlanName }}</strong><small>Asignado el {{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small></span>
                       <span class="student-plan-workouts"><strong>{{ assignment.workoutCount }}</strong><small>workouts</small></span>
                       <span class="status-pill">{{ assignment.status }}</span>
+                      <button mat-icon-button type="button" class="student-plan-unassign" matTooltip="Finalizar asignación" [attr.aria-label]="'Finalizar asignación de ' + assignment.trainingPlanName" (click)="$event.stopPropagation(); unassignTrackingPlan(assignment)"><mat-icon>link_off</mat-icon></button>
+                    </article>
+                  }
+                </div>
+              }
+
+              <div class="plan-history-heading">
+                <div><span class="eyebrow">Historial</span><h3>Planes anteriores</h3></div>
+                <span>{{ selectedTrackingClientPlanHistory().length }}</span>
+              </div>
+              @if (!selectedTrackingClientPlanHistory().length) {
+                <div class="inline-empty">Los planes finalizados aparecerán acá sin perder su fecha de asignación.</div>
+              } @else {
+                <div class="student-plan-list plan-history-list">
+                  @for (assignment of selectedTrackingClientPlanHistory(); track assignment.id) {
+                    <article class="student-plan-item historical">
+                      <span class="student-plan-icon"><mat-icon>history</mat-icon></span>
+                      <span class="student-plan-name"><strong>{{ assignment.trainingPlanName }}</strong><small>Asignado el {{ assignment.assignedAt | date:'dd/MM/yyyy' }}</small></span>
+                      <span class="student-plan-workouts"><strong>{{ assignment.workoutCount }}</strong><small>workouts</small></span>
+                      <span class="status-pill historical">FINALIZADO</span>
                     </article>
                   }
                 </div>
@@ -907,6 +963,10 @@
           </section>
         }
       </section>
+    </mat-tab>
+
+    <mat-tab label="Turnos">
+      <app-weekly-schedules-page [embedded]="true" (trackingRequested)="openTrackingFromSchedule($event)" />
     </mat-tab>
 
     <mat-tab label="Ejercicios">
@@ -1417,6 +1477,11 @@
                       }
                     </div>
 
+                    <div class="group-coordinate-status" [class.configured]="group.bodyMapCoordinates.length">
+                      <mat-icon>{{ group.bodyMapCoordinates.length ? 'location_on' : 'location_off' }}</mat-icon>
+                      <span>{{ group.bodyMapCoordinates.length ? group.bodyMapCoordinates.length + ' zonas SVG' : 'Sin coordenadas' }}</span>
+                    </div>
+
                     <div class="group-actions" aria-label="Acciones del grupo">
                       <button mat-icon-button type="button" matTooltip="Editar grupo" aria-label="Editar grupo" (click)="$event.stopPropagation(); editMuscleGroup(group)">
                         <mat-icon>edit</mat-icon>
@@ -1452,6 +1517,19 @@
                       Editar grupo
                     </button>
                   </div>
+
+                  <section class="coordinate-detail">
+                    <div><span class="eyebrow">Coordenadas</span><strong>{{ selectedGroup.bodyMapCoordinates.length }} paths vinculados</strong></div>
+                    @if (selectedGroup.bodyMapCoordinates.length) {
+                      <svg viewBox="0 0 1664 1248" aria-label="Vista previa de coordenadas de {{ selectedGroup.name }}">
+                        <g transform="translate(0 155)">
+                          @for (path of selectedGroup.bodyMapCoordinates; track path) { <path [attr.d]="path"></path> }
+                        </g>
+                      </svg>
+                    } @else {
+                      <small>Editá el grupo para cargar un path SVG por línea y vincularlo explícitamente al mapa corporal.</small>
+                    }
+                  </section>
 
                   @if (selectedGroup.muscles.length) {
                     <div class="muscle-detail-list">

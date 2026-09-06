@@ -31,7 +31,7 @@ import { PaymentMethod } from '../../../payment-methods/models/payment-method.mo
 import { PaymentMethodsService } from '../../../payment-methods/services/payment-methods.service';
 import { debounceTime, distinctUntilChanged, map, merge } from 'rxjs';
 
-type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'expired' | 'paused';
+type ClientOperationalStatus = 'archived' | 'noMembership' | 'upToDate' | 'nearExpiration' | 'pendingPayment' | 'expired' | 'scheduled' | 'paused';
 
 @Component({
   selector: 'app-clients-page',
@@ -533,8 +533,11 @@ export class ClientsPageComponent {
       return 'Sin vencimiento informado';
     }
 
-    const prefix = this.isMembershipExpired(this.getEffectiveMembership(client)) ? 'Vencida el ' : 'Vence ';
-    return `${prefix}${new Intl.DateTimeFormat('es-AR').format(new Date(endDate))}`;
+    const formattedDate = new Intl.DateTimeFormat('es-AR').format(new Date(endDate));
+    if (!client.debePago) {
+      return `${this.isMembershipExpired(this.getEffectiveMembership(client)) ? 'Venció' : 'Válida hasta'} ${formattedDate}`;
+    }
+    return `${this.isMembershipExpired(this.getEffectiveMembership(client)) ? 'Vencida el ' : 'Vence '}${formattedDate}`;
   }
 
   getOperationalStatus(client: Client): ClientOperationalStatus {
@@ -547,17 +550,10 @@ export class ClientsPageComponent {
       return 'noMembership';
     }
 
-    if (this.isMembershipPaused(membership)) {
-      return 'paused';
-    }
-
-    if (this.isMembershipExpired(membership) && !client.debePago) {
-      return 'expired';
-    }
-
-    if (client.debePago) {
-      return 'pendingPayment';
-    }
+    if (this.isMembershipExpired(membership)) return 'expired';
+    const today = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    if (membership.fechaInicio.slice(0,10) > today) return 'scheduled';
+    if (client.debePago) return 'pendingPayment';
 
     if (client.membresiaProximaAVencer) {
       return 'nearExpiration';
@@ -572,11 +568,10 @@ export class ClientsPageComponent {
       noMembership: 'Sin membresía',
       upToDate: 'Al día',
       nearExpiration: 'Próximo a vencer',
-      pendingPayment: this.isMembershipExpired(this.getEffectiveMembership(client))
-        ? 'Vencida - pendiente de pago'
-        : 'Vigente - pendiente de pago',
+      pendingPayment: 'Pendiente de pago',
       expired: 'Vencida',
-      paused: 'En pausa'
+      scheduled: 'Programada',
+      paused: 'Período pendiente de pago'
     };
 
     return labels[this.getOperationalStatus(client)];

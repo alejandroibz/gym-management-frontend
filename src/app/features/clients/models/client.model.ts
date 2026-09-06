@@ -6,6 +6,11 @@ export interface ClientRelationRecord {
 }
 
 export interface ClientMembership {
+  planNameSnapshot?: string;
+  isDateBased?: boolean;
+  renewalAnchorDay?: number;
+  durationUnitSnapshot?: string;
+  durationQuantitySnapshot?: number;
   id?: number;
   membershipPlanId: number;
   fechaInicio: string;
@@ -60,6 +65,9 @@ export interface Client {
   membershipsHistory?: ClientMembership[];
   payments: ClientRelationRecord[];
   healthProfile?: HealthPatientDetail | null;
+  tieneCoberturaVigente?: boolean;
+  puedeEntrenar?: boolean;
+  saldoPendiente?: number;
   debePago: boolean;
   ultimoPagoFecha?: string | null;
   membresiaProximaAVencer?: boolean;

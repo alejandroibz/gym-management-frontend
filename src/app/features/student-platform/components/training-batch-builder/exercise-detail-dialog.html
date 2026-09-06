@@ -1,0 +1,59 @@
+<section class="exercise-detail">
+  <header>
+    <div>
+      <span>Detalle del ejercicio</span>
+      <h2>{{ exercise.name }}</h2>
+      <p>Información del ejercicio</p>
+    </div>
+    <button mat-icon-button type="button" aria-label="Cerrar detalle" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <div class="detail-content">
+    <div class="media-stage">
+      @if (primaryVideo && isDirectVideo(primaryVideo)) {
+        <video [src]="primaryVideo" controls playsinline preload="metadata"></video>
+      } @else if (primaryImage) {
+        <img [src]="primaryImage" [alt]="exercise.name">
+      } @else {
+        <div class="media-placeholder"><mat-icon>fitness_center</mat-icon><span>Sin imagen o video</span></div>
+      }
+    </div>
+
+    <div class="exercise-copy">
+      <article>
+        <span>Grupo muscular</span>
+        <div class="muscle-chips">
+          <strong>{{ exercise.primaryMuscleGroupName || exercise.muscleGroup || 'Sin grupo principal' }}</strong>
+          @if (exercise.secondaryMuscleGroupName) {
+            <strong>{{ exercise.secondaryMuscleGroupName }}</strong>
+          }
+        </div>
+      </article>
+
+      <article>
+        <span>Descripción</span>
+        <p>{{ exercise.description || 'Sin descripción cargada.' }}</p>
+      </article>
+
+      <article>
+        <span>Músculos involucrados</span>
+        <div class="muscle-chips">
+          @for (muscle of exercise.muscles; track muscle.id) {
+            <strong>{{ muscle.name }}</strong>
+          } @empty {
+            <p>{{ exercise.musclesInvolved || 'Sin músculos detallados.' }}</p>
+          }
+        </div>
+      </article>
+
+      @if (primaryVideo && !isDirectVideo(primaryVideo)) {
+        <a mat-stroked-button [href]="primaryVideo" target="_blank" rel="noopener noreferrer">
+          <mat-icon>play_circle</mat-icon>
+          Abrir video
+        </a>
+      }
+    </div>
+  </div>
+</section>

@@ -1259,7 +1259,25 @@ small,
 }
 
 .plan-summary {
-  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  align-items: start;
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+
+.plan-summary .routine-icon {
+  grid-row: 1 / span 2;
+}
+
+.plan-summary .routine-title strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.plan-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  grid-column: 2;
 }
 
 .plan-description {
@@ -2228,7 +2246,9 @@ small,
 .professional-round-label { background: color-mix(in srgb, var(--app-accent) 7%, var(--app-surface)); border-top: 1px solid var(--app-border); color: var(--app-accent); font-size: .7rem; font-weight: 800; padding: .4rem .7rem; text-transform: uppercase; }
 .attendance-list,.student-plan-list { display: grid; gap: .55rem; }
 .attendance-item,.student-plan-item { align-items: center; background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 9px; display: grid; gap: .7rem; padding: .7rem; }
-.attendance-item { grid-template-columns: 40px 1fr auto; }.student-plan-item { grid-template-columns: 40px 1fr auto auto; }
+.student-plan-item.clickable { cursor: pointer; }
+.student-plan-item.clickable:is(:hover,:focus-visible) { background: var(--app-surface); border-color: var(--app-accent); outline: 0; }
+.attendance-item { grid-template-columns: 40px 1fr auto; }.student-plan-item { grid-template-columns: 40px minmax(0, 1fr) auto auto auto; }
 .attendance-icon,.student-plan-icon { align-items: center; background: var(--app-accent-soft); border-radius: 8px; color: var(--app-accent); display: flex; height: 38px; justify-content: center; width: 38px; }
 .attendance-item strong,.attendance-item small,.student-plan-item strong,.student-plan-item small { display: block; }.attendance-item small,.student-plan-item small,.attendance-item time { color: var(--app-text-muted); font-size: .75rem; }
 .student-plan-workouts { text-align: center; }.student-plan-workouts strong { font-size: 1.15rem; }.status-pill { background: var(--app-accent-soft); border-radius: 999px; color: var(--app-accent); font-size: .7rem; font-weight: 700; padding: .3rem .55rem; text-transform: uppercase; }
@@ -2259,7 +2279,7 @@ small,
 @media (max-width: 820px) {
   .session-heading-actions { align-items: stretch; flex-direction: column; }.professional-session-form { grid-template-columns: 1fr; }.professional-session-form .wide { grid-column: 1; }
   .professional-set-editor-header { display: none; }.professional-set-editor-row { grid-template-columns: 42px 1fr 1fr; }.professional-set-editor-row>span { grid-column: 1 / -1; }.professional-set-editor-row label span { color: var(--app-text-muted); display: block; font-size: .65rem; }.cycle-badge { grid-column: 1; }
-  .attendance-item { grid-template-columns: 40px 1fr; }.attendance-item time { grid-column: 2; }.student-plan-item { grid-template-columns: 40px 1fr auto; }.student-plan-workouts { grid-column: 2; text-align: left; }.status-pill { grid-column: 3; grid-row: 1; }
+  .attendance-item { grid-template-columns: 40px 1fr; }.attendance-item time { grid-column: 2; }.student-plan-item { grid-template-columns: 40px 1fr auto; }.student-plan-workouts { grid-column: 2; text-align: left; }.status-pill { grid-column: 3; grid-row: 1; }.student-plan-unassign { grid-column: 3; grid-row: 2; }
   .session-history-summary { grid-template-columns: 48px 1fr 24px; }.session-feeling { grid-column: 2 / -1; }
   .session-set-header { display: none; }.session-set-grid { grid-template-columns: 45px 1fr 1fr; }.session-set-grid>small:nth-child(2) { grid-column: 2 / -1; }
   .session-set-grid label span { color: var(--app-text-muted); display: block; font-size: .68rem; margin-bottom: .2rem; }.session-set-grid label:last-of-type { grid-column: 2 / -1; }

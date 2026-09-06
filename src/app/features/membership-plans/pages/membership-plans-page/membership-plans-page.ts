@@ -207,6 +207,7 @@ export class MembershipPlansPageComponent {
         nombre: result.nombre,
         descripcion: result.descripcion,
         precio: result.precio,
+        durationUnit: result.durationUnit, durationQuantity: result.durationQuantity,
         duracionDias: result.duracionDias
       };
 

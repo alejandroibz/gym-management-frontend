@@ -1,3 +1,4 @@
+import { membershipEnd } from '../../../payments/utils/membership-dates';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
@@ -244,7 +245,7 @@ export class ClientDialogComponent {
       return;
     }
 
-    this.form.controls.fechaFin.setValue(this.addDays(fechaInicio, plan.duracionDias));
+    this.form.controls.fechaFin.setValue(membershipEnd(fechaInicio, plan.durationUnit ?? "Days", plan.durationQuantity ?? plan.duracionDias));
   }
 
   submit(): void {
@@ -272,8 +273,8 @@ export class ClientDialogComponent {
       membership: value.hasMembership
         ? {
             membershipPlanId: Number(value.membershipPlanId),
-            fechaInicio: new Date(`${value.fechaInicio}T00:00:00`).toISOString(),
-            fechaFin: new Date(`${value.fechaFin}T00:00:00`).toISOString(),
+            fechaInicio: value.fechaInicio,
+            fechaFin: value.fechaFin,
             periodYear: Number(value.membershipPeriodYear),
             periodMonth: Number(value.membershipPeriodMonth),
             precioFinal: Number(value.precioFinal)
@@ -321,7 +322,7 @@ export class ClientDialogComponent {
     this.form.patchValue({
       fechaInicio,
       precioFinal: plan.precio,
-      fechaFin: this.addDays(fechaInicio, plan.duracionDias),
+      fechaFin: membershipEnd(fechaInicio, plan.durationUnit ?? "Days", plan.durationQuantity ?? plan.duracionDias),
       initialPaymentAmount: plan.precio
     }, { emitEvent: false });
   }

@@ -8,12 +8,12 @@
     <img src="/images/body-muscle-map.png" alt="Mapa corporal muscular">
     <svg viewBox="0 0 1664 1248" aria-hidden="true">
       <g stroke-linejoin="round" stroke-width="3" transform="translate(0 155)">
-        @for (zone of zones; track zone.key) {
-          @for (path of paths[zone.key]; track path) {
+        @for (area of activeAreas(); track area.key) {
+          @for (path of area.paths; track path) {
             <path
               [attr.d]="path"
-              [attr.fill]="hasActiveZone(zone.key) ? 'rgba(93, 143, 240, .58)' : 'transparent'"
-              [attr.stroke]="hasActiveZone(zone.key) ? '#4478de' : 'transparent'"></path>
+              fill="rgba(93, 143, 240, .58)"
+              stroke="#4478de"></path>
           }
         }
       </g>
@@ -21,8 +21,8 @@
   </div>
 
   <div class="active-zone-list">
-    @for (zone of activeZones(); track zone.key) {
-      <span>{{ zone.label }}</span>
+    @for (area of activeAreas(); track area.key) {
+      <span>{{ area.label }}</span>
     } @empty {
       <small>Sin musculos asociados al mapa.</small>
     }

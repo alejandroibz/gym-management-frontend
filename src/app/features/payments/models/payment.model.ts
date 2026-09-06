@@ -32,6 +32,10 @@ export interface PaymentFilters {
 }
 
 export interface PaymentCreatePayload {
+  operationId?: string;
+  contractAmount?: number;
+  coverageMode?: string;
+  coverageReason?: string;
   clientId: number;
   clientMembershipId?: number | null;
   fechaPago: string;

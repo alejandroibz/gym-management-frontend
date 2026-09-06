@@ -134,6 +134,12 @@
               <input matInput type="number" min="0" step="0.01" formControlName="sueldo" />
             </mat-form-field>
 
+            @if (!categoryIsProfessor()) {
+              <mat-checkbox formControlName="esProfesor">Puede recibir alumnos como profesor</mat-checkbox>
+            } @else {
+              <div class="professor-category-note"><mat-icon>school</mat-icon><span>La categoría habilita automáticamente a este empleado como profesor.</span></div>
+            }
+
             <div class="access-box">
               <p class="access-eyebrow">Acceso al sistema</p>
 
@@ -200,6 +206,10 @@
           <article class="summary-item">
             <span>Acceso app</span>
             <strong>{{ currentEmployee.hasAppAccess ? 'Si' : 'No' }}</strong>
+          </article>
+          <article class="summary-item">
+            <span>Profesor</span>
+            <strong>{{ currentEmployee.esProfesor ? 'Sí' : 'No' }}</strong>
           </article>
           <article class="summary-item">
             <span>Rol app</span>

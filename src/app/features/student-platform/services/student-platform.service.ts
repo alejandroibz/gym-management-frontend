@@ -142,8 +142,11 @@ export class StudentPlatformService {
     return this.http.get<TrainingPlan>(`${this.apiUrl}/TrainingPlans/${id}`);
   }
 
-  getTrainingPlanAssignments(): Observable<TrainingPlanAssignment[]> {
-    return this.http.get<TrainingPlanAssignment[]>(`${this.apiUrl}/TrainingPlans/assignments`);
+  getTrainingPlanAssignments(clientId?: number, includeInactive = false): Observable<TrainingPlanAssignment[]> {
+    let params = new HttpParams();
+    if (clientId) params = params.set('clientId', clientId);
+    if (includeInactive) params = params.set('includeInactive', true);
+    return this.http.get<TrainingPlanAssignment[]>(`${this.apiUrl}/TrainingPlans/assignments`, { params });
   }
 
   createTrainingPlan(payload: TrainingPlanPayload): Observable<{ id: number }> {

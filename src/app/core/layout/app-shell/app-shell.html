@@ -28,6 +28,9 @@
       <div class="sidebar-section-label" *ngIf="!isCollapsed">Principal</div>
 
       <mat-nav-list class="nav-list">
+        <a *ngIf="isAdminOrSuperAdmin$ | async" mat-list-item routerLink="/preregistrations" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content"><mat-icon>person_add</mat-icon><span class="nav-text">Preinscripciones</span></div>
+        </a>
         <a *ngIf="!(isAdminOrSuperAdmin$ | async)" mat-list-item routerLink="/my-contracts" routerLinkActive="active-link" (click)="closeSidebarOnMobile()">
           <div class="nav-item-content"><mat-icon>verified_user</mat-icon><span class="nav-text">Mis contratos</span></div>
         </a>
@@ -64,6 +67,18 @@
           <div class="nav-item-content">
             <mat-icon>person</mat-icon>
             <span class="nav-text">Clientes</span>
+          </div>
+        </a>
+
+        <a
+          *ngIf="(isAdminOrSuperAdmin$ | async) && !(isSuperAdmin$ | async)"
+          mat-list-item
+          routerLink="/weekly-schedules"
+          routerLinkActive="active-link"
+          (click)="closeSidebarOnMobile()">
+          <div class="nav-item-content">
+            <mat-icon>calendar_month</mat-icon>
+            <span class="nav-text">Turnos</span>
           </div>
         </a>
 

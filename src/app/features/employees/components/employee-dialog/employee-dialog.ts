@@ -32,6 +32,7 @@ export interface EmployeeDialogResult {
   fechaNacimiento: string;
   fechaIngreso: string;
   sueldo: number;
+  esProfesor: boolean;
   appAccess?: EmployeeAppAccessPayload | null;
 }
 
@@ -95,6 +96,7 @@ export class EmployeeDialogComponent {
       this.data.employee?.sueldo ?? null,
       [Validators.required, Validators.min(0)]
     ],
+    esProfesor: [this.data.employee?.esProfesor ?? false],
     createAccess: [false],
     appRole: ['Admin' as EmployeeAppRole | '' ]
   });
@@ -106,11 +108,20 @@ export class EmployeeDialogComponent {
         this.updateAccessValidators();
       });
 
+    this.form.controls.employeeCategoryId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.applyProfessorCategory());
+
+    this.applyProfessorCategory();
     this.updateAccessValidators();
   }
 
   get isEditing(): boolean {
     return !!this.data.employee;
+  }
+
+  get categoryIsProfessor(): boolean {
+    return this.isProfessorCategory(this.form.controls.employeeCategoryId.value);
   }
 
   close(): void {
@@ -164,6 +175,7 @@ export class EmployeeDialogComponent {
       fechaNacimiento: new Date(`${value.fechaNacimiento}T00:00:00`).toISOString(),
       fechaIngreso: new Date(`${value.fechaIngreso}T00:00:00`).toISOString(),
       sueldo: Number(value.sueldo),
+      esProfesor: this.isProfessorCategory(value.employeeCategoryId) || value.esProfesor,
       appAccess: value.createAccess
         ? {
             createAccess: true,
@@ -179,6 +191,17 @@ export class EmployeeDialogComponent {
     }
 
     return value.slice(0, 10);
+  }
+
+  private applyProfessorCategory(): void {
+    if (this.categoryIsProfessor) {
+      this.form.controls.esProfesor.setValue(true, { emitEvent: false });
+    }
+  }
+
+  private isProfessorCategory(categoryId: number | null): boolean {
+    return this.data.categories.find(category => category.id === Number(categoryId))?.nombre
+      .toLocaleLowerCase().includes('profesor') ?? false;
   }
 
   private updateAccessValidators(): void {

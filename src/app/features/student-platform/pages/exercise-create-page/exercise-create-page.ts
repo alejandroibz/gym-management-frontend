@@ -387,6 +387,10 @@ export class ExerciseCreatePageComponent {
     return this.muscleGroups().find(group => group.id === groupId)?.name ?? null;
   }
 
+  getGroup(groupId: number): MuscleGroup | null {
+    return this.muscleGroups().find(group => group.id === groupId) ?? null;
+  }
+
   private normalize(value: string): string {
     return value.trim().toLowerCase();
   }
