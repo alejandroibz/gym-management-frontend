@@ -152,7 +152,7 @@
           <mat-icon>edit_note</mat-icon>
           <div>
             <h2>Editar workout</h2>
-            <span>Actualiza nombre, descripcion y ejercicios de esta plantilla.</span>
+            <span>Actualiza el contenido y pulsá Guardar cambios para confirmar, o Cancelar para descartar.</span>
           </div>
         </div>
 
@@ -165,6 +165,8 @@
             <mat-label>Descripcion</mat-label>
             <input matInput formControlName="description">
           </mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Nivel</mat-label><input matInput formControlName="level"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Objetivo</mat-label><input matInput formControlName="goal"></mat-form-field>
         </form>
       </section>
     }
@@ -207,18 +209,44 @@
             }
           </div>
           @if (isEditing()) {
-            @for (block of editableBlocks(); track block.id || block.sortOrder; let bi = $index) {
-              <div class="block-table-heading" [class.selected-block]="activeEditableBlockIndex() === bi" (click)="activeEditableBlockIndex.set(bi)"><strong>{{ block.name }}</strong><span>{{ block.cycles }} ciclo{{ block.cycles === 1 ? '' : 's' }}</span><button mat-icon-button type="button" matTooltip="Eliminar bloque" (click)="$event.stopPropagation(); removeEditableBlock(bi)"><mat-icon>delete</mat-icon></button></div>
-              @for (exercise of block.exercises; track exercise.exerciseId; let i = $index) {
-                <div class="table-row"><strong>{{ exercise.sortOrder }}</strong><div class="exercise-cell"><b>{{ exercise.exerciseName }}</b><small class="muscle-group">{{ exercise.muscleGroup }}</small>@if (exercise.notes) { <small class="exercise-notes">{{ exercise.notes }}</small> }</div><span>{{ exercise.sets || '-' }}</span><span>{{ exercise.reps || '-' }}</span><span>{{ exercise.weight || 0 }} kg</span><span>{{ exercise.restSeconds || '-' }}s</span><button mat-icon-button type="button" matTooltip="Quitar ejercicio" (click)="removeWorkoutExercise(bi,i)"><mat-icon>close</mat-icon></button></div>
-              }
+            @for (block of editableBlocks(); track block; let bi = $index) {
+              <section class="editable-block" [class.selected-block]="activeEditableBlockIndex() === bi">
+                <div class="editor-actions">
+                  <button mat-stroked-button type="button" (click)="activeEditableBlockIndex.set(bi)">{{ activeEditableBlockIndex() === bi ? 'Bloque seleccionado' : 'Seleccionar bloque' }}</button>
+                  <button mat-icon-button type="button" aria-label="Subir bloque" [disabled]="bi === 0" (click)="moveEditableItem(editableBlocks(), bi, -1)"><mat-icon>arrow_upward</mat-icon></button>
+                  <button mat-icon-button type="button" aria-label="Bajar bloque" [disabled]="bi === editableBlocks().length - 1" (click)="moveEditableItem(editableBlocks(), bi, 1)"><mat-icon>arrow_downward</mat-icon></button>
+                  <button mat-stroked-button type="button" (click)="removeEditableBlock(bi)"><mat-icon>delete</mat-icon>Eliminar bloque</button>
+                </div>
+                <div class="editor-fields">
+                  <label>Nombre del bloque<input [(ngModel)]="block.name" maxlength="150" required></label>
+                  <label>Ciclos<input type="number" [(ngModel)]="block.cycles" min="1" max="100" required></label>
+                  <label class="editor-wide">Notas del bloque<textarea [(ngModel)]="block.notes" maxlength="1000"></textarea></label>
+                </div>
+                @for (exercise of block.exercises; track exercise; let i = $index) {
+                  <article class="editable-exercise">
+                    <div class="editor-actions"><strong>{{ i + 1 }}. {{ exercise.exerciseName }}</strong>
+                      <button mat-icon-button type="button" aria-label="Subir ejercicio" [disabled]="i === 0" (click)="moveEditableItem(block.exercises, i, -1)"><mat-icon>arrow_upward</mat-icon></button>
+                      <button mat-icon-button type="button" aria-label="Bajar ejercicio" [disabled]="i === block.exercises.length - 1" (click)="moveEditableItem(block.exercises, i, 1)"><mat-icon>arrow_downward</mat-icon></button>
+                      <button mat-stroked-button type="button" (click)="removeWorkoutExercise(bi, i)"><mat-icon>delete</mat-icon>Quitar ejercicio</button>
+                    </div>
+                    <div class="editor-fields">
+                      <label class="editor-wide">Ejercicio<select [ngModel]="exercise.exerciseId" (ngModelChange)="replaceWorkoutExercise(exercise, $event)">@for (option of exercises(); track option.id) { <option [ngValue]="option.id">{{ option.name }}</option> }</select></label>
+                      <label>Series<input type="number" [(ngModel)]="exercise.sets" min="1" max="100"></label>
+                      <label>Repeticiones<input type="number" [(ngModel)]="exercise.reps" min="1" max="1000"></label>
+                      <label>Peso (kg)<input type="number" [(ngModel)]="exercise.weight" min="0" max="10000" step="0.1"></label>
+                      <label>Descanso (segundos)<input type="number" [(ngModel)]="exercise.restSeconds" min="0" max="3600"></label>
+                      <label class="editor-wide">Notas<textarea [(ngModel)]="exercise.notes" maxlength="1000"></textarea></label>
+                    </div>
+                  </article>
+                } @empty { <p>Bloque sin ejercicios. Agregá un ejercicio o eliminá el bloque antes de guardar.</p> }
+              </section>
             }
           } @else {
-            @for (block of currentWorkout.blocks; track block.id) {
+            @for (block of currentWorkout.blocks; track block.id; let bi = $index) {
               <div class="block-table-heading"><strong>{{ block.name }}</strong><span>{{ block.cycles }} ciclo{{ block.cycles === 1 ? '' : 's' }}</span></div>
-              @for (exercise of block.exercises; track exercise.id) {
+              @for (exercise of block.exercises; track exercise.id; let ei = $index) {
                 <div class="table-row">
-                  <strong>{{ exercise.sortOrder }}</strong><div class="exercise-cell"><b>{{ exercise.exerciseName }}</b><small class="muscle-group">{{ exercise.muscleGroup }}</small>@if (exercise.notes) { <small class="exercise-notes">{{ exercise.notes }}</small> }</div>
+                  <strong>{{ exercise.sortOrder }}</strong><div class="exercise-cell"><b>{{ exercise.exerciseName }}</b><small class="muscle-group">{{ exercise.muscleGroup }}</small>@if (exercise.notes) { <small class="exercise-notes">{{ exercise.notes }}</small> }<button mat-stroked-button type="button" class="remove-exercise-action" (click)="startRemovingWorkoutExercise(bi, ei)"><mat-icon>playlist_remove</mat-icon>Quitar del workout</button></div>
                   <span>{{ exercise.sets || '-' }}</span><span>{{ exercise.reps || '-' }}</span><span>{{ exercise.weight || 0 }} kg</span><span>{{ exercise.restSeconds || '-' }}s</span>
                 </div>
               }

@@ -447,3 +447,18 @@
 .block-table-heading { grid-column:1/-1; display:flex; justify-content:space-between; padding:.65rem .85rem; background:#e4e4e7; }
 .block-table-heading.selected-block { background:#fee2e2; outline:1px solid #dc2626; }
 .block-add-panel { margin-bottom:1rem; }
+
+.exercises-table.is-editing { overflow: visible; border: 0; }
+.exercises-table.is-editing .table-header { display: none; }
+.editable-block { border: 1px solid var(--app-border, #e4e7ec); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; min-width: 0; }
+.editable-block.selected-block { border-color: var(--app-primary, #15803d); }
+.editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .8rem; }
+.editor-actions strong { flex: 1 1 100%; }
+.editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.editor-fields label { display: grid; gap: .3rem; min-width: 0; font-size: .85rem; }
+.editor-fields input, .editor-fields select, .editor-fields textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: .6rem; border: 1px solid var(--app-border, #e4e7ec); border-radius: 6px; color: var(--app-text); background: var(--app-surface); font: inherit; }
+.editor-wide { grid-column: 1 / -1; }
+.editable-exercise { border-top: 1px solid var(--app-border, #e4e7ec); margin-top: 1rem; padding-top: 1rem; }
+@media (max-width: 480px) { .editor-fields { grid-template-columns: 1fr; } .editable-block { padding: .65rem; } }
+
+.remove-exercise-action { justify-self: start; margin-top: .45rem; }

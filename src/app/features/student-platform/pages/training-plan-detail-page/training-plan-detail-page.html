@@ -85,6 +85,7 @@
                   Ver mas
                 </a>
 
+                <a class="workout-link" mat-stroked-button [routerLink]="['/student-platform/routines', workout.routineId]" [queryParams]="{ edit: true }"><mat-icon>edit</mat-icon>Editar workout</a>
                 @if (isWorkoutExpanded(workout.id)) {
                   <div class="workout-details" [id]="'plan-workout-' + workout.id">
                     @if (workout.notes) {

@@ -40,7 +40,8 @@
   gap: 0.35rem;
   padding: 1rem;
   border-radius: 18px;
-  background: #fbfbfc;
+  background: var(--app-surface-muted);
+  color: var(--app-text);
   border: 1px solid var(--app-border);
 }
 

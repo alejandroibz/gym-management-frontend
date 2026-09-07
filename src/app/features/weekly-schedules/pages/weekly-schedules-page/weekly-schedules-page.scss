@@ -12,3 +12,15 @@
 .trainer-list { display:grid; gap:1rem; }.trainer-list article { margin:0; }.trainer-list article>header { display:flex; justify-content:space-between; margin-bottom:1rem; }.trainer-list article>header>div { display:grid; gap:.2rem; }.trainer-list article>header small { color:var(--app-text-muted,#64748b); }.trainer-list header span { color:#b91c1c; }.availability-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:.75rem; }.availability-grid section { display:grid; align-content:start; gap:.3rem; padding:.75rem; border-radius:12px; background:var(--app-surface-muted,#f8fafc); }.availability-grid h3 { margin:0 0 .25rem; font-size:.85rem; }
 .trainer-students-week { border-top:1px solid var(--app-border,#e2e8f0); display:grid; gap:.55rem; grid-template-columns:repeat(6,minmax(130px,1fr)); margin-top:1rem; padding-top:1rem; }.trainer-students-week section { align-content:start; display:grid; gap:.4rem; }.trainer-students-week h3 { font-size:.78rem; margin:0; }.trainer-student { background:var(--app-surface-muted,#f8fafc); border:1px solid var(--app-border,#e2e8f0); border-radius:9px; color:inherit; cursor:pointer; display:grid; gap:.15rem; min-width:0; padding:.5rem; text-align:left; }.trainer-student:hover { border-color:var(--app-accent,#c92a1f); }.trainer-student strong { font-size:.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.trainer-student span { color:var(--app-text-muted,#64748b); font-size:.68rem; }
 @media(max-width:1100px){.controls{grid-template-columns:repeat(2,1fr)}.availability-grid,.trainer-students-week{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.page-header{align-items:start;flex-direction:column}.controls{grid-template-columns:1fr}.availability-grid,.trainer-students-week{grid-template-columns:repeat(2,1fr)}}
+
+:host-context(body.dark-theme) .banner.error {
+  background: color-mix(in srgb, #ef4444 12%, var(--app-surface));
+  color: #fca5a5;
+}
+:host-context(body.dark-theme) .banner.success {
+  background: color-mix(in srgb, #22c55e 12%, var(--app-surface));
+  color: #86efac;
+}
+:host-context(body.dark-theme) .trainer-list header span {
+  color: #fca5a5;
+}
