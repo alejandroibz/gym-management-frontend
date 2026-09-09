@@ -1,5 +1,7 @@
-﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
+import { PaymentCoverageComponent } from '../../../payments/components/payment-coverage-dialog';
+import { isMembershipIncome } from '../../../payments/utils/payment-checkout';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
@@ -37,6 +39,7 @@ export interface RegisterPaymentDialogData {
   standalone: true,
   imports: [
     CommonModule,
+    PaymentCoverageComponent,
     ReactiveFormsModule,
     MatDialogModule,
     MatAutocompleteModule,
@@ -62,6 +65,14 @@ export class RegisterPaymentDialogComponent {
   private selectedClientLookupId = 0;
   readonly data = inject<RegisterPaymentDialogData>(MAT_DIALOG_DATA);
 
+  @ViewChild(PaymentCoverageComponent) coverage?: PaymentCoverageComponent;
+  isMembershipPayment(): boolean { return isMembershipIncome(this.data.incomeCategories.find(c=>c.id===Number(this.form.controls.cashMovementCategoryId.value))?.nombre ?? ''); }
+  onCategoryChange(): void {
+    this.form.controls.clientMembershipId.clearValidators();
+    this.form.controls.clientMembershipId.updateValueAndValidity();
+    if (this.isEditing) return;
+    this.form.patchValue({monto:0,aplicarDescuento:false,descuentoMonto:0,descuentoPorcentaje:null,descuentoMotivo:'',montoOriginal:null});
+  }
   readonly isEditing = !!this.data.payment;
   readonly selectedClient = signal<Client | null>(this.getInitialClient());
   readonly isLoadingSelectedClient = signal(false);
@@ -91,7 +102,7 @@ export class RegisterPaymentDialogComponent {
   readonly subtitle = this.isEditing
     ? 'Actualiza los datos del cobro seleccionado.'
     : 'Carga un cobro realizado por un alumno o cliente. Esto no crea un movimiento manual de caja.';
-  readonly submitLabel = this.isEditing ? 'Guardar cambios' : 'Registrar cobro';
+  get submitLabel() { return this.isEditing ? 'Guardar cambios' : this.isMembershipPayment() && this.coverage?.unpaidRenewal ? (this.coverage.total > 0 ? 'Registrar cobro y renovación' : 'Confirmar renovación') : 'Registrar cobro'; }
 
   readonly membershipLabel = computed(() => {
     const membership = this.getEffectiveMembership(this.selectedClient());
@@ -101,6 +112,7 @@ export class RegisterPaymentDialogComponent {
 
   constructor() {
     this.initializeSelectedClient();
+    this.onCategoryChange();
 
     this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
       if (!this.isEditing && typeof user?.email === 'string') {
@@ -118,7 +130,7 @@ export class RegisterPaymentDialogComponent {
     this.selectedClient.set(client);
     this.clientSearchControl.setValue(client, { emitEvent: false });
     this.form.controls.clientId.setValue(client.id, { emitEvent: false });
-    this.applyMembership(this.getEffectiveMembership(client));
+    if (!this.isEditing) this.applyMembership(this.getEffectiveMembership(client));
     if (!this.isEditing) this.loadSelectedClientDetails(client.id);
   }
   close(): void {
@@ -155,6 +167,21 @@ export class RegisterPaymentDialogComponent {
   }
 
   submit(): void {
+    if (!this.isEditing && this.isMembershipPayment()) {
+      if (this.isLoadingSelectedClient() || !this.coverage?.valid) { this.toast.warning('Seleccioná los períodos completos a cobrar y revisá las fechas.'); return; }
+      this.form.patchValue({monto:this.coverage.total,aplicarDescuento:false,descuentoMonto:0,descuentoPorcentaje:null,descuentoMotivo:'',montoOriginal:null});
+    }
+
+    const renewalOnly = !this.isEditing && this.isMembershipPayment() && !!this.coverage?.unpaidRenewal && this.coverage.total === 0;
+    if (renewalOnly) {
+      this.form.controls.monto.clearValidators();
+      this.form.controls.paymentMethodId.clearValidators();
+    } else {
+      this.form.controls.monto.setValidators(positiveMoneyValidators);
+      this.form.controls.paymentMethodId.setValidators([Validators.required]);
+    }
+    this.form.controls.monto.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.paymentMethodId.updateValueAndValidity({ emitEvent: false });
 
     if (this.form.invalid) {
       markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
@@ -165,7 +192,9 @@ export class RegisterPaymentDialogComponent {
     const raw = this.form.getRawValue();
     this.dialogRef.close({
       clientId: Number(raw.clientId),
-      clientMembershipId: Number(raw.clientMembershipId),
+      periods: !this.isEditing && this.isMembershipPayment() ? this.coverage?.periods : undefined,
+      unpaidRenewal: !this.isEditing && this.isMembershipPayment() ? this.coverage?.unpaidRenewal : undefined,
+      clientMembershipId: this.isMembershipPayment() ? Number(raw.clientMembershipId) : null,
       fechaPago: this.toLocalDateIso(raw.fechaPago),
       monto: Number(raw.monto),
       montoOriginal: raw.aplicarDescuento && raw.montoOriginal !== null && raw.montoOriginal !== undefined
@@ -309,7 +338,7 @@ export class RegisterPaymentDialogComponent {
         }
 
         this.selectedClient.set(client);
-        this.applyMembership(this.getEffectiveMembership(client)) || this.clearMembership();
+        if (this.isMembershipPayment()) this.applyMembership(this.getEffectiveMembership(client)) || this.clearMembership();
         this.isLoadingSelectedClient.set(false);
       },
       error: () => {
@@ -318,7 +347,9 @@ export class RegisterPaymentDialogComponent {
         }
 
         if (Number(this.form.controls.clientId.value) === clientId) {
+          this.selectedClient.set(null);
           this.clearMembership();
+          this.toast.warning('No se pudieron cargar los períodos. Volvé a seleccionar el cliente.');
         }
 
         this.isLoadingSelectedClient.set(false);
@@ -332,7 +363,7 @@ export class RegisterPaymentDialogComponent {
   }
 
   private applyMembership(membership: ClientMembership | null): boolean {
-    if (!membership?.id) {
+    if (this.isEditing || !this.isMembershipPayment() || !membership?.id) {
       return false;
     }
 

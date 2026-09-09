@@ -1,5 +1,7 @@
+import { PaymentCoverageComponent } from '../../components/payment-coverage-dialog';
+import { isMembershipIncome } from '../../utils/payment-checkout';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@auth0/auth0-angular';
@@ -7,14 +9,12 @@ import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ConfirmDialogComponent } from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { createNotifiedErrorSignal } from '../../../../core/services/notified-error-signal';
 import { CashMovementCategory } from '../../../cash-movement-categories/models/cash-movement-category.model';
 import { CashMovementCategoriesService } from '../../../cash-movement-categories/services/cash-movement-categories.service';
@@ -36,6 +36,7 @@ type ReturnTarget = 'clients' | 'movements';
   standalone: true,
   imports: [
     CommonModule,
+    PaymentCoverageComponent,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -55,7 +56,6 @@ export class PaymentRegisterPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly clientsService = inject(ClientsService);
@@ -66,6 +66,8 @@ export class PaymentRegisterPageComponent {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly toast = inject(ToastService);
 
+  @ViewChild(PaymentCoverageComponent) coverage?: PaymentCoverageComponent;
+  readonly isLoadingClient = signal(false);
   readonly clients = signal<Client[]>([]);
   readonly employees = signal<Employee[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
@@ -135,6 +137,7 @@ export class PaymentRegisterPageComponent {
   }
 
   onCategoryChange(): void {
+    this.form.patchValue({monto:0,aplicarDescuento:false,descuentoMonto:0,descuentoPorcentaje:null,descuentoMotivo:'',montoOriginal:null});
     this.selectedCategoryId.set(Number(this.form.controls.cashMovementCategoryId.value) || null);
     this.applyMembershipDefaults();
     this.form.updateValueAndValidity({ emitEvent: false });
@@ -189,10 +192,22 @@ export class PaymentRegisterPageComponent {
   }
 
   confirmPayment(): void {
-    if (this.isMembershipPayment() && !this.currentMembership()?.id) {
-      this.errorMessage.set('Para cobrar una membresía, selecciona un cliente con membresía activa.');
-      return;
+    if (this.isSaving()) return;
+    if (this.isMembershipPayment()) {
+      if (this.isLoadingClient() || !this.coverage?.valid) { this.errorMessage.set('Seleccioná los períodos completos a cobrar y revisá las fechas.'); return; }
+      this.form.patchValue({monto:this.coverage.total,aplicarDescuento:false,descuentoMonto:0,descuentoPorcentaje:null,descuentoMotivo:'',montoOriginal:null});
     }
+
+    const renewalOnly = this.isMembershipPayment() && !!this.coverage?.unpaidRenewal && this.coverage.total === 0;
+    if (renewalOnly) {
+      this.form.controls.monto.clearValidators();
+      this.form.controls.paymentMethodId.clearValidators();
+    } else {
+      this.form.controls.monto.setValidators(positiveMoneyValidators);
+      this.form.controls.paymentMethodId.setValidators([Validators.required]);
+    }
+    this.form.controls.monto.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.paymentMethodId.updateValueAndValidity({ emitEvent: false });
 
     if (this.form.invalid) {
       markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
@@ -202,27 +217,7 @@ export class PaymentRegisterPageComponent {
 
 
     const payload = this.buildPayload();
-    const client = this.selectedClient();
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '520px',
-      maxWidth: 'calc(100vw - 1rem)',
-      autoFocus: false,
-      data: {
-        title: 'Confirmar cobro',
-        message: this.getConfirmationMessage(payload, client),
-        confirmLabel: 'Confirmar cobro',
-        cancelLabel: 'Cancelar',
-        tone: 'primary'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (!confirmed) {
-        return;
-      }
-
-      this.savePayment(payload);
-    });
+    this.savePayment(payload);
   }
 
   cancel(): void {
@@ -307,6 +302,7 @@ export class PaymentRegisterPageComponent {
   }
 
   private loadClientDetails(clientId: number): void {
+    this.isLoadingClient.set(true);
     this.clientsService.getById(clientId).subscribe({
       next: client => {
         if (Number(this.form.controls.clientId.value) !== clientId) {
@@ -314,8 +310,10 @@ export class PaymentRegisterPageComponent {
         }
 
         this.selectedClient.set(client);
+        this.isLoadingClient.set(false);
         this.applyMembershipDefaults();
-      }
+      },
+      error: () => { if(Number(this.form.controls.clientId.value) === clientId) { this.selectedClient.set(null); this.isLoadingClient.set(false); this.errorMessage.set('No se pudieron cargar los períodos del cliente. Volvé a seleccionarlo.'); } }
     });
   }
 
@@ -374,6 +372,8 @@ export class PaymentRegisterPageComponent {
   private buildPayload(): PaymentCreatePayload {
     const raw = this.form.getRawValue();
     return {
+      periods: this.isMembershipPayment() ? this.coverage?.periods : undefined,
+      unpaidRenewal: this.isMembershipPayment() ? this.coverage?.unpaidRenewal : undefined,
       clientId: Number(raw.clientId),
       clientMembershipId: this.isMembershipPayment() ? Number(raw.clientMembershipId) : null,
       fechaPago: this.toLocalDateIso(raw.fechaPago),
@@ -392,25 +392,6 @@ export class PaymentRegisterPageComponent {
       periodMonth: Number(raw.periodMonth),
       collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? ''
     };
-  }
-
-  private getConfirmationMessage(payload: PaymentCreatePayload, client: Client | null): string {
-    const lines = [
-      `Cliente: ${client ? this.getClientLabel(client) : `#${payload.clientId}`}`,
-      this.isMembershipPayment()
-        ? `Membresía: ${this.membershipLabel()}`
-        : `Tipo de cobro: ${this.paymentTypeLabel()}`,
-      `Monto final: ${this.formatCurrency(payload.monto)}`,
-      `Método: ${this.paymentMethods().find(method => method.id === payload.paymentMethodId)?.nombre ?? 'Sin dato'}`,
-      `Fecha: ${new Intl.DateTimeFormat('es-AR').format(new Date(payload.fechaPago))}`
-    ];
-
-    if (payload.descuentoMonto > 0) {
-      lines.splice(3, 0, `Descuento: ${this.formatCurrency(payload.descuentoMonto)}${payload.descuentoPorcentaje ? ` (${payload.descuentoPorcentaje}%)` : ''}`);
-      lines.splice(4, 0, `Motivo: ${payload.descuentoMotivo || 'Sin motivo'}`);
-    }
-
-    return lines.join('\n');
   }
 
   private savePayment(payload: PaymentCreatePayload): void {
@@ -441,7 +422,7 @@ export class PaymentRegisterPageComponent {
   }
 
   private isMembershipCategory(category: CashMovementCategory | null): boolean {
-    return this.normalizeText(category?.nombre ?? '').includes('membres');
+    return isMembershipIncome(category?.nombre ?? '');
   }
 
   private getEffectiveMembership(client: Client | null): ClientMembership | null {

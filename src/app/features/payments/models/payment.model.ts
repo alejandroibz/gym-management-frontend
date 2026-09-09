@@ -1,3 +1,4 @@
+import { ClientMembershipRenewPayload } from '../../clients/models/client.model';
 export interface Payment {
   id: number;
   clientId: number;
@@ -32,6 +33,8 @@ export interface PaymentFilters {
 }
 
 export interface PaymentCreatePayload {
+  unpaidRenewal?: ClientMembershipRenewPayload;
+  periods?: import('../utils/payment-checkout').PaymentPeriod[];
   operationId?: string;
   contractAmount?: number;
   coverageMode?: string;

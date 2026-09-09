@@ -1,8 +1,5 @@
 import { ConfirmDialogComponent } from '../../../core/components/confirm-dialog/confirm-dialog';
 import { MatDialog } from '@angular/material/dialog';
-import { ClientsService } from '../../clients/services/clients.service';
-import { PaymentCoverageDialogComponent } from '../components/payment-coverage-dialog';
-import { CashMovementCategoriesService } from '../../cash-movement-categories/services/cash-movement-categories.service';
 import { switchMap, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
@@ -26,8 +23,6 @@ interface RawPagedResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class PaymentsService {
   private readonly dialog = inject(MatDialog);
-  private readonly clientsService = inject(ClientsService);
-  private readonly categoriesService = inject(CashMovementCategoriesService);
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/api/Payments`;
 
@@ -59,12 +54,20 @@ export class PaymentsService {
 
   create(payload: PaymentCreatePayload): Observable<void> {
     payload.operationId ??= crypto.randomUUID();
-    return this.categoriesService.getPaged(1,1000).pipe(switchMap(result => {
-      const category = result.items.find(c=>c.id === payload.cashMovementCategoryId);
-      const membership = !category || category.nombre.trim().toLowerCase() === 'cobro membresias';
-      if (!membership) return this.http.post<void>(this.apiUrl, payload);
-      return this.clientsService.getById(payload.clientId).pipe(switchMap(client => this.dialog.open(PaymentCoverageDialogComponent,{data:{client,payload},width:'620px',disableClose:true}).afterClosed()),switchMap(selection=> selection ? this.http.post<void>(this.apiUrl,selection) : throwError(()=>({error:{message:'Cobro cancelado: no se confirmaron las fechas.'}}))));
-    }));
+    if (payload.periods?.length || payload.unpaidRenewal) {
+      const { periods = [], unpaidRenewal, ...common } = payload;
+      // Keep line identifiers stable when retrying this checkout.
+      const payments = periods.map((period, index) => ({...common,...period,
+        operationId: this.lineOperationId(payload.operationId!, index),
+        montoOriginal: null, descuentoMonto: 0, descuentoPorcentaje: null, descuentoMotivo: null}));
+      return this.http.post<void>(this.apiUrl + '/batch', {payments, unpaidRenewal});
+    }
+    return this.http.post<void>(this.apiUrl, payload);
+  }
+
+  private lineOperationId(id: string, index: number): string {
+    const tail = (parseInt(id.slice(-8),16) + index) >>> 0;
+    return id.slice(0,-8) + tail.toString(16).padStart(8,'0');
   }
 
   update(id: number, payload: PaymentUpdatePayload): Observable<void> {

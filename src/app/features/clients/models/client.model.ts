@@ -1,4 +1,4 @@
-﻿import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
+import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
 import { HealthPatientDetail } from '../../health/models/health.model';
 
 export interface ClientRelationRecord {
@@ -21,6 +21,14 @@ export interface ClientMembership {
   precioFinal: number;
   activo?: boolean;
   plan?: MembershipPlan | null;
+}
+
+export interface ClientMembershipRenewPayload {
+  clientId: number;
+  membershipId: number;
+  fechaInicio: string | null;
+  fechaFin: string;
+  precioFinal: number;
 }
 
 export interface ClientMembershipWritePayload {

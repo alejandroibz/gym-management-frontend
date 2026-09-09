@@ -249,6 +249,7 @@ export class ClientDialogComponent {
   }
 
   submit(): void {
+    if (this.form.controls.registerInitialPayment.value) this.form.controls.initialPaymentAmount.setValue(Number(this.form.controls.precioFinal.value));
     if (this.form.invalid) {
       markAndFocusFirstInvalid(this.form, this.elementRef.nativeElement);
       this.toast.warning('Revisá los campos marcados antes de guardar el cliente.');

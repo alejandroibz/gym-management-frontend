@@ -30,17 +30,9 @@
         <mat-error>Seleccioná un cliente de la lista.</mat-error>
       </mat-form-field>
 
-      <div class="context-box span-2">
-        <span class="context-label">Membresía activa</span>
-        <strong>{{ membershipLabel() }}</strong>
-        @if (isLoadingSelectedClient()) {
-          <small>Buscando la membresía del cliente...</small>
-        } @else if (!hasSelectedClientMembership() && form.controls.clientId.value) {
-          <small>El cliente seleccionado no tiene una membresía activa para asociar el cobro.</small>
-        }
-      </div>
 
-      <mat-form-field appearance="outline">
+      @if (!(!isEditing && isMembershipPayment() && coverage?.unpaidRenewal && coverage?.total === 0)) {
+<mat-form-field appearance="outline">
         <mat-label>Método de pago</mat-label>
         <mat-select formControlName="paymentMethodId">
           @for (method of data.paymentMethods; track method.id) {
@@ -49,10 +41,11 @@
         </mat-select>
         <mat-error>Seleccioná un método de pago.</mat-error>
       </mat-form-field>
+}
 
       <mat-form-field appearance="outline">
         <mat-label>Tipo de cobro</mat-label>
-        <mat-select formControlName="cashMovementCategoryId">
+        <mat-select formControlName="cashMovementCategoryId" (selectionChange)="onCategoryChange()">
           @for (category of data.incomeCategories; track category.id) {
             <mat-option [value]="category.id">{{ category.nombre }}</mat-option>
           }
@@ -60,6 +53,9 @@
         <mat-error>Seleccioná el tipo de cobro.</mat-error>
       </mat-form-field>
 
+      @if (!isEditing && isMembershipPayment()) {
+        <app-payment-coverage class="span-2" [client]="isLoadingSelectedClient() ? null : selectedClient()" [paymentDate]="form.controls.fechaPago.value || ''" />
+      }
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Empleado responsable</mat-label>
         <mat-select formControlName="collectedByEmployeeEmail">
@@ -80,10 +76,13 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Monto final cobrado</mat-label>
-        <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+        @if (!isEditing && isMembershipPayment()) {
+          <input matInput [value]="coverage?.total || 0" readonly />
+        } @else { <input matInput type="number" min="0.01" step="0.01" formControlName="monto" /> }
         <mat-error>El importe debe ser mayor que cero.</mat-error>
       </mat-form-field>
 
+      @if (!isMembershipPayment()) {
       <div class="discount-toggle span-2">
         <mat-checkbox formControlName="aplicarDescuento" (change)="onDiscountToggle()">Aplicar descuento</mat-checkbox>
         @if (hasDiscount()) {
@@ -135,6 +134,7 @@
         </div>
       }
 
+      }
       <mat-form-field appearance="outline">
         <mat-label>Mes de imputación</mat-label>
         <input matInput type="number" min="1" max="12" formControlName="periodMonth" />
@@ -151,7 +151,7 @@
 
     <div class="dialog-actions">
       <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
-      <button mat-flat-button type="submit">{{ submitLabel }}</button>
+      <button mat-flat-button type="submit" [disabled]="!isEditing && isMembershipPayment() && (isLoadingSelectedClient() || !coverage?.valid)">{{ submitLabel }}</button>
     </div>
   </form>
 </div>
