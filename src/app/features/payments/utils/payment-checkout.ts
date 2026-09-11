@@ -1,5 +1,6 @@
 import { Client, ClientMembership } from '../../clients/models/client.model';
 export interface PaymentPeriod {
+  renewalPlanId?: number;
   continuePreviousPeriod?: boolean;
   clientMembershipId: number;
   coverageMode: string;

@@ -24,7 +24,7 @@ export function getApiErrorMessage(error: unknown): ApiErrorMessage {
 
   const payload = error.error;
   const details = extractValidationMessages(payload);
-  const payloadMessage = extractText(payload, 'message') || extractText(payload, 'detail');
+  const payloadMessage = extractText(payload, 'message') || extractText(payload, 'detail') || extractText(payload, 'error');
   const title = extractText(payload, 'title') || getStatusTitle(error.status);
   const referenceId = extractText(payload, 'referenceId');
 

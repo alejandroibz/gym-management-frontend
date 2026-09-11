@@ -707,6 +707,8 @@ export class MovementsPageComponent {
   private toPaymentUpdatePayload(id: number, payload: PaymentCreatePayload): PaymentUpdatePayload {
     return {
       id,
+      changeReason: payload.changeReason,
+      estado: payload.estado,
       clientId: payload.clientId,
       clientMembershipId: payload.clientMembershipId,
       fechaPago: payload.fechaPago,
@@ -719,7 +721,9 @@ export class MovementsPageComponent {
       cashMovementCategoryId: payload.cashMovementCategoryId,
       periodYear: payload.periodYear,
       periodMonth: payload.periodMonth,
-      collectedByEmployeeEmail: payload.collectedByEmployeeEmail
+      collectedByEmployeeEmail: payload.collectedByEmployeeEmail,
+      membershipStartDate: payload.membershipStartDate,
+      membershipEndDate: payload.membershipEndDate
     };
   }
 

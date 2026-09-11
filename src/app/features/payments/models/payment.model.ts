@@ -33,6 +33,9 @@ export interface PaymentFilters {
 }
 
 export interface PaymentCreatePayload {
+  renewalPlanId?: number;
+  changeReason?: string;
+  estado?: string;
   unpaidRenewal?: ClientMembershipRenewPayload;
   periods?: import('../utils/payment-checkout').PaymentPeriod[];
   operationId?: string;

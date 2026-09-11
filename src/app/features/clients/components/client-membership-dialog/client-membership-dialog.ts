@@ -28,7 +28,7 @@ export interface ClientMembershipDialogData {
     MatSelectModule
   ],
   template: `
-    <h2 mat-dialog-title>Editar membresia</h2>
+    <h2 mat-dialog-title>Corregir membresía</h2>
     <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content class="dialog-body">
         <mat-form-field appearance="outline">
@@ -61,7 +61,7 @@ export interface ClientMembershipDialogData {
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Precio final</mat-label>
+          <mat-label>Precio contratado</mat-label>
           <input matInput type="number" min="0" formControlName="precioFinal">
         </mat-form-field>
 
@@ -72,6 +72,15 @@ export interface ClientMembershipDialogData {
             <mat-option value="Inactive">Inactiva</mat-option>
           </mat-select>
         </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Motivo de la corrección</mat-label>
+          <textarea matInput formControlName="changeReason" maxlength="500"></textarea>
+          <mat-hint>Se registra el antes y después. Al corregir fechas también se actualiza la cobertura de los pagos activos asociados. El precio contratado es independiente de los importes cobrados.</mat-hint>
+          <mat-error>Indicá el motivo de la corrección.</mat-error>
+        </mat-form-field>
+        @if (form.hasError('invalidDates')) {
+          <p role="alert">El fin no puede ser anterior al inicio.</p>
+        }
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
@@ -113,8 +122,9 @@ export class ClientMembershipDialogComponent {
     periodYear: [this.data.membership.periodYear ?? new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]],
     periodMonth: [this.data.membership.periodMonth ?? new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
     precioFinal: [this.data.membership.precioFinal, [Validators.required, Validators.min(0)]],
+    changeReason: ['', [Validators.required, Validators.maxLength(500), Validators.pattern(/\S/)]],
     estado: [this.data.membership.activo === false || this.data.membership.estado === 'Inactive' ? 'Inactive' : 'Active', [Validators.required]]
-  });
+  }, { validators: control => control.get('fechaFin')?.value < control.get('fechaInicio')?.value ? { invalidDates: true } : null });
 
   submit(): void {
     if (this.form.invalid || !this.data.membership.id) {
@@ -132,6 +142,7 @@ export class ClientMembershipDialogComponent {
       periodYear: Number(raw.periodYear),
       periodMonth: Number(raw.periodMonth),
       precioFinal: Number(raw.precioFinal),
+      changeReason: raw.changeReason.trim(),
       estado: raw.estado
     });
   }

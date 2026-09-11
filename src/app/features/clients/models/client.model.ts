@@ -24,6 +24,7 @@ export interface ClientMembership {
 }
 
 export interface ClientMembershipRenewPayload {
+  renewalPlanId?: number;
   clientId: number;
   membershipId: number;
   fechaInicio: string | null;
@@ -101,9 +102,11 @@ export interface ClientCreatePayload {
 
 export interface ClientUpdatePayload extends ClientCreatePayload {
   id: number;
+  membershipId?: number | null;
 }
 
 export interface ClientMembershipUpdatePayload {
+  changeReason: string;
   clientId: number;
   membershipId: number;
   membershipPlanId: number;

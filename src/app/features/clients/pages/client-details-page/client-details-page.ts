@@ -1140,9 +1140,9 @@ export class ClientDetailsPageComponent {
         this.isSaving.set(false);
         this.loadClient();
       },
-      error: () => {
+      error: (error: unknown) => {
         this.isSaving.set(false);
-        this.errorMessage.set('No se pudo actualizar el cliente.');
+        this.errorMessage.set(this.getApiErrorMessage(error, 'No se pudo actualizar el cliente.'));
       }
     });
   }
@@ -1271,6 +1271,7 @@ export class ClientDetailsPageComponent {
 
     return {
       id,
+      membershipId: raw.hasMembership ? this.currentMembership()?.id ?? null : null,
       branchId,
       nombre: raw.nombre.trim(),
       apellido: raw.apellido.trim(),
@@ -1311,6 +1312,8 @@ export class ClientDetailsPageComponent {
       id,
       clientId: currentClient.id,
       clientMembershipId: this.getPaymentClientMembershipId(payment),
+      membershipStartDate: this.getStringPaymentField(payment, ['membershipstartdate']),
+      membershipEndDate: this.getStringPaymentField(payment, ['membershipenddate']),
       fechaPago,
       monto,
       montoOriginal: this.getNumericPaymentField(payment, ['montooriginal', 'originalamount']),
@@ -1334,6 +1337,8 @@ export class ClientDetailsPageComponent {
   private toPaymentUpdatePayload(id: number, payload: PaymentCreatePayload): PaymentUpdatePayload {
     return {
       id,
+      changeReason: payload.changeReason,
+      estado: payload.estado,
       clientId: payload.clientId,
       clientMembershipId: payload.clientMembershipId,
       fechaPago: payload.fechaPago,

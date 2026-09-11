@@ -1,3 +1,4 @@
+import { MembershipPlansService } from '../../membership-plans/services/membership-plans.service';
 import { describe, it, expect } from 'vitest';
 import { PaymentCoverageComponent } from './payment-coverage-dialog';
 import { Client } from '../../clients/models/client.model';
@@ -107,6 +108,7 @@ describe('Formulario de cobro', () => {
     await TestBed.configureTestingModule({
       imports: [RegisterPaymentDialogComponent],
       providers: [
+        { provide: MembershipPlansService, useValue: { getPaged: () => of({ items: [], totalPages: 1 }) } },
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
@@ -167,6 +169,7 @@ describe('Formulario de cobro', () => {
     await TestBed.configureTestingModule({
       imports: [RegisterPaymentDialogComponent],
       providers: [
+        { provide: MembershipPlansService, useValue: { getPaged: () => of({ items: [], totalPages: 1 }) } },
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
@@ -209,4 +212,44 @@ it('conserva el día de renovación después de febrero al renovar un período',
   expect(c.periods[0].membershipStartDate).toBe('2026-02-28');
   expect(c.periods[0].membershipEndDate).toBe('2026-03-30');
   expect(c.periods).toHaveLength(1);
+});
+
+
+describe('Cambiar de plan al renovar', () => {
+  it('ofrece otro plan y envía su precio y duración, con o sin cobro', () => {
+    const c = setup();
+    const old = JSON.stringify(c.client!.membershipsHistory);
+    c.plans = [{ ...c.source!.plan!, id: 3, nombre: '3 veces por semana', precio: 70000, durationUnit: 'Days', durationQuantity: 30 }];
+    c.renew = true;
+    expect(c.renewalPlanId).toBe(1);
+    expect(c.availablePlans.map(p => p.id)).toEqual([1, 3]);
+    c.renewalPlanId = 3; c.resetPrice();
+    expect(c.price).toBe(70000);
+    expect(c.unpaidRenewal).toMatchObject({ renewalPlanId: 3, precioFinal: 70000, fechaFin: '2026-10-08' });
+    expect(c.total).toBe(65000);
+    c.payRenewalNow = true;
+    expect(c.total).toBe(135000);
+    expect(c.periods[0].renewalPlanId).toBeUndefined();
+    expect(c.periods[1]).toMatchObject({ renewalPlanId: 3, monto: 70000, membershipEndDate: '2026-10-08' });
+    expect(JSON.stringify(c.client!.membershipsHistory)).toBe(old);
+    c.renewalPlanId = 1; c.resetPrice();
+    expect(c.price).toBe(65000);
+  });
+});
+
+
+it('renueva desde el último período contratado y conserva las deudas históricas por separado', () => {
+  const c = setup();
+  const old = c.client!.membershipsHistory![0];
+  c.client = { ...c.client!, membershipsHistory: [
+    { ...old, id: 3, fechaInicio: '2026-10-11', fechaFin: '2026-11-10', activo: false },
+    { ...old, id: 2, fechaInicio: '2026-09-11', fechaFin: '2026-10-10' },
+    old
+  ] };
+  c.ngOnChanges(); c.renew = true;
+  expect(c.source?.id).toBe(2);
+  expect(c.start).toBe('2026-10-11');
+  expect(c.unpaidRenewal?.membershipId).toBe(2);
+  expect(c.periods[0].clientMembershipId).toBe(1);
+  expect(c.periods[0].coverageMode).toBe('Existing');
 });

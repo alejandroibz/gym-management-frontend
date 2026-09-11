@@ -1,3 +1,4 @@
+import { MembershipPlan } from '../../membership-plans/models/membership-plan.model';
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -59,20 +60,18 @@ import { activeContracts, availableBalance, PaymentPeriod } from '../utils/payme
         <mat-checkbox [(ngModel)]="payRenewalNow" [ngModelOptions]="{ standalone: true }">
           ¿Registra pago ahora?
         </mat-checkbox>
-        <mat-form-field appearance="outline"
-          ><mat-label>Plan a renovar</mat-label>
-          <mat-select
-            [(ngModel)]="sourceId"
-            (ngModelChange)="resetPrice()"
-            [ngModelOptions]="{ standalone: true }"
-          >
-            @for (m of memberships; track m.id) {
-              <mat-option [value]="m.id"
-                >{{ m.planNameSnapshot || m.plan?.nombre }} · {{ m.fechaFin.slice(0, 10) < paymentDate ? 'venció' : 'vence' }}
-                {{ m.fechaFin | date: 'dd/MM/yyyy' }}</mat-option
-              >
+        @if (source; as previous) {
+          <p>Último período contratado: <strong>{{ previous.planNameSnapshot || previous.plan?.nombre }}</strong>
+            · {{ previous.fechaInicio | date:'dd/MM/yyyy' }}–{{ previous.fechaFin | date:'dd/MM/yyyy' }}.</p>
+        }
+        <mat-form-field appearance="outline">
+          <mat-label>Plan a renovar</mat-label>
+          <mat-select [(ngModel)]="renewalPlanId" (ngModelChange)="resetPrice()" [ngModelOptions]="{ standalone: true }">
+            @for (plan of availablePlans; track plan.id) {
+              <mat-option [value]="plan.id">{{ plan.nombre }} · {{ plan.precio | currency:'ARS' }}</mat-option>
             }
           </mat-select>
+          <mat-hint>Podés cambiar de plan para el nuevo período.</mat-hint>
         </mat-form-field>
         <mat-checkbox [(ngModel)]="specificDate" [ngModelOptions]="{ standalone: true }"
           >Elegir otra fecha de inicio</mat-checkbox
@@ -127,6 +126,7 @@ import { activeContracts, availableBalance, PaymentPeriod } from '../utils/payme
           · {{ line.monto | currency: 'ARS' }}
         </p>
       }
+      @if (renew && renewalPlan) { <p>Nuevo plan: <strong>{{ renewalPlan.nombre }}</strong></p> }
       @if (unpaidRenewal; as pending) {
         <p>Nuevo período pendiente de pago: {{ pending.fechaInicio | date:'dd/MM/yyyy' }}–{{ pending.fechaFin | date:'dd/MM/yyyy' }}
           · {{ pending.precioFinal | currency:'ARS' }}. No se cobra ahora.</p>
@@ -196,8 +196,9 @@ import { activeContracts, availableBalance, PaymentPeriod } from '../utils/payme
 export class PaymentCoverageComponent implements OnChanges {
   @Input() client: Client | null = null;
   @Input() paymentDate = '';
+  @Input() plans: MembershipPlan[] = [];
+  renewalPlanId?: number;
   selectedIds: number[] = [];
-  sourceId?: number;
   renew = false;
   specificDate = false;
   chosenDate = '';
@@ -208,8 +209,15 @@ export class PaymentCoverageComponent implements OnChanges {
     return activeContracts(this.client);
   }
   get source() {
-    return this.memberships.find((m) => m.id === this.sourceId);
+    return this.memberships.sort((a, b) => b.fechaFin.localeCompare(a.fechaFin) || b.fechaInicio.localeCompare(a.fechaInicio) || (b.id ?? 0) - (a.id ?? 0))[0];
   }
+  get availablePlans(): MembershipPlan[] {
+    const sourcePlan = this.source?.plan;
+    const plans = this.plans.filter(p => !sourcePlan || p.gymId === sourcePlan.gymId);
+    return sourcePlan && !plans.some(p => p.id === sourcePlan.id) ? [sourcePlan, ...plans] : plans;
+  }
+  get renewalPlan() { return this.availablePlans.find(p => p.id === this.renewalPlanId); }
+  resetRenewalPlan() { this.renewalPlanId = this.source?.membershipPlanId; this.resetPrice(); }
   balance(m: ClientMembership) {
     return availableBalance(this.client, m);
   }
@@ -222,15 +230,14 @@ export class PaymentCoverageComponent implements OnChanges {
       this.renew = false;
       this.specificDate = false;
       this.payRenewalNow = false;
-      this.sourceId = this.memberships.at(-1)?.id;
       const first = this.memberships.find((m) => this.balance(m) > 0);
       this.selectedIds = first?.id ? [first.id] : [];
       this.chosenDate = this.paymentDate;
-      this.resetPrice();
+      this.resetRenewalPlan();
     }
   }
   resetPrice() {
-    this.price = this.source?.plan?.precio ?? this.source?.precioFinal ?? 0;
+    this.price = this.renewalPlan?.precio ?? this.source?.precioFinal ?? 0;
   }
   toggle(id: number, checked: boolean) {
     this.selectedIds = checked
@@ -263,14 +270,15 @@ export class PaymentCoverageComponent implements OnChanges {
   }
   get newPeriod(): PaymentPeriod | null {
     const m = this.source;
-    if (!this.renew || !m?.plan || !this.start) return null;
+    const plan = this.renewalPlan;
+    if (!this.renew || !m || !plan || !this.start) return null;
     const continuity = this.start === this.nextStart;
     const anchor = continuity ? m.renewalAnchorDay ?? Number(m.fechaInicio.slice(8, 10)) : Number(this.start.slice(8, 10));
     try {
       return {
-        clientMembershipId: m.id!, coverageMode: continuity ? 'Continuity' : 'Restart',
+        clientMembershipId: m.id!, renewalPlanId: plan.id, coverageMode: continuity ? 'Continuity' : 'Restart',
         membershipStartDate: this.start,
-        membershipEndDate: membershipEnd(this.start, m.plan.durationUnit ?? 'Days', m.plan.durationQuantity ?? m.plan.duracionDias, anchor),
+        membershipEndDate: membershipEnd(this.start, plan.durationUnit ?? 'Days', plan.durationQuantity ?? plan.duracionDias, anchor),
         contractAmount: Number(this.price), monto: Number(this.price)
       };
     } catch { return null; }
@@ -278,7 +286,7 @@ export class PaymentCoverageComponent implements OnChanges {
   get unpaidRenewal() {
     const period = this.newPeriod;
     return this.renew && !this.payRenewalNow && period ? {
-      clientId: this.client!.id, membershipId: period.clientMembershipId,
+      clientId: this.client!.id, membershipId: period.clientMembershipId, renewalPlanId: period.renewalPlanId,
       fechaInicio: period.membershipStartDate, fechaFin: period.membershipEndDate,
       precioFinal: period.contractAmount
     } : undefined;
@@ -290,7 +298,7 @@ export class PaymentCoverageComponent implements OnChanges {
     if (!this.memberships.length) return '';
     if (
       this.renew &&
-      (!this.source?.plan ||
+      (!this.renewalPlan ||
         !this.start ||
         !this.newPeriod ||
         this.start < this.nextStart ||

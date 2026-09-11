@@ -12,6 +12,9 @@
   </div>
 
   <form class="dialog-form" [formGroup]="form" (ngSubmit)="submit()">
+    @if (isEditing) {
+      <p>Los cambios quedan auditados. Cambiar el importe recalcula el saldo y la caja; no modifica el precio contratado. Corregir la cobertura actualiza la membresía y sus pagos activos asociados.</p>
+    }
     <div class="form-grid">
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Cliente</mat-label>
@@ -53,8 +56,22 @@
         <mat-error>Seleccioná el tipo de cobro.</mat-error>
       </mat-form-field>
 
+      @if (isEditing && isMembershipPayment()) {
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>Membresía a la que corresponde el pago</mat-label>
+          <mat-select formControlName="clientMembershipId" (selectionChange)="onEditMembershipChange()">
+            @for (m of editableMemberships(); track m.id) {
+              <mat-option [value]="m.id">#{{ m.id }} · {{ m.planNameSnapshot || m.plan?.nombre }} · {{ m.fechaInicio | date:'dd/MM/yyyy' }} – {{ m.fechaFin | date:'dd/MM/yyyy' }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>Seleccioná la membresía del cliente.</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Inicio de cobertura</mat-label><input matInput type="date" formControlName="membershipStartDate" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Fin de cobertura</mat-label><input matInput type="date" formControlName="membershipEndDate" /></mat-form-field>
+      }
       @if (!isEditing && isMembershipPayment()) {
-        <app-payment-coverage class="span-2" [client]="isLoadingSelectedClient() ? null : selectedClient()" [paymentDate]="form.controls.fechaPago.value || ''" />
+        @if (plansLoadError()) { <p role="alert" class="span-2">No se pudieron cargar los otros planes. Volvé a abrir el formulario para reintentar.</p> }
+        <app-payment-coverage [plans]="renewalPlans()" class="span-2" [client]="isLoadingSelectedClient() ? null : selectedClient()" [paymentDate]="form.controls.fechaPago.value || ''" />
       }
       <mat-form-field appearance="outline" class="span-2">
         <mat-label>Empleado responsable</mat-label>
@@ -82,7 +99,7 @@
         <mat-error>El importe debe ser mayor que cero.</mat-error>
       </mat-form-field>
 
-      @if (!isMembershipPayment()) {
+      @if (isEditing || !isMembershipPayment()) {
       <div class="discount-toggle span-2">
         <mat-checkbox formControlName="aplicarDescuento" (change)="onDiscountToggle()">Aplicar descuento</mat-checkbox>
         @if (hasDiscount()) {
@@ -147,6 +164,10 @@
         <mat-error>Ingresá un año entre 2000 y 2100.</mat-error>
       </mat-form-field>
 
+      @if (isEditing) {
+        <mat-form-field appearance="outline"><mat-label>Estado</mat-label><mat-select formControlName="estado"><mat-option value="Confirmado">Confirmado</mat-option><mat-option value="Pendiente">Pendiente</mat-option></mat-select></mat-form-field>
+        <mat-form-field appearance="outline" class="span-2"><mat-label>Motivo de la corrección</mat-label><textarea matInput formControlName="changeReason" maxlength="500"></textarea><mat-error>Indicá el motivo.</mat-error></mat-form-field>
+      }
     </div>
 
     <div class="dialog-actions">

@@ -1,3 +1,5 @@
+import { MembershipPlan } from '../../../membership-plans/models/membership-plan.model';
+import { MembershipPlansService } from '../../../membership-plans/services/membership-plans.service';
 import { PaymentCoverageComponent } from '../../../payments/components/payment-coverage-dialog';
 import { isMembershipIncome } from '../../../payments/utils/payment-checkout';
 import { CommonModule } from '@angular/common';
@@ -58,6 +60,9 @@ export class RegisterPaymentDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<RegisterPaymentDialogComponent, PaymentCreatePayload>);
   private readonly clientsService = inject(ClientsService);
+  private readonly plansService = inject(MembershipPlansService);
+  readonly renewalPlans = signal<MembershipPlan[]>([]);
+  readonly plansLoadError = signal(false);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly elementRef = inject(ElementRef<HTMLElement>);
@@ -70,16 +75,36 @@ export class RegisterPaymentDialogComponent {
   onCategoryChange(): void {
     this.form.controls.clientMembershipId.clearValidators();
     this.form.controls.clientMembershipId.updateValueAndValidity();
-    if (this.isEditing) return;
+    if (this.isEditing) {
+      if (this.isMembershipPayment()) this.form.controls.clientMembershipId.setValidators([Validators.required, Validators.min(1)]);
+      else this.form.patchValue({ clientMembershipId: 0, membershipStartDate: '', membershipEndDate: '' });
+      this.form.controls.clientMembershipId.updateValueAndValidity();
+      return;
+    }
     this.form.patchValue({monto:0,aplicarDescuento:false,descuentoMonto:0,descuentoPorcentaje:null,descuentoMotivo:'',montoOriginal:null});
   }
   readonly isEditing = !!this.data.payment;
+  readonly hasLinkedPayment = this.isEditing && !!this.data.payment?.clientMembershipId;
+  readonly searchedClients = signal<Client[]>([]);
+  private searchId = 0;
+  editableMemberships(): ClientMembership[] {
+    const c = this.selectedClient();
+    return c?.membershipsHistory?.length ? c.membershipsHistory : c?.membership ? [c.membership] : [];
+  }
+  onEditMembershipChange(): void {
+    const m = this.editableMemberships().find(m => m.id === Number(this.form.controls.clientMembershipId.value));
+    this.form.patchValue({ membershipStartDate: m?.fechaInicio?.slice(0,10) ?? '', membershipEndDate: m?.fechaFin?.slice(0,10) ?? '' });
+  }
   readonly selectedClient = signal<Client | null>(this.getInitialClient());
   readonly isLoadingSelectedClient = signal(false);
   readonly clientSearchControl = new FormControl<Client | string>(this.getInitialClient() ?? '', { nonNullable: true });
 
   readonly form = this.formBuilder.group(
     {
+      changeReason: ['', this.isEditing ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(500)] : []],
+      estado: [this.data.payment?.estado ?? 'Pendiente'],
+      membershipStartDate: [this.data.payment?.membershipStartDate?.slice(0,10) ?? ''],
+      membershipEndDate: [this.data.payment?.membershipEndDate?.slice(0,10) ?? ''],
       clientId: [this.data.payment?.clientId ?? this.getInitialClient()?.id ?? (null as number | null), [Validators.required]],
       clientMembershipId: [this.data.payment?.clientMembershipId ?? 0, [Validators.required, Validators.min(1)]],
       fechaPago: [this.toDateInputValue(this.data.payment?.fechaPago ?? this.data.defaultDate), [Validators.required]],
@@ -111,8 +136,10 @@ export class RegisterPaymentDialogComponent {
   readonly displayClient = (value: Client | string): string => typeof value === 'string' ? value : this.getClientLabel(value);
 
   constructor() {
+    if (!this.isEditing) this.loadRenewalPlans();
     this.initializeSelectedClient();
     this.onCategoryChange();
+
 
     this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
       if (!this.isEditing && typeof user?.email === 'string') {
@@ -121,6 +148,15 @@ export class RegisterPaymentDialogComponent {
     });
   }
 
+  private loadRenewalPlans(page = 1): void {
+    this.plansService.getPaged(page, 100).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: result => {
+        this.renewalPlans.update(plans => [...plans, ...result.items]);
+        if (page < result.totalPages) this.loadRenewalPlans(page + 1);
+      },
+      error: () => this.plansLoadError.set(true)
+    });
+  }
   private initializeSelectedClient(): void {
     const client = this.getInitialClient();
     if (!client) {
@@ -131,7 +167,7 @@ export class RegisterPaymentDialogComponent {
     this.clientSearchControl.setValue(client, { emitEvent: false });
     this.form.controls.clientId.setValue(client.id, { emitEvent: false });
     if (!this.isEditing) this.applyMembership(this.getEffectiveMembership(client));
-    if (!this.isEditing) this.loadSelectedClientDetails(client.id);
+    if (!this.isEditing || !client.membershipsHistory?.length) this.loadSelectedClientDetails(client.id);
   }
   close(): void {
     this.dialogRef.close();
@@ -158,12 +194,23 @@ export class RegisterPaymentDialogComponent {
     this.selectedClient.set(null);
     this.form.controls.clientId.setValue(null);
     this.clearMembership();
+    const query = this.clientSearchControl.value;
+    const id = ++this.searchId;
+    if (typeof query !== 'string' || query.trim().length < 2) { this.searchedClients.set([]); return; }
+    this.clientsService.getPaged(1, 25, { search: query.trim() }).subscribe({
+      next: result => { if (id === this.searchId) this.searchedClients.set(result.items); },
+      error: () => { if (id === this.searchId) this.searchedClients.set([]); }
+    });
   }
 
   selectClient(client: Client): void {
     this.form.controls.clientId.setValue(client.id);
     this.clientSearchControl.setValue(client, { emitEvent: false });
-    this.onClientChange();
+    this.selectedClient.set(client);
+    if (this.isEditing) {
+      this.form.patchValue({ clientMembershipId: 0, membershipStartDate: '', membershipEndDate: '' });
+      this.loadSelectedClientDetails(client.id);
+    } else this.onClientChange();
   }
 
   submit(): void {
@@ -190,7 +237,15 @@ export class RegisterPaymentDialogComponent {
     }
 
     const raw = this.form.getRawValue();
+    if (this.isEditing && (!!raw.membershipStartDate !== !!raw.membershipEndDate ||
+        (raw.membershipStartDate && raw.membershipEndDate && raw.membershipEndDate < raw.membershipStartDate))) {
+      this.toast.warning('Revisá ambas fechas de cobertura.'); return;
+    }
+    const coverageChanged = raw.membershipStartDate !== (this.data.payment?.membershipStartDate?.slice(0,10) ?? '') ||
+      raw.membershipEndDate !== (this.data.payment?.membershipEndDate?.slice(0,10) ?? '');
     this.dialogRef.close({
+      changeReason: this.isEditing ? raw.changeReason?.trim() : undefined,
+      estado: this.isEditing ? raw.estado ?? undefined : undefined,
       clientId: Number(raw.clientId),
       periods: !this.isEditing && this.isMembershipPayment() ? this.coverage?.periods : undefined,
       unpaidRenewal: !this.isEditing && this.isMembershipPayment() ? this.coverage?.unpaidRenewal : undefined,
@@ -212,8 +267,8 @@ export class RegisterPaymentDialogComponent {
       periodYear: Number(raw.periodYear),
       periodMonth: Number(raw.periodMonth),
       collectedByEmployeeEmail: raw.collectedByEmployeeEmail ?? '',
-      membershipStartDate: null,
-      membershipEndDate: null
+      membershipStartDate: this.isEditing && this.isMembershipPayment() && coverageChanged ? raw.membershipStartDate || null : null,
+      membershipEndDate: this.isEditing && this.isMembershipPayment() && coverageChanged ? raw.membershipEndDate || null : null
     });
   }
 
@@ -226,7 +281,7 @@ export class RegisterPaymentDialogComponent {
     const value = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : this.getClientLabel(rawValue).toLowerCase();
     if (!value) return this.data.clients.slice(0, 25);
 
-    return this.data.clients
+    return [...this.data.clients, ...this.searchedClients()].filter((c, i, all) => all.findIndex(x => x.id === c.id) === i)
       .filter(client => {
         const label = this.getClientLabel(client).toLowerCase();
         return label.includes(value) || client.dni?.toLowerCase().includes(value) || client.telefono?.toLowerCase().includes(value);
@@ -338,7 +393,10 @@ export class RegisterPaymentDialogComponent {
         }
 
         this.selectedClient.set(client);
-        if (this.isMembershipPayment()) this.applyMembership(this.getEffectiveMembership(client)) || this.clearMembership();
+        if (this.isEditing) {
+          const linked = this.editableMemberships().find(m => m.id === Number(this.form.controls.clientMembershipId.value));
+          if (!linked) this.form.controls.clientMembershipId.setValue(0);
+        } else if (this.isMembershipPayment()) this.applyMembership(this.getEffectiveMembership(client)) || this.clearMembership();
         this.isLoadingSelectedClient.set(false);
       },
       error: () => {
@@ -377,6 +435,10 @@ export class RegisterPaymentDialogComponent {
   }
 
   private clearMembership(): void {
+    if (this.isEditing) {
+      this.form.patchValue({ clientMembershipId: 0, membershipStartDate: '', membershipEndDate: '' });
+      return;
+    }
     this.form.patchValue({
       clientMembershipId: 0,
       monto: 0,
