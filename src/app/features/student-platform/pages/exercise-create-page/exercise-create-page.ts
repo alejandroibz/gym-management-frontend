@@ -1,3 +1,4 @@
+import { YoutubePlaylistImportComponent } from '../../components/youtube-playlist-import/youtube-playlist-import';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -103,6 +104,11 @@ export class ExerciseCreatePageComponent {
         this.toast.error('No se pudo cargar el catalogo muscular.');
       }
     });
+  }
+
+  openPlaylistImport(): void {
+    this.dialog.open(YoutubePlaylistImportComponent, { width: '1320px', maxWidth: '96vw', disableClose: true })
+      .afterClosed().subscribe((count: number) => { if (count) this.createdCount.update(value => value + count); });
   }
 
   isEditMode(): boolean {
@@ -321,9 +327,9 @@ export class ExerciseCreatePageComponent {
         }
         this.router.navigate(['/student-platform'], { queryParams: { tab: 'ejercicios', exerciseId: exercise.id } });
       },
-      error: () => {
+      error: error => {
         this.isLoading.set(false);
-        this.toast.error(this.isEditMode() ? 'No se pudo actualizar el ejercicio.' : 'No se pudo guardar el ejercicio.');
+        this.toast.error(error?.error?.errors?.join(' ') || (this.isEditMode() ? 'No se pudo actualizar el ejercicio.' : 'No se pudo guardar el ejercicio.'));
       }
     });
   }

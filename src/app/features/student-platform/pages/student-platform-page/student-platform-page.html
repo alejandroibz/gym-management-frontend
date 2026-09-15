@@ -1205,6 +1205,7 @@
                 {{ showExerciseBodyMap() ? 'Ocultar mapa muscular' : 'Mostrar mapa muscular' }}
               </button>
               @if (isAdminOrSuperAdmin$ | async) {
+                <button mat-stroked-button type="button" (click)="openPlaylistImport()"><mat-icon>playlist_add</mat-icon>Importar playlist de YouTube</button>
                 <button mat-flat-button color="primary" type="button" routerLink="/student-platform/exercises/new">
                   <mat-icon>add</mat-icon>
                   Nuevo ejercicio
@@ -1290,6 +1291,7 @@
               <h3>No hay ejercicios para mostrar</h3>
               <p>Ajusta los filtros o crea un nuevo ejercicio para empezar la biblioteca.</p>
               @if (isAdminOrSuperAdmin$ | async) {
+                <button mat-stroked-button type="button" (click)="openPlaylistImport()"><mat-icon>playlist_add</mat-icon>Importar playlist de YouTube</button>
                 <button mat-flat-button color="primary" type="button" routerLink="/student-platform/exercises/new">
                   <mat-icon>add</mat-icon>
                   Nuevo ejercicio

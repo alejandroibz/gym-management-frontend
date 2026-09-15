@@ -13,6 +13,7 @@
     </div>
     <div class="header-actions">
       @if (!isEditMode()) {
+        <button mat-stroked-button type="button" (click)="openPlaylistImport()" [disabled]="isLoading()"><mat-icon>playlist_add</mat-icon>Importar playlist de YouTube</button>
         <span class="session-count">{{ createdCount() }} creados en esta sesion</span>
       }
       <button mat-stroked-button type="button" routerLink="/student-platform" [queryParams]="{ tab: 'ejercicios' }">

@@ -36,6 +36,10 @@ export class StudentPlatformService {
     return this.http.put<PointRule>(`${this.apiUrl}/Achievements/point-rules/${id}`, { points, isActive });
   }
 
+  previewYoutubePlaylist(url: string): Observable<{ items: Array<{ videoId: string; name: string; description: string; videoUrl: string }>; skipped: number }> {
+    return this.http.post<{ items: Array<{ videoId: string; name: string; description: string; videoUrl: string }>; skipped: number }>(`${this.apiUrl}/Exercises/youtube-playlist/preview`, { url });
+  }
+
   getExercises(filters: string | ExerciseFilters = ''): Observable<Exercise[]> {
     let params = new HttpParams();
     if (typeof filters === 'string') {

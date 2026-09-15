@@ -1,3 +1,4 @@
+import { YoutubePlaylistImportComponent } from '../../components/youtube-playlist-import/youtube-playlist-import';
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, Component, TemplateRef, ViewChild, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -420,6 +421,13 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   private readonly platformService = inject(StudentPlatformService);
   private readonly clientsService = inject(ClientsService);
   private readonly dialog = inject(MatDialog);
+
+  openPlaylistImport(): void {
+    this.dialog.open(YoutubePlaylistImportComponent, { width: '1320px', maxWidth: '96vw', disableClose: true })
+      .afterClosed().subscribe((count: number) => {
+        if (count) this.platformService.getExercises().subscribe(exercises => this.exercises.set(exercises));
+      });
+  }
   private readonly roleService = inject(RoleService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
@@ -1304,9 +1312,9 @@ export class StudentPlatformPageComponent implements AfterViewInit {
         this.resetExerciseForm();
         this.platformService.getExercises().subscribe(exercises => this.exercises.set(exercises));
       },
-      error: () => {
+      error: error => {
         this.isLoading.set(false);
-        this.feedback.set('No se pudo guardar el ejercicio.');
+        this.feedback.set(error?.error?.errors?.join(' ') || 'No se pudo guardar el ejercicio.');
       }
     });
   }

@@ -45,6 +45,49 @@ export class TrainingBatchBuilderComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private userStorageSuffix = 'current-user';
 
+  readonly focusedExerciseKey = signal<string | null>(null);
+  readonly exerciseDestinations = computed(() => this.plans().flatMap(plan => plan.workouts.flatMap(workout => workout.blocks.map(block => ({
+    plan, workout, block, label: `${this.mode === 'plans' ? plan.name + ' / ' : ''}${workout.name} / ${block.name}`
+  })))));
+  readonly treeExerciseListIds = computed(() => this.exerciseDestinations()
+    .filter(item => (!item.plan.collapsed || this.mode === 'workouts') && !item.workout.collapsed)
+    .map(item => 'tree-exercises-' + item.block.clientKey));
+
+  selectTreeExercise(plan: BuilderPlan, workout: BuilderWorkout, block: BuilderBlock, exercise: BuilderExercise): void {
+    this.focusedExerciseKey.set(exercise.clientKey);
+    this.select({ kind: 'block', planKey: plan.clientKey, workoutKey: workout.clientKey, blockKey: block.clientKey });
+  }
+
+  dropTreeExercise(targetBlockKey: string, event: CdkDragDrop<string>): void {
+    const source = event.item.data as { blockKey: string; exerciseKey: string };
+    if (!source?.exerciseKey) return;
+    this.moveTreeExercise(source.blockKey, source.exerciseKey, targetBlockKey, event.currentIndex);
+  }
+
+  moveTreeExercise(sourceBlockKey: string, exerciseKey: string, targetBlockKey: string, index?: number): void {
+    const source = this.exerciseDestinations().find(item => item.block.clientKey === sourceBlockKey);
+    const target = this.exerciseDestinations().find(item => item.block.clientKey === targetBlockKey);
+    if (!source || !target) return;
+    const sourceIndex = source.block.exercises.findIndex(exercise => exercise.clientKey === exerciseKey);
+    if (sourceIndex < 0) return;
+    const exercise = source.block.exercises[sourceIndex];
+    if (source !== target && target.block.exercises.some(item => item.exerciseId === exercise.exerciseId)) {
+      this.toast.error(`${exercise.name} ya está agregado en ese bloque.`);
+      return;
+    }
+    source.block.exercises.splice(sourceIndex, 1);
+    target.block.exercises.splice(Math.max(0, Math.min(index ?? target.block.exercises.length, target.block.exercises.length)), 0, exercise);
+    for (const item of new Set([source, target])) {
+      item.block.exercises.forEach((row, position) => row.sortOrder = position + 1);
+      if (item.workout.sourceRoutineId) item.workout.isModified = true;
+    }
+    target.plan.collapsed = false;
+    target.workout.collapsed = false;
+    this.focusedExerciseKey.set(exerciseKey);
+    this.selection.set({ kind: 'block', planKey: target.plan.clientKey, workoutKey: target.workout.clientKey, blockKey: target.block.clientKey });
+    this.touch();
+  }
+
   readonly plans = signal<BuilderPlan[]>([]);
   readonly selection = signal<BuilderSelection | null>(null);
   readonly exercises = signal<Exercise[]>([]);

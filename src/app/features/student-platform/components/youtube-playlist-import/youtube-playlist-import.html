@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Importar ejercicios de YouTube</h2>
+<mat-dialog-content>
+  <p>Pegá una playlist pública o no listada. Cada video será un ejercicio; usamos su título como nombre y descripción inicial.</p>
+  <div class="playlist-input">
+    <label>Enlace de la playlist<input type="url" [(ngModel)]="playlistUrl" [disabled]="busy()" placeholder="https://www.youtube.com/playlist?list=..."></label>
+    <button mat-stroked-button (click)="preview()" [disabled]="busy() || !playlistUrl.trim()">Buscar videos</button>
+  </div>
+  @if (busy()) { <mat-progress-bar mode="indeterminate" /> }
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  <p role="status" aria-live="polite">{{ message() }}</p>
+  @if (busy() && total()) { <p role="status">Procesando {{ processed() }} de {{ total() }}…</p> }
+  @if (rows().length) {
+    <label>Grupo muscular para los seleccionados
+      <select [(ngModel)]="groupId" [disabled]="busy()">
+        <option [ngValue]="0">General — clasificar después</option>
+        @for (group of groups(); track group.id) { <option [ngValue]="group.id">{{ group.name }}</option> }
+      </select>
+    </label>
+    <p>Revisá los nombres y desmarcá los videos que no sean ejercicios. La descripción vacía se completa con el nombre.</p>
+    <div class="selection">
+      <button mat-button (click)="selectAll(true)" [disabled]="busy()">Seleccionar todos</button>
+      <button mat-button (click)="selectAll(false)" [disabled]="busy()">Quitar selección</button>
+      <span>{{ selectedRows().length }} seleccionados</span>
+    </div>
+    <div class="video-list">
+      @for (row of rows(); track row.videoId) {
+        <article>
+          <input type="checkbox" [(ngModel)]="row.selected" [disabled]="busy() || row.state === 'existing' || row.state === 'created'" [attr.aria-label]="'Importar ' + row.name">
+          <div class="fields">
+            <label>Nombre<input [(ngModel)]="row.name" maxlength="150" required [disabled]="busy() || row.state === 'existing' || row.state === 'created'"></label>
+            <label>Descripción<textarea [(ngModel)]="row.description" maxlength="2000" rows="2" [disabled]="busy() || row.state === 'existing' || row.state === 'created'"></textarea></label>
+            @if (row.state === 'existing') { <span>Ya existe en el catálogo</span> }
+            @if (row.state === 'created') { <span>Ejercicio creado</span> }
+            @if (row.error) { <span class="error" role="alert">{{ row.error }}</span> }
+          </div>
+          <div class="video-preview">
+            @if (playingVideo(); as player) {
+              @if (player.id === row.videoId) {
+                <iframe class="inline-player" [src]="player.url" [title]="'Video de ' + row.name" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                <button mat-button type="button" (click)="playingVideo.set(null)">Volver a miniatura</button>
+              }
+            }
+            @if (playingVideo()?.id !== row.videoId) {
+              <button type="button" class="video-thumbnail" (click)="playVideo(row.videoId)" [attr.aria-label]="'Reproducir ' + row.name">
+                <span class="thumbnail-fallback"><mat-icon>smart_display</mat-icon><span>Reproducir video</span></span>
+                <img [src]="'https://i.ytimg.com/vi/' + row.videoId + '/mqdefault.jpg'" [alt]="'Miniatura de ' + row.name" width="320" height="180" loading="lazy" decoding="async" (error)="$any($event.target).hidden = true">
+                <mat-icon class="thumbnail-play">play_circle</mat-icon>
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else if (loaded()) { <p>Esta playlist no tiene videos disponibles para importar.</p> }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()" [disabled]="busy()">Cerrar</button>
+  <button mat-flat-button (click)="importSelected()" [disabled]="!canImport()">Importar {{ selectedRows().length }} ejercicios</button>
+</mat-dialog-actions>

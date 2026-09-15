@@ -40,9 +40,22 @@
                     @if (!workout.collapsed) {
                       <div class="block-tree" cdkDropList [cdkDropListData]="workout.blocks" (cdkDropListDropped)="dropBlock(workout,$event)">
                         @for (block of workout.blocks; track block.clientKey; let bi = $index) {
-                          <div cdkDrag class="block-node" [class.selected]="selection()?.kind === 'block' && selection()?.blockKey === block.clientKey" (click)="select({kind:'block',planKey:plan.clientKey,workoutKey:workout.clientKey,blockKey:block.clientKey})">
-                            <div class="block-node-controls"><mat-icon cdkDragHandle matTooltip="Arrastrar bloque">drag_indicator</mat-icon><button type="button" matTooltip="Eliminar bloque" [attr.aria-label]="'Eliminar ' + block.name" (click)="$event.stopPropagation(); removeBlock(workout,block)"><mat-icon>close</mat-icon></button></div>
-                            <span>{{ block.name || 'Bloque sin nombre' }}<small>{{ block.exercises.length }} ej. × {{ block.cycles }}</small></span>
+                          <div cdkDrag class="tree-block">
+                            <div class="block-node" [class.selected]="selection()?.kind === 'block' && selection()?.blockKey === block.clientKey" (click)="select({kind:'block',planKey:plan.clientKey,workoutKey:workout.clientKey,blockKey:block.clientKey})">
+                              <div class="block-node-controls"><mat-icon cdkDragHandle matTooltip="Arrastrar bloque">drag_indicator</mat-icon><button type="button" matTooltip="Eliminar bloque" [attr.aria-label]="'Eliminar ' + block.name" (click)="$event.stopPropagation(); removeBlock(workout,block)"><mat-icon>close</mat-icon></button></div>
+                              <span>{{ block.name || 'Bloque sin nombre' }}<small>{{ block.exercises.length }} ej. × {{ block.cycles }}</small></span>
+                            </div>
+                            <div class="tree-exercises" cdkDropList [id]="'tree-exercises-' + block.clientKey" [cdkDropListData]="block.clientKey" [cdkDropListConnectedTo]="treeExerciseListIds()" (cdkDropListDropped)="dropTreeExercise(block.clientKey,$event)" [attr.aria-label]="'Ejercicios de ' + block.name">
+                              @for (exercise of block.exercises; track exercise.clientKey) {
+                                <div class="tree-exercise" cdkDrag [cdkDragData]="{blockKey:block.clientKey,exerciseKey:exercise.clientKey}" [class.focused]="focusedExerciseKey() === exercise.clientKey">
+                                  <mat-icon cdkDragHandle matTooltip="Arrastrar ejercicio a otro bloque">drag_indicator</mat-icon>
+                                  <button type="button" class="tree-exercise-name" [title]="exercise.name" (click)="selectTreeExercise(plan,workout,block,exercise)">{{ exercise.name }}</button>
+
+                                </div>
+                              } @empty {
+                                <span class="tree-exercise-empty">Arrastrá ejercicios aquí</span>
+                              }
+                            </div>
                           </div>
                         }
                         <button type="button" class="tree-add" (click)="select({kind:'workout',planKey:plan.clientKey,workoutKey:workout.clientKey}); addBlock(workout)"><mat-icon>add</mat-icon>Bloque</button>
@@ -90,7 +103,7 @@
               <div class="exercise-table" cdkDropList id="selected-exercises-drop" [cdkDropListData]="block.exercises" [cdkDropListConnectedTo]="['exercise-catalog-drag-source']" (cdkDropListDropped)="dropExercise(block,$event)">
                 <div class="exercise-head"><span></span><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>Descanso</span><span>Notas</span><span></span></div>
                 @for (exercise of block.exercises; track exercise.clientKey; let ei = $index) {
-                  <div class="exercise-line" cdkDrag>
+                  <div class="exercise-line" cdkDrag [class.exercise-focused]="focusedExerciseKey() === exercise.clientKey">
                     <div><mat-icon cdkDragHandle matTooltip="Arrastrar">drag_indicator</mat-icon><input type="checkbox" [(ngModel)]="exercise.selected" aria-label="Seleccionar ejercicio"></div>
                     <span class="exercise-name"><strong>{{ exercise.name }}</strong><small>{{ exercise.muscleGroup }}</small></span>
                     <input type="number" min="1" [(ngModel)]="exercise.sets" (ngModelChange)="touchWorkout(workout)" aria-label="Series">

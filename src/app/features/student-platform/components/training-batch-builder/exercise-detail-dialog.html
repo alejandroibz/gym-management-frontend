@@ -11,14 +11,31 @@
   </header>
 
   <div class="detail-content">
-    <div class="media-stage">
-      @if (primaryVideo && isDirectVideo(primaryVideo)) {
+    <div class="media-column">
+      @if (primaryImage && hasPlayableVideo) {
+        <button mat-stroked-button type="button" class="media-toggle" (click)="showPhoto.set(!showPhoto())">
+          <mat-icon>{{ showPhoto() ? 'play_circle' : 'image' }}</mat-icon>
+          {{ showPhoto() ? 'Ver video' : 'Ver foto' }}
+        </button>
+      }
+      <div class="media-stage">
+      @if (!showPhoto() && primaryVideo && isDirectVideo(primaryVideo)) {
         <video [src]="primaryVideo" controls playsinline preload="metadata"></video>
+      } @else if (!showPhoto() && embeddedVideo) {
+        <iframe
+          [src]="embeddedVideo"
+          [title]="'Video de ' + exercise.name"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen>
+        </iframe>
       } @else if (primaryImage) {
         <img [src]="primaryImage" [alt]="exercise.name">
       } @else {
         <div class="media-placeholder"><mat-icon>fitness_center</mat-icon><span>Sin imagen o video</span></div>
       }
+    </div>
+
     </div>
 
     <div class="exercise-copy">
@@ -48,12 +65,6 @@
         </div>
       </article>
 
-      @if (primaryVideo && !isDirectVideo(primaryVideo)) {
-        <a mat-stroked-button [href]="primaryVideo" target="_blank" rel="noopener noreferrer">
-          <mat-icon>play_circle</mat-icon>
-          Abrir video
-        </a>
-      }
     </div>
   </div>
 </section>
