@@ -10,7 +10,7 @@ import { StudentPlatformService } from '../../services/student-platform.service'
 import { Exercise, MuscleGroup } from '../../models/student-platform.model';
 
 interface ImportRow {
-  videoId: string; name: string; description: string; videoUrl: string;
+  rowNumber?: number; videoId: string; name: string; description: string; videoUrl: string;
   selected: boolean; state: 'pending' | 'existing' | 'created' | 'error'; error: string;
 }
 
@@ -38,11 +38,11 @@ export function youtubeVideoId(value: string | null | undefined): string | null 
 export class YoutubePlaylistImportComponent {
   private readonly service = inject(StudentPlatformService);
   private readonly sanitizer = inject(DomSanitizer);
-  readonly playingVideo = signal<{ id: string; url: SafeResourceUrl } | null>(null);
+  readonly playingVideo = signal<{ rowIndex: number; url: SafeResourceUrl } | null>(null);
 
-  playVideo(videoId: string): void {
+  playVideo(videoId: string, rowIndex: number): void {
     if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return;
-    this.playingVideo.set({ id: videoId, url: this.sanitizer.bypassSecurityTrustResourceUrl(
+    this.playingVideo.set({ rowIndex, url: this.sanitizer.bypassSecurityTrustResourceUrl(
       `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0`
     ) });
   }
@@ -56,6 +56,8 @@ export class YoutubePlaylistImportComponent {
   readonly processed = signal(0);
   readonly total = signal(0);
   readonly loaded = signal(false);
+  source: 'playlist' | 'file' = 'playlist';
+  file: File | null = null;
   playlistUrl = '';
   groupId = 0;
 
@@ -65,7 +67,77 @@ export class YoutubePlaylistImportComponent {
 
   canImport(): boolean {
     const selected = this.selectedRows();
-    return !this.busy() && selected.length > 0 && selected.every(row => row.name.trim().length > 0 && row.name.length <= 150 && row.description.length <= 2000);
+    return !this.busy() && selected.length > 0 && selected.every(row => !this.validationError(row));
+  }
+
+  validationError(row: ImportRow): string {
+    if (!row.name.trim()) return 'Completá el nombre del ejercicio.';
+    if (row.name.length > 150) return 'El nombre admite hasta 150 caracteres.';
+    if (row.description.length > 2000) return 'La descripción admite hasta 2.000 caracteres.';
+    try {
+      const value = row.videoUrl.trim();
+      const url = new URL(value);
+      if (value.length > 1000 || /\s/.test(value) || !['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) throw new Error();
+      if (['youtu.be', 'www.youtu.be', 'youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com'].includes(url.hostname) && !youtubeVideoId(value))
+        return 'Ingresá el enlace de un video de YouTube válido.';
+    } catch { return 'Ingresá un enlace válido que comience con https:// o http://.'; }
+    return '';
+  }
+
+  private videoKey(value: string | null | undefined): string {
+    const id = youtubeVideoId(value);
+    if (id) return id;
+    try { const url = new URL(value?.trim() || ''); url.hash = ''; return url.href; }
+    catch { return value?.trim() || ''; }
+  }
+
+  updateVideo(row: ImportRow): void {
+    row.videoId = youtubeVideoId(row.videoUrl.trim()) || '';
+    this.playingVideo.set(null);
+  }
+
+  changeSource(source: 'playlist' | 'file'): void {
+    if (this.busy() || source === this.source) return;
+    this.source = source;
+    this.file = null;
+    this.clearPreview();
+  }
+
+  chooseFile(event: Event): void {
+    this.file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    this.clearPreview();
+  }
+
+  private clearPreview(): void {
+    this.playingVideo.set(null); this.error.set(''); this.message.set('');
+    this.rows.set([]); this.loaded.set(false); this.total.set(0);
+  }
+
+  async previewFile(): Promise<void> {
+    if (this.busy() || !this.file) return;
+    this.clearPreview();
+    if (!/\.(csv|xls|xlsx)$/i.test(this.file.name) || !this.file.size || this.file.size > 5 * 1024 * 1024) {
+      this.error.set('Elegí un archivo CSV, XLS o XLSX con contenido, de hasta 5 MB.'); return;
+    }
+    this.setBusy(true);
+    try {
+      const [preview, exercises, groups] = await Promise.all([
+        firstValueFrom(this.service.previewExerciseFile(this.file)),
+        firstValueFrom(this.service.getExercises()), firstValueFrom(this.service.getMuscleGroups())
+      ]);
+      const existing = this.existingIds(exercises);
+      this.groups.set(groups);
+      this.rows.set(preview.items.map(item => {
+        const row: ImportRow = { ...item, videoId: youtubeVideoId(item.videoUrl) || '', selected: true, state: 'pending', error: '' };
+        if (existing.has(this.exerciseKey(row.name, this.videoKey(row.videoUrl)))) { row.state = 'existing'; row.selected = false; }
+        else if (this.validationError(row)) row.selected = false;
+        return row;
+      }));
+      this.loaded.set(true);
+      this.message.set(`${preview.items.length} ejercicios encontrados en ${preview.sheetName}. ${preview.skipped} filas vacías omitidas.${preview.headerSkipped ? ' Encabezado detectado y omitido.' : ''} Revisá las filas con errores antes de seleccionarlas.`);
+    } catch (error: any) {
+      this.error.set(error?.error?.message || 'No se pudo leer el archivo. Verificá el formato e intentá nuevamente.');
+    } finally { this.setBusy(false); }
   }
 
   private exerciseKey(name: string, videoId: string): string {
@@ -74,7 +146,7 @@ export class YoutubePlaylistImportComponent {
 
   private existingIds(exercises: Exercise[]): Set<string> {
     return new Set(exercises.flatMap(exercise => [exercise.videoUrl, ...(exercise.media ?? []).filter(media => media.mediaType === 'Video').map(media => media.url)]
-      .map(youtubeVideoId).filter((id): id is string => !!id).map(id => this.exerciseKey(exercise.name, id))));
+      .map(url => this.videoKey(url)).filter((id): id is string => !!id).map(id => this.exerciseKey(exercise.name, id))));
   }
   private setBusy(value: boolean): void {
     this.busy.set(value);
@@ -92,7 +164,7 @@ export class YoutubePlaylistImportComponent {
       ]);
       const existing = this.existingIds(exercises);
       this.groups.set(groups);
-      this.rows.set(preview.items.map(row => ({ ...row, selected: !existing.has(this.exerciseKey(row.name, row.videoId)), state: existing.has(this.exerciseKey(row.name, row.videoId)) ? 'existing' : 'pending', error: '' })));
+      this.rows.set(preview.items.map(row => ({ ...row, selected: !existing.has(this.exerciseKey(row.name, this.videoKey(row.videoUrl))), state: existing.has(this.exerciseKey(row.name, this.videoKey(row.videoUrl))) ? 'existing' : 'pending', error: '' })));
       this.loaded.set(true);
       this.message.set(`${preview.items.length} videos encontrados. ${preview.skipped} no disponibles o repetidos omitidos.`);
     } catch (error: any) {
@@ -112,17 +184,17 @@ export class YoutubePlaylistImportComponent {
       const existing = this.existingIds(await firstValueFrom(this.service.getExercises()));
       const group = this.groups().find(item => item.id === Number(this.groupId));
       for (const row of selected) {
-        if (existing.has(this.exerciseKey(row.name, row.videoId))) {
+        if (existing.has(this.exerciseKey(row.name, this.videoKey(row.videoUrl)))) {
           row.state = 'existing'; row.selected = false; row.error = ''; skipped++;
         } else {
           try {
             await firstValueFrom(this.service.createExercise({
               name: row.name.trim(), description: row.description.trim() || row.name.trim(),
-              videoUrl: row.videoUrl, muscleGroup: group?.name || 'General',
+              videoUrl: row.videoUrl.trim(), muscleGroup: group?.name || 'General',
               primaryMuscleGroupId: group?.id ?? null, muscleIds: [],
-              media: [{ mediaType: 'Video', url: row.videoUrl, title: row.name.trim(), sortOrder: 1 }]
+              media: [{ mediaType: 'Video', url: row.videoUrl.trim(), title: row.name.trim(), sortOrder: 1 }]
             }));
-            existing.add(this.exerciseKey(row.name, row.videoId)); row.state = 'created'; row.selected = false; row.error = '';
+            existing.add(this.exerciseKey(row.name, this.videoKey(row.videoUrl))); row.state = 'created'; row.selected = false; row.error = '';
             imported++; this.created.update(value => value + 1);
           } catch (error: any) {
             row.state = 'error'; row.error = error?.error?.errors?.join(' ') || 'No se pudo guardar. Podés reintentar.'; failed++;
@@ -138,7 +210,7 @@ export class YoutubePlaylistImportComponent {
   }
 
   selectAll(selected: boolean): void {
-    this.rows.update(rows => rows.map(row => ({ ...row, selected: ['pending', 'error'].includes(row.state) && selected })));
+    this.rows.update(rows => rows.map(row => ({ ...row, selected: ['pending', 'error'].includes(row.state) && selected && !this.validationError(row) })));
   }
 
   close(): void { if (!this.busy()) this.dialog.close(this.created()); }

@@ -40,6 +40,12 @@ export class StudentPlatformService {
     return this.http.post<{ items: Array<{ videoId: string; name: string; description: string; videoUrl: string }>; skipped: number }>(`${this.apiUrl}/Exercises/youtube-playlist/preview`, { url });
   }
 
+  previewExerciseFile(file: File): Observable<{ items: Array<{ rowNumber: number; name: string; description: string; videoUrl: string }>; sheetName: string; skipped: number; headerSkipped: boolean }> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<{ items: Array<{ rowNumber: number; name: string; description: string; videoUrl: string }>; sheetName: string; skipped: number; headerSkipped: boolean }>(`${this.apiUrl}/Exercises/file/preview`, body);
+  }
+
   getExercises(filters: string | ExerciseFilters = ''): Observable<Exercise[]> {
     let params = new HttpParams();
     if (typeof filters === 'string') {

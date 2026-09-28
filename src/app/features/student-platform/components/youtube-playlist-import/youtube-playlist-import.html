@@ -1,10 +1,23 @@
-<h2 mat-dialog-title>Importar ejercicios de YouTube</h2>
+<h2 mat-dialog-title>Carga masiva de ejercicios</h2>
 <mat-dialog-content>
+  <div class="source-options" role="group" aria-label="Origen de la carga masiva">
+    <button mat-stroked-button type="button" (click)="changeSource('playlist')" [attr.aria-pressed]="source === 'playlist'" [disabled]="busy()"><mat-icon>playlist_play</mat-icon>Lista de YouTube</button>
+    <button mat-stroked-button type="button" (click)="changeSource('file')" [attr.aria-pressed]="source === 'file'" [disabled]="busy()"><mat-icon>upload_file</mat-icon>Archivo Excel o CSV</button>
+  </div>
+  @if (source === 'playlist') {
   <p>Pegá una playlist pública o no listada. Cada video será un ejercicio; usamos su título como nombre y descripción inicial.</p>
   <div class="playlist-input">
     <label>Enlace de la playlist<input type="url" [(ngModel)]="playlistUrl" [disabled]="busy()" placeholder="https://www.youtube.com/playlist?list=..."></label>
     <button mat-stroked-button (click)="preview()" [disabled]="busy() || !playlistUrl.trim()">Buscar videos</button>
   </div>
+  } @else {
+    <p>Subí un archivo CSV, XLS o XLSX. Columna A: nombre del ejercicio; B: link del video; C: descripción. Puede tener encabezados o empezar directamente con ejercicios.</p>
+    <p>Se lee la primera hoja de Excel. Máximo 5 MB y 2.000 ejercicios. Para Google Sheets, descargá la planilla como Excel o CSV.</p>
+    <div class="playlist-input">
+      <label>Archivo de ejercicios<input type="file" accept=".csv,.xls,.xlsx" (change)="chooseFile($event)" [disabled]="busy()"></label>
+      <button mat-stroked-button type="button" (click)="previewFile()" [disabled]="busy() || !file">Revisar archivo</button>
+    </div>
+  }
   @if (busy()) { <mat-progress-bar mode="indeterminate" /> }
   @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
   <p role="status" aria-live="polite">{{ message() }}</p>
@@ -16,42 +29,47 @@
         @for (group of groups(); track group.id) { <option [ngValue]="group.id">{{ group.name }}</option> }
       </select>
     </label>
-    <p>Revisá los nombres y desmarcá los videos que no sean ejercicios. La descripción vacía se completa con el nombre.</p>
+    <p>Revisá los datos y desmarcá los ejercicios que no quieras importar. La descripción vacía se completa con el nombre.</p>
     <div class="selection">
       <button mat-button (click)="selectAll(true)" [disabled]="busy()">Seleccionar todos</button>
       <button mat-button (click)="selectAll(false)" [disabled]="busy()">Quitar selección</button>
       <span>{{ selectedRows().length }} seleccionados</span>
     </div>
     <div class="video-list">
-      @for (row of rows(); track row.videoId) {
+      @for (row of rows(); track $index) {
         <article>
           <input type="checkbox" [(ngModel)]="row.selected" [disabled]="busy() || row.state === 'existing' || row.state === 'created'" [attr.aria-label]="'Importar ' + row.name">
           <div class="fields">
+            @if (row.rowNumber) { <strong>Fila {{ row.rowNumber }}</strong> }
+            <label>Enlace del video<input type="url" [(ngModel)]="row.videoUrl" (ngModelChange)="updateVideo(row)" maxlength="1000" [disabled]="busy() || row.state === 'existing' || row.state === 'created'"></label>
             <label>Nombre<input [(ngModel)]="row.name" maxlength="150" required [disabled]="busy() || row.state === 'existing' || row.state === 'created'"></label>
             <label>Descripción<textarea [(ngModel)]="row.description" maxlength="2000" rows="2" [disabled]="busy() || row.state === 'existing' || row.state === 'created'"></textarea></label>
             @if (row.state === 'existing') { <span>Ya existe en el catálogo</span> }
             @if (row.state === 'created') { <span>Ejercicio creado</span> }
+            @if (validationError(row)) { <span class="error" role="alert">{{ validationError(row) }}</span> }
             @if (row.error) { <span class="error" role="alert">{{ row.error }}</span> }
           </div>
+          @if (row.videoId) {
           <div class="video-preview">
             @if (playingVideo(); as player) {
-              @if (player.id === row.videoId) {
+              @if (player.rowIndex === $index) {
                 <iframe class="inline-player" [src]="player.url" [title]="'Video de ' + row.name" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 <button mat-button type="button" (click)="playingVideo.set(null)">Volver a miniatura</button>
               }
             }
-            @if (playingVideo()?.id !== row.videoId) {
-              <button type="button" class="video-thumbnail" (click)="playVideo(row.videoId)" [attr.aria-label]="'Reproducir ' + row.name">
+            @if (playingVideo()?.rowIndex !== $index) {
+              <button type="button" class="video-thumbnail" (click)="playVideo(row.videoId, $index)" [attr.aria-label]="'Reproducir ' + row.name">
                 <span class="thumbnail-fallback"><mat-icon>smart_display</mat-icon><span>Reproducir video</span></span>
                 <img [src]="'https://i.ytimg.com/vi/' + row.videoId + '/mqdefault.jpg'" [alt]="'Miniatura de ' + row.name" width="320" height="180" loading="lazy" decoding="async" (error)="$any($event.target).hidden = true">
                 <mat-icon class="thumbnail-play">play_circle</mat-icon>
               </button>
             }
           </div>
+          }
         </article>
       }
     </div>
-  } @else if (loaded()) { <p>Esta playlist no tiene videos disponibles para importar.</p> }
+  } @else if (loaded()) { <p>No hay ejercicios disponibles para importar en este origen.</p> }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-button (click)="close()" [disabled]="busy()">Cerrar</button>
