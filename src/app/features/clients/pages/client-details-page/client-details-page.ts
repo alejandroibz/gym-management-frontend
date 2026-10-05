@@ -35,6 +35,7 @@ import { PaymentsService } from '../../../payments/services/payments.service';
 import { ClientMembershipDialogComponent } from '../../components/client-membership-dialog/client-membership-dialog';
 import { Client, ClientCreatePayload, ClientMembership, ClientRelationRecord, ClientUpdatePayload, StudentGoalAdmin, StudentMeasurementAdmin } from '../../models/client.model';
 import { ClientsService } from '../../services/clients.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { ClientContract } from '../../../contracts/models/contract.model';
 import { ContractsService } from '../../../contracts/services/contracts.service';
 import { dateOrderValidator, markAndFocusFirstInvalid, nonWhitespaceValidator, notFutureDateValidator, periodMonthValidators, periodYearValidators } from '../../../../core/forms/business-form-validators';
@@ -93,6 +94,8 @@ export class ClientDetailsPageComponent {
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isDownloadingPlan = signal(false);
+  readonly isEnablingAccess = signal(false);
+  private readonly toast = inject(ToastService);
   readonly isEditing = signal(false);
   readonly isCreateMode = signal(this.route.snapshot.routeConfig?.path === 'clients/new');
   readonly errorMessage = createNotifiedErrorSignal();
@@ -211,6 +214,44 @@ export class ClientDetailsPageComponent {
     }
 
     this.router.navigate(['/clients']);
+  }
+
+  enableAccess(): void {
+    const client = this.client();
+    if (!client || !this.isAdminOrSuperAdmin() || this.isEnablingAccess() || this.isSaving() || this.isEditing() || client.hasAppAccess) return;
+    if (!client.activo) {
+      this.errorMessage.set('Reactivá al alumno antes de habilitar su acceso.');
+      return;
+    }
+    const email = client.email?.trim();
+    if (!email || Validators.email(this.formBuilder.control(email))) {
+      this.errorMessage.set('Ingresá y guardá un email válido en la ficha antes de habilitar el acceso.');
+      return;
+    }
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '460px', maxWidth: 'calc(100vw - 1rem)', autoFocus: false,
+      data: {
+        title: 'Habilitar acceso al sistema',
+        message: `Se habilitará el acceso de ${client.nombre} ${client.apellido} como alumno. Si se crea una cuenta nueva, recibirá en ${email} un correo para definir su contraseña.`,
+        confirmLabel: 'Habilitar acceso', cancelLabel: 'Cancelar', tone: 'primary'
+      }
+    }).afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
+      if (!confirmed || this.isEnablingAccess()) return;
+      this.isEnablingAccess.set(true);
+      this.errorMessage.set('');
+      this.clientsService.enableAccess(client.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.isEnablingAccess.set(false);
+          this.client.update(current => current?.id === client.id ? { ...current, hasAppAccess: true } : current);
+          this.toast.success('Acceso al sistema habilitado.');
+          this.loadClient();
+        },
+        error: (error: { error?: { message?: string } }) => {
+          this.isEnablingAccess.set(false);
+          this.errorMessage.set(error.error?.message || 'No se pudo habilitar el acceso. Volvé a intentarlo.');
+        }
+      });
+    });
   }
 
   startEditing(): void {

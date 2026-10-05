@@ -82,6 +82,7 @@ export interface Client {
   membresiaProximaAVencer?: boolean;
   membresiaVencimientoNotificado?: boolean;
   hasValidContract?: boolean;
+  hasAppAccess?: boolean;
 }
 
 export interface ClientCreatePayload {

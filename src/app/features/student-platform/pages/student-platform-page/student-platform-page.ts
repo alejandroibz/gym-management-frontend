@@ -1,8 +1,9 @@
 import { YoutubePlaylistImportComponent } from '../../components/youtube-playlist-import/youtube-playlist-import';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, ChangeDetectionStrategy, Component, TemplateRef, ViewChild, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
@@ -23,7 +24,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { environment } from '../../../../../environments/environment';
 import { Client } from '../../../clients/models/client.model';
 import { ClientsService } from '../../../clients/services/clients.service';
-import { AchievementTemplate, AttendanceLog, BranchAttendanceSettings, Exercise, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, WorkoutSession } from '../../models/student-platform.model';
+import { AchievementTemplate, AttendanceLog, BranchAttendanceSettings, Exercise, ExerciseProgressHistory, ExerciseObservation, TrackingExercise, GamificationMetrics, HabitDefinition, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, WorkoutSession } from '../../models/student-platform.model';
 import { StudentPlatformService } from '../../services/student-platform.service';
 import { WeeklySchedulesPageComponent } from '../../../weekly-schedules/pages/weekly-schedules-page/weekly-schedules-page';
 
@@ -398,6 +399,7 @@ export class MuscleDialogComponent {
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatDatepickerModule,
     MatDialogModule,
     MatDividerModule,
@@ -455,6 +457,18 @@ export class StudentPlatformPageComponent implements AfterViewInit {
   readonly professionalBlockCycles = signal<Record<string, number>>({});
   readonly professionalWorkoutDraft = signal<Record<string, { weight: number | null; reps: number | null }>>({});
   readonly expandedProfessionalBlockId = signal<number | null>(null);
+  readonly trackingExercises = signal<TrackingExercise[]>([]);
+  readonly showAllTrackingExercises = signal(false);
+  readonly visibleTrackingExercises = computed(() => this.trackingExercises().filter(e => this.showAllTrackingExercises() || e.isAssigned));
+  readonly exerciseObservation = this.formBuilder.nonNullable.control('', [Validators.required, Validators.maxLength(2000)]);
+  readonly savingObservation = signal(false);
+  readonly loadingExerciseProgress = signal(false);
+  readonly observationError = signal('');
+  readonly editingObservationId = signal(0);
+  readonly deletingObservationId = signal(0);
+  readonly moderationText = this.formBuilder.nonNullable.control('', [Validators.required, Validators.maxLength(2000)]);
+  private trackingExercisesClientId = 0;
+  private progressRequestVersion = 0;
   readonly progressHistory = signal<ExerciseProgressHistory | null>(null);
   readonly ranking = signal<RankingResponse | null>(null);
   readonly achievements = signal<AchievementTemplate[]>([]);
@@ -842,6 +856,7 @@ export class StudentPlatformPageComponent implements AfterViewInit {
 
   constructor() {
     this.loadAll();
+    this.trackingForm.controls.clientId.valueChanges.subscribe(() => this.resetExerciseTracking());
     this.assignmentListPlanSearch.valueChanges.subscribe(value => {
       const selectedPlan = this.trainingPlans().find(plan => plan.id === this.selectedAssignmentPlanId());
       if (selectedPlan && value !== selectedPlan.name) {
@@ -1889,6 +1904,18 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       return;
     }
 
+    if (this.trackingExercisesClientId !== raw.clientId) {
+      this.resetExerciseTracking();
+      this.trackingExercisesClientId = raw.clientId;
+    }
+    this.platformService.getTrackingExercises(raw.clientId).subscribe({
+      next: exercises => {
+        if (this.trackingForm.controls.clientId.value === raw.clientId) this.trackingExercises.set(exercises);
+      },
+      error: () => {
+        if (this.trackingForm.controls.clientId.value === raw.clientId) this.observationError.set('No se pudieron cargar los ejercicios. Volvé a consultar el seguimiento.');
+      }
+    });
     this.platformService.getAttendance(raw.clientId, this.trackingFrom.value || undefined, this.trackingTo.value || undefined).subscribe({
       next: attendance => this.attendance.set(attendance),
       error: () => this.feedback.set('No se pudo cargar la asistencia.')
@@ -1922,8 +1949,115 @@ export class StudentPlatformPageComponent implements AfterViewInit {
     }
   }
 
+  private resetExerciseTracking(): void {
+    this.progressRequestVersion++;
+    this.editingObservationId.set(0); this.deletingObservationId.set(0);
+    this.trackingExercisesClientId = 0;
+    this.trackingExercises.set([]);
+    this.showAllTrackingExercises.set(false);
+    this.trackingForm.controls.exerciseId.setValue(0);
+    this.progressHistory.set(null);
+    this.exerciseObservation.reset('');
+    this.observationError.set('');
+    this.loadingExerciseProgress.set(false);
+  }
+
+  selectedTrackingExercise(): TrackingExercise | undefined {
+    return this.trackingExercises().find(exercise => exercise.id === this.trackingForm.controls.exerciseId.value);
+  }
+
+  private syncTrackingObservationCounts(): void {
+    const history = this.progressHistory();
+    if (!history) return;
+    const notes = (history.observations ?? []).filter(note => !note.isSuperseded);
+    this.trackingExercises.update(exercises => exercises.map(exercise => exercise.id === history.exerciseId ? {
+      ...exercise,
+      studentObservationCount: notes.filter(note => note.isStudentAuthor).length,
+      trainerObservationCount: notes.filter(note => !note.isStudentAuthor).length
+    } : exercise));
+  }
+
+  setAllTrackingExercises(value: boolean): void {
+    this.showAllTrackingExercises.set(value);
+    if (!this.visibleTrackingExercises().some(e => e.id === Number(this.trackingForm.controls.exerciseId.value))) {
+      this.trackingForm.controls.exerciseId.setValue(0);
+      this.progressRequestVersion++;
+      this.progressHistory.set(null);
+      this.exerciseObservation.reset('');
+      this.loadingExerciseProgress.set(false);
+      this.observationError.set('');
+    }
+  }
+
+  beginObservationEdit(note: ExerciseObservation): void {
+    if (this.savingObservation()) return;
+    this.editingObservationId.set(note.id);
+    this.deletingObservationId.set(0);
+    this.moderationText.setValue(note.text);
+  }
+
+  saveObservationEdit(): void {
+    const history = this.progressHistory(); const id = this.editingObservationId();
+    if (!history || !id || this.moderationText.invalid || !this.moderationText.value.trim() || this.savingObservation()) return;
+    this.savingObservation.set(true); this.observationError.set('');
+    this.platformService.editExerciseObservation(history.exerciseId, id, this.moderationText.value.trim(), history.clientId).subscribe({
+      next: note => {
+        this.savingObservation.set(false);
+        if (this.progressHistory()?.clientId !== history.clientId || this.progressHistory()?.exerciseId !== history.exerciseId) return;
+        this.progressHistory.update(value => value ? { ...value, observations: note.id === id ? value.observations : [note, ...value.observations.map(item => item.id === id ? { ...item, isSuperseded: true } : item)] } : null);
+        this.editingObservationId.set(0);
+      },
+      error: () => { this.savingObservation.set(false); this.observationError.set('No se pudo modificar. Conservamos tu texto; recargá el historial si la observación cambió.'); }
+    });
+  }
+
+  deleteObservation(note: ExerciseObservation): void {
+    const history = this.progressHistory(); if (!history || this.savingObservation()) return;
+    this.savingObservation.set(true); this.observationError.set('');
+    this.platformService.deleteExerciseObservation(history.exerciseId, note.id, history.clientId).subscribe({
+      next: () => {
+        this.savingObservation.set(false);
+        if (this.progressHistory()?.clientId !== history.clientId || this.progressHistory()?.exerciseId !== history.exerciseId) return;
+        const rootId = note.originalObservationId ?? note.id;
+        this.progressHistory.update(value => value ? { ...value, observations: value.observations.filter(item => item.id !== rootId && item.originalObservationId !== rootId) } : null);
+        this.syncTrackingObservationCounts();
+        this.deletingObservationId.set(0); this.editingObservationId.set(0);
+      },
+      error: () => { this.savingObservation.set(false); this.observationError.set('No se pudo eliminar la observación. Volvé a intentarlo.'); }
+    });
+  }
+
+  saveExerciseObservation(): void {
+    const history = this.progressHistory();
+    const text = this.exerciseObservation.value.trim();
+    if (!history || !text || this.exerciseObservation.invalid || this.savingObservation()) return;
+    this.savingObservation.set(true);
+    this.observationError.set('');
+    this.platformService.addExerciseObservation(history.exerciseId, text, history.clientId).subscribe({
+      next: observation => {
+        this.savingObservation.set(false);
+        if (this.progressHistory()?.clientId !== history.clientId || this.progressHistory()?.exerciseId !== history.exerciseId) return;
+        this.progressHistory.update(current => current ? { ...current, observations: [observation, ...(current.observations ?? [])] } : null);
+        this.syncTrackingObservationCounts();
+        this.exerciseObservation.reset('');
+        this.feedback.set('Observación guardada. El alumno puede verla en su progreso.');
+      },
+      error: () => {
+        this.savingObservation.set(false);
+        if (this.progressHistory()?.clientId === history.clientId && this.progressHistory()?.exerciseId === history.exerciseId)
+          this.observationError.set('No se pudo guardar la observación. Tu texto se conserva; volvé a intentarlo.');
+      }
+    });
+  }
+
   loadExerciseProgress(showMissingMessage = true): void {
     const raw = this.trackingForm.getRawValue();
+    const version = ++this.progressRequestVersion;
+    this.editingObservationId.set(0); this.deletingObservationId.set(0);
+    this.progressHistory.set(null);
+    this.exerciseObservation.reset('');
+    this.observationError.set('');
+    this.loadingExerciseProgress.set(false);
     if (raw.clientId <= 0 || raw.exerciseId <= 0) {
       this.progressHistory.set(null);
       if (showMissingMessage) {
@@ -1932,9 +2066,19 @@ export class StudentPlatformPageComponent implements AfterViewInit {
       return;
     }
 
+    this.loadingExerciseProgress.set(true);
     this.platformService.getExerciseProgress(raw.exerciseId, raw.clientId).subscribe({
-      next: history => this.progressHistory.set(history),
-      error: () => this.feedback.set('No se pudo cargar el historial del ejercicio.')
+      next: history => {
+        if (version !== this.progressRequestVersion) return;
+        this.progressHistory.set(history);
+        this.syncTrackingObservationCounts();
+        this.loadingExerciseProgress.set(false);
+      },
+      error: () => {
+        if (version !== this.progressRequestVersion) return;
+        this.loadingExerciseProgress.set(false);
+        this.observationError.set('No se pudo cargar el historial del ejercicio. Volvé a intentarlo.');
+      }
     });
   }
 

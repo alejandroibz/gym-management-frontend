@@ -81,6 +81,10 @@ export class ClientsService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  enableAccess(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/access`, {});
+  }
+
   reactivate(id: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${id}/reactivate`, {});
   }

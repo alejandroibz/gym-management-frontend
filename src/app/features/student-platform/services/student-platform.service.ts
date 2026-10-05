@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { AchievementPayload, AchievementTemplate, AssignRoutinePayload, AssignTrainingPlanPayload, AttendanceLog, BranchAttendanceSettings, Exercise, ExercisePayload, ExerciseProgressHistory, GamificationMetrics, HabitDefinition, HabitDefinitionPayload, Muscle, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutinePayload, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, TrainingPlanCompositionBatchPayload, TrainingPlanCompositionBatchResult, TrainingPlanCompositionPayload, TrainingPlanCompositionResult, TrainingPlanPayload, WorkoutSession, WorkoutSessionPayload, WorkoutSessionProfessionalReviewPayload } from '../models/student-platform.model';
+import { AchievementPayload, AchievementTemplate, AssignRoutinePayload, AssignTrainingPlanPayload, AttendanceLog, BranchAttendanceSettings, Exercise, ExercisePayload, ExerciseProgressHistory, ExerciseObservation, TrackingExercise, GamificationMetrics, HabitDefinition, HabitDefinitionPayload, Muscle, MuscleGroup, PointRule, RankingResponse, RoutineAssignment, RoutinePayload, RoutineTemplate, TrainingPlan, TrainingPlanAssignment, TrainingPlanCompositionBatchPayload, TrainingPlanCompositionBatchResult, TrainingPlanCompositionPayload, TrainingPlanCompositionResult, TrainingPlanPayload, WorkoutSession, WorkoutSessionPayload, WorkoutSessionProfessionalReviewPayload } from '../models/student-platform.model';
 
 interface UploadedFile {
   url: string;
@@ -213,6 +213,24 @@ export class StudentPlatformService {
 
   saveAttendance(clientId: number, date: string, notes?: string): Observable<AttendanceLog> {
     return this.http.post<AttendanceLog>(`${this.apiUrl}/Training/attendance`, { clientId, date, source: 'Manual', notes: notes || null });
+  }
+
+  getTrackingExercises(clientId?: number): Observable<TrackingExercise[]> {
+    let params = new HttpParams();
+    if (clientId) params = params.set('clientId', clientId);
+    return this.http.get<TrackingExercise[]>(`${this.apiUrl}/Training/tracking-exercises`, { params });
+  }
+
+  addExerciseObservation(exerciseId: number, text: string, clientId?: number): Observable<ExerciseObservation> {
+    return this.http.post<ExerciseObservation>(`${this.apiUrl}/Training/progress/${exerciseId}/observations`, { text, clientId });
+  }
+
+  editExerciseObservation(exerciseId: number, observationId: number, text: string, clientId?: number): Observable<ExerciseObservation> {
+    return this.http.put<ExerciseObservation>(`${this.apiUrl}/Training/progress/${exerciseId}/observations/${observationId}`, { text, clientId });
+  }
+
+  deleteExerciseObservation(exerciseId: number, observationId: number, clientId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/Training/progress/${exerciseId}/observations/${observationId}`, { params: new HttpParams().set('clientId', clientId) });
   }
 
   getExerciseProgress(exerciseId: number, clientId?: number): Observable<ExerciseProgressHistory> {

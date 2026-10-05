@@ -52,6 +52,9 @@
 
         @if (!isCreateMode()) {
           <div class="hero-pills">
+            <span class="hero-pill" [class.hero-pill-success]="currentClient.hasAppAccess" role="status">
+              {{ currentClient.hasAppAccess ? 'Acceso habilitado' : 'Sin acceso al sistema' }}
+            </span>
             <span class="hero-pill">{{ getMembershipLabel() }}</span>
             @if (currentClient.tieneLesion) {
               <span class="hero-pill hero-pill-warning">Con lesiÃ³n</span>
@@ -76,6 +79,12 @@
           </button>
 
           @if (isAdminOrSuperAdmin()) {
+            @if (!currentClient.hasAppAccess) {
+              <button mat-stroked-button type="button" [disabled]="isSaving() || isEnablingAccess() || !currentClient.activo" (click)="enableAccess()">
+                @if (isEnablingAccess()) { <mat-spinner diameter="18"></mat-spinner> } @else { <mat-icon>vpn_key</mat-icon> }
+                {{ isEnablingAccess() ? 'Habilitando...' : 'Habilitar acceso al sistema' }}
+              </button>
+            }
             <button mat-stroked-button type="button" [disabled]="isSaving() || !canRegisterPayment()" (click)="openRegisterPaymentDialog()">
               <mat-icon>payments</mat-icon>
               Registrar cobro
