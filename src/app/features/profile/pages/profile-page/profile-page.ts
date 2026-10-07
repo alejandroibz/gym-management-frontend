@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -92,8 +93,9 @@ export class ProfilePageComponent {
         this.populateForm(profile);
         this.isLoading.set(false);
       },
-      error: () => {
+      error: (error: unknown) => {
         this.isLoading.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 404) return;
         this.toast.error('No se pudo cargar tu perfil.');
       }
     });

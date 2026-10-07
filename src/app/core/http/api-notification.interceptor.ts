@@ -18,6 +18,13 @@ export function apiNotificationInterceptor(request: HttpRequest<unknown>, next: 
       queueMicrotask(() => toast.successIfUnchanged(getSuccessMessage(request.method), initialToastRevision));
     }),
     catchError((error: unknown) => {
+      // A missing current profile is expected for admins without a profile record.
+      if (request.method === 'GET' &&
+          request.url === `${environment.apiUrl}/api/Profile/me` &&
+          error instanceof HttpErrorResponse && error.status === 404) {
+        return throwError(() => error);
+      }
+
       const notification = getApiErrorMessage(error);
       queueMicrotask(() => toast.show(notification.message, 'error', 20000, notification.title));
       return throwError(() => error instanceof HttpErrorResponse ? error : new Error(notification.message));
